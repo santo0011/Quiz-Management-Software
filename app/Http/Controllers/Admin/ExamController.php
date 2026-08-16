@@ -32,7 +32,7 @@ class ExamController extends Controller
 
         return view('admin.exams.index', [
             'selectedBranch' => $branch,
-            'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1]),
+            'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
             'classes' => SchoolClass::where('branch_id', $branch->id)->orderBy('name')->get(),
             'filters' => $request->only(['search', 'status']),

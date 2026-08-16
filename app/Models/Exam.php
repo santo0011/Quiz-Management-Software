@@ -18,6 +18,7 @@ class Exam extends Model
         'title',
         'description',
         'total_marks',
+        'marks_per_question',
         'duration_minutes',
         'starts_at',
         'ends_at',
@@ -39,6 +40,7 @@ class Exam extends Model
             'randomize_answers' => 'boolean',
             'negative_marking_enabled' => 'boolean',
             'negative_marks' => 'decimal:2',
+            'marks_per_question' => 'decimal:2',
         ];
     }
 
@@ -100,5 +102,13 @@ class Exam extends Model
             ->count();
 
         return max(0, $this->maximum_attempts - $usedAttempts);
+    }
+
+    public function recalculateTotalMarks(): void
+    {
+        $count = $this->questions()->count();
+        $this->update([
+            'total_marks' => (int) round($count * (float) $this->marks_per_question),
+        ]);
     }
 }

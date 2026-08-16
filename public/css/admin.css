@@ -903,6 +903,29 @@ body {
     border-color: var(--primary);
 }
 
+.btn-add-question {
+    width: 100%;
+    min-height: 46px;
+    border: 2px dashed var(--primary);
+    border-radius: 10px;
+    background: #f8faff;
+    color: var(--primary);
+    font-weight: 800;
+    font-size: .92rem;
+    transition: all .18s ease;
+}
+
+.btn-add-question:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(35, 86, 216, .2);
+}
+
+.multi-question-block {
+    scroll-margin-top: 120px;
+}
+
 .question-form-actions {
     display: flex;
     flex-wrap: wrap;

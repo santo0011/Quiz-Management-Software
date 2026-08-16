@@ -52,17 +52,29 @@
                 <h3>Marks & Duration</h3>
             </div>
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <label for="marks_per_question" class="form-label">Marks Per Question <span class="required-mark">*</span></label>
+                    <input id="marks_per_question" type="number" step="0.01" min="0.01" name="marks_per_question" value="{{ old('marks_per_question', $exam->marks_per_question ?? 1) }}" class="form-control marks-per-question-input @error('marks_per_question') is-invalid @enderror" required>
+                    @error('marks_per_question')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-3">
+                    <label for="total_questions" class="form-label">Total Questions <span class="required-mark">*</span></label>
+                    <input id="total_questions" type="number" min="1" name="total_questions" value="{{ old('total_questions', $exam->questions()->count() ?: 1) }}" class="form-control total-questions-input @error('total_questions') is-invalid @enderror" required>
+                    <div class="form-text">Expected question count</div>
+                    @error('total_questions')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-3">
                     <label for="total_marks" class="form-label">Total Marks <span class="required-mark">*</span></label>
-                    <input id="total_marks" type="number" min="1" name="total_marks" value="{{ old('total_marks', $exam->total_marks) }}" class="form-control @error('total_marks') is-invalid @enderror" required>
+                    <input id="total_marks" type="number" min="1" name="total_marks" value="{{ old('total_marks', $exam->total_marks) }}" class="form-control total-marks-input @error('total_marks') is-invalid @enderror" readonly>
+                    <div class="form-text">Auto-calculated</div>
                     @error('total_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="duration_minutes" class="form-label">Duration Minutes <span class="required-mark">*</span></label>
                     <input id="duration_minutes" type="number" min="1" name="duration_minutes" value="{{ old('duration_minutes', $exam->duration_minutes) }}" class="form-control @error('duration_minutes') is-invalid @enderror" required>
                     @error('duration_minutes')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="passing_marks" class="form-label">Passing Marks</label>
                     <input id="passing_marks" type="number" min="0" name="passing_marks" value="{{ old('passing_marks', $exam->passing_marks) }}" class="form-control @error('passing_marks') is-invalid @enderror">
                     @error('passing_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -142,3 +154,27 @@
         <a href="{{ route($prefix.'.exams.index') }}" class="btn btn-soft">Cancel</a>
     </div>
 </form>
+
+@push('scripts')
+    <script>
+        (function () {
+            const marksInput = document.getElementById('marks_per_question');
+            const questionsInput = document.getElementById('total_questions');
+            const totalInput = document.getElementById('total_marks');
+
+            if (! marksInput || ! questionsInput || ! totalInput) {
+                return;
+            }
+
+            const updateTotal = () => {
+                const marks = parseFloat(marksInput.value) || 0;
+                const count = parseInt(questionsInput.value, 10) || 0;
+                totalInput.value = (marks * count) || '';
+            };
+
+            marksInput.addEventListener('input', updateTotal);
+            questionsInput.addEventListener('input', updateTotal);
+            updateTotal();
+        })();
+    </script>
+@endpush

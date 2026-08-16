@@ -30,11 +30,13 @@ class ExamRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'school_class_id' => ['required', 'exists:school_classes,id'],
-            'total_marks' => ['required', 'integer', 'min:1'],
+            'marks_per_question' => ['required', 'numeric', 'min:0.01', 'max:9999.99'],
+            'total_questions' => ['nullable', 'integer', 'min:1'],
+            'total_marks' => ['nullable', 'integer', 'min:0'],
             'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
-            'passing_marks' => ['nullable', 'integer', 'min:0', 'lte:total_marks'],
+            'passing_marks' => ['nullable', 'integer', 'min:0'],
             'maximum_attempts' => ['required', 'integer', 'min:1', 'max:20'],
             'randomize_questions' => ['nullable', 'boolean'],
             'randomize_answers' => ['nullable', 'boolean'],
@@ -84,6 +86,15 @@ class ExamRequest extends FormRequest
         $validated['negative_marks'] = $validated['negative_marking_enabled']
             ? ($validated['negative_marks'] ?? 0)
             : 0;
+
+        $validated['marks_per_question'] = (float) ($validated['marks_per_question'] ?? 1);
+
+        if (($validated['total_questions'] ?? false)) {
+            $validated['total_marks'] = (int) round(
+                $validated['marks_per_question'] * (int) $validated['total_questions']
+            );
+            unset($validated['total_questions']);
+        }
 
         return $validated;
     }

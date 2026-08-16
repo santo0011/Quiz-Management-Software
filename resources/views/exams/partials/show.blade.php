@@ -21,6 +21,7 @@
 
     <div class="stats-grid">
         <div class="stat-card"><span>Total Marks</span><strong>{{ $exam->total_marks }}</strong></div>
+        <div class="stat-card"><span>Marks Per Question</span><strong>{{ $exam->marks_per_question }}</strong></div>
         <div class="stat-card"><span>Passing Marks</span><strong>{{ $exam->passing_marks ?? 'Not set' }}</strong></div>
         <div class="stat-card"><span>Duration</span><strong>{{ $exam->duration_minutes }} min</strong></div>
         <div class="stat-card"><span>Questions</span><strong>{{ $exam->questions->count() }}</strong></div>

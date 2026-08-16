@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MultiQuestionRequest;
 use App\Http\Requests\QuestionRequest;
 use App\Models\Branch;
 use App\Models\Exam;
@@ -39,12 +40,47 @@ class QuestionController extends Controller
         ]);
     }
 
-    public function store(QuestionRequest $request, Exam $exam): RedirectResponse
+    public function store(MultiQuestionRequest $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($exam);
-        $this->saveQuestion($request, $exam, new Question);
 
-        return redirect()->route('admin.exams.show', $exam)->with('success', 'Question added successfully.');
+        DB::transaction(function () use ($request, $exam): void {
+            $exam->refresh();
+
+            foreach (array_values($request->input('questions', [])) as $questionData) {
+                $question = new Question;
+                $question->fill([
+                    'question_text' => trim($questionData['question_text']),
+                    'question_type' => $questionData['question_type'] ?? 'mcq',
+                    'marks' => $questionData['marks'] ?? $exam->marks_per_question,
+                    'explanation' => $questionData['explanation'] ?? null,
+                ]);
+                $question->exam_id = $exam->id;
+                $question->save();
+
+                $correctIndex = (int) ($questionData['correct_option'] ?? 0);
+                foreach (array_values($questionData['options'] ?? []) as $index => $option) {
+                    $question->options()->create([
+                        'option_text' => trim($option),
+                        'is_correct' => $index === $correctIndex,
+                        'position' => $index,
+                    ]);
+                }
+            }
+
+            // Recalculate total marks based on actual question count
+            $count = $exam->questions()->count();
+            $exam->update([
+                'total_marks' => (int) round($count * (float) $exam->marks_per_question),
+            ]);
+        });
+
+        $count = count($request->input('questions', []));
+        $message = $count > 1
+            ? "{$count} questions added successfully."
+            : 'Question added successfully.';
+
+        return redirect()->route('admin.exams.show', $exam)->with('success', $message);
     }
 
     public function edit(Question $question): View
@@ -71,6 +107,8 @@ class QuestionController extends Controller
         $this->authorizeExam($question->exam);
         $exam = $question->exam;
         $question->delete();
+        $exam->refresh();
+        $exam->recalculateTotalMarks();
 
         return redirect()->route('admin.exams.show', $exam)->with('success', 'Question deleted successfully.');
     }

@@ -118,7 +118,7 @@ class ExamAttemptService
                     $isCorrect = false;
                 } elseif ($selected->is_correct) {
                     $correct++;
-                    $marksAwarded = (float) $question->marks;
+                    $marksAwarded = (float) ($exam->marks_per_question > 0 ? $exam->marks_per_question : $question->marks);
                     $isCorrect = true;
                 } else {
                     $wrong++;
