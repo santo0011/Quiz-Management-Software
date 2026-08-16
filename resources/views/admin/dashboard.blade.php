@@ -1,0 +1,79 @@
+@extends('layouts.admin')
+
+@section('title', 'Dashboard')
+@section('page-title', 'Dashboard')
+
+@section('content')
+    <div class="dashboard-hero">
+        <div>
+            <span>Operational Overview</span>
+            <h2>Quiz Management is ready for branch-based operations.</h2>
+            <p>Select a branch to manage branch-specific students now, with exams, questions, and results ready for later modules.</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="metric-card">
+                <i class="bi bi-diagram-3-fill"></i>
+                <span>Total Branches</span>
+                <strong>{{ $branchCount }}</strong>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card">
+                <i class="bi bi-people-fill"></i>
+                <span>Students</span>
+                <strong>{{ $studentCount }}</strong>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card">
+                <i class="bi bi-building-check"></i>
+                <span>{{ $selectedBranch ? 'Selected Branch Students' : 'Selected Branch' }}</span>
+                <strong>{{ $selectedBranch ? $selectedBranchStudentCount : 'None' }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <section class="content-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Recent Branches</h2>
+                <p>Your latest branch records appear here.</p>
+            </div>
+            <a href="{{ route('admin.branches.index') }}" class="btn btn-outline-primary btn-sm">View all</a>
+        </div>
+
+        @if ($recentBranches->isEmpty())
+            <div class="empty-state">
+                <i class="bi bi-building-add"></i>
+                <h3>No branches yet</h3>
+                <p>Create your first branch to begin organizing the platform.</p>
+            </div>
+        @else
+            <div class="table-responsive">
+                <table class="table align-middle admin-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Created</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($recentBranches as $branch)
+                            <tr>
+                                <td>{{ $branch->name }}</td>
+                                <td>{{ $branch->created_at->format('d M Y') }}</td>
+                                <td class="text-end">
+                                    <a href="{{ route('admin.branches.show', $branch) }}" class="btn btn-sm btn-soft">Details</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </section>
+@endsection
