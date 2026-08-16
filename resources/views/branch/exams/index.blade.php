@@ -30,7 +30,7 @@
         @include('exams.partials.table', ['prefix' => 'branch'])
     </section>
 
-    <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="addExamDrawer">
+    <div class="offcanvas offcanvas-end student-drawer exam-drawer" tabindex="-1" id="addExamDrawer">
         <div class="offcanvas-header student-drawer-header">
             <div>
                 <span class="page-kicker">Exam Management</span>
