@@ -59,7 +59,7 @@
                     <div class="option-row" data-option-row>
                         <label class="option-badge">{{ chr(65 + $index) }}</label>
                         <div class="option-input-wrap">
-                            <textarea name="options[]" rows="2" class="form-control math-input" placeholder="Option {{ chr(65 + $index) }} text" required>{{ $optionValue }}</textarea>
+                            <textarea name="options[]" rows="1" class="form-control math-input" placeholder="Option {{ chr(65 + $index) }} text" required>{{ $optionValue }}</textarea>
                         </div>
                         <label class="correct-answer-label" title="Mark as correct">
                             <input type="radio" name="correct_option" value="{{ $index }}" class="form-check-input correct-radio" @checked((int) $correctIndex === $index) aria-label="Correct option">
@@ -128,7 +128,7 @@
                 row.innerHTML = `
                     <label class="option-badge">${letter}</label>
                     <div class="option-input-wrap">
-                        <textarea name="options[]" rows="2" class="form-control math-input" placeholder="Option ${letter}" required></textarea>
+                        <textarea name="options[]" rows="1" class="form-control math-input" placeholder="Option ${letter}" required></textarea>
                     </div>
                     <label class="correct-answer-label" title="Mark as correct">
                         <input type="radio" name="correct_option" value="${count}" class="form-check-input correct-radio" aria-label="Correct option">
