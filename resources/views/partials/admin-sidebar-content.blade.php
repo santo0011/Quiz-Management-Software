@@ -4,7 +4,7 @@
         <strong>QuizCore</strong>
         <span>Management Suite</span>
     </div>
-    <button class="sidebar-collapse-toggle d-none d-lg-grid" type="button" aria-label="Collapse sidebar" data-sidebar-toggle data-bs-toggle="tooltip" data-bs-title="Collapse sidebar">
+    <button class="sidebar-collapse-toggle d-none d-lg-grid" type="button" aria-label="Collapse sidebar" data-sidebar-toggle>
         <i class="bi bi-chevron-left"></i>
     </button>
 </div>
@@ -13,12 +13,12 @@
     @foreach ($links as $link)
         @php($isBranchLocked = ($link['requiresBranch'] ?? false) && ! $hasSelectedBranch)
         @if ($link['route'] && ! $isBranchLocked)
-            <a href="{{ route($link['route']) }}" class="{{ request()->routeIs($link['active']) ? 'active' : '' }}" data-bs-toggle="tooltip" data-bs-title="{{ $link['label'] }}">
+            <a href="{{ route($link['route']) }}" class="{{ request()->routeIs($link['active']) ? 'active' : '' }}">
                 <i class="bi {{ $link['icon'] }}"></i>
                 <span>{{ $link['label'] }}</span>
             </a>
         @else
-            <span class="disabled" role="link" aria-disabled="true" data-bs-toggle="tooltip" data-bs-title="{{ $isBranchLocked ? 'Please select a branch first to manage branch-related data.' : $link['label'] }}">
+            <span class="disabled" role="link" aria-disabled="true">
                 <i class="bi {{ $link['icon'] }}"></i>
                 <span>{{ $link['label'] }}</span>
             </span>
@@ -28,7 +28,7 @@
 
 <form method="POST" action="{{ route('logout') }}" class="sidebar-logout" data-logout-form>
     @csrf
-    <button class="btn w-100" type="submit" data-bs-toggle="tooltip" data-bs-title="Logout">
+    <button class="btn w-100" type="submit">
         <i class="bi bi-box-arrow-right"></i>
         <span>Logout</span>
     </button>
