@@ -52,6 +52,40 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
+}
+
+.mobile-sidebar .brand {
+    padding-right: 60px;
+}
+
+.mobile-sidebar-close {
+    position: absolute;
+    top: 22px;
+    right: 14px;
+    z-index: 30;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .08);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background .18s ease, transform .22s ease;
+    padding: 0;
+}
+
+.mobile-sidebar-close:hover {
+    background: rgba(255, 255, 255, .18);
+    transform: rotate(90deg);
+}
+
+.mobile-sidebar-close:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, .4);
+    outline-offset: 2px;
 }
 
 .brand,
@@ -968,6 +1002,26 @@ body {
 }
 
 @media (max-width: 575.98px) {
+    body {
+        overflow-x: hidden;
+    }
+
+    .mobile-sidebar {
+        width: min(86vw, 320px) !important;
+        max-width: 86vw;
+    }
+
+    .mobile-sidebar .brand {
+        padding-right: 52px;
+    }
+
+    .mobile-sidebar-close {
+        top: 20px;
+        right: 12px;
+        width: 36px;
+        height: 36px;
+    }
+
     .student-drawer {
         width: 96vw !important;
     }

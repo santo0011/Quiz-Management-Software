@@ -18,6 +18,9 @@
 
 <div class="offcanvas offcanvas-start mobile-sidebar" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
     <div class="offcanvas-body p-0">
+        <button type="button" class="mobile-sidebar-close d-lg-none" data-bs-dismiss="offcanvas" aria-label="Close sidebar">
+            <i class="bi bi-x-lg"></i>
+        </button>
         @include('partials.admin-sidebar-content', ['links' => $links, 'hasSelectedBranch' => $hasSelectedBranch])
     </div>
 </div>
