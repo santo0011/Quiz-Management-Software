@@ -1,11 +1,23 @@
 @php($prefix = $prefix ?? 'admin')
 @php($contextBranch = $selectedBranch ?? $branch)
+@php($isPublished = $exam->exists && $exam->isPublished())
+
+@if ($isPublished)
+    <div class="feedback-alert info mb-4">
+        <i class="bi bi-lock-fill"></i>
+        <div>
+            <strong>This exam is published and locked.</strong>
+            <p class="mb-0">Published exams cannot be edited or deleted. The publish restriction is permanent.</p>
+        </div>
+    </div>
+@endif
 
 <form method="POST" action="{{ $action }}" class="admin-form">
     @csrf
     @if (($method ?? 'POST') !== 'POST')
         @method($method)
     @endif
+    <fieldset {{ $isPublished ? 'disabled' : '' }}>
 
     <div class="exam-form-sections">
         <section class="exam-form-section">
@@ -56,12 +68,6 @@
                     <label for="marks_per_question" class="form-label">Marks Per Question <span class="required-mark">*</span></label>
                     <input id="marks_per_question" type="number" step="0.01" min="0.01" name="marks_per_question" value="{{ old('marks_per_question', $exam->marks_per_question ?? 1) }}" class="form-control marks-per-question-input @error('marks_per_question') is-invalid @enderror" required>
                     @error('marks_per_question')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-3">
-                    <label for="total_questions" class="form-label">Total Questions <span class="required-mark">*</span></label>
-                    <input id="total_questions" type="number" min="1" name="total_questions" value="{{ old('total_questions', $exam->questions()->count() ?: 1) }}" class="form-control total-questions-input @error('total_questions') is-invalid @enderror" required>
-                    <div class="form-text">Expected question count</div>
-                    @error('total_questions')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-3">
                     <label for="total_marks" class="form-label">Total Marks <span class="required-mark">*</span></label>
@@ -146,11 +152,15 @@
         </section>
     </div>
 
+    </fieldset>
+
     <div class="d-flex gap-2 mt-4">
-        <button class="btn btn-primary" type="submit">
-            <i class="bi bi-check-circle-fill"></i>
-            {{ $button }}
-        </button>
+        @if (!$isPublished)
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-check-circle-fill"></i>
+                {{ $button }}
+            </button>
+        @endif
         <a href="{{ route($prefix.'.exams.index') }}" class="btn btn-soft">Cancel</a>
     </div>
 </form>
@@ -159,21 +169,18 @@
     <script>
         (function () {
             const marksInput = document.getElementById('marks_per_question');
-            const questionsInput = document.getElementById('total_questions');
             const totalInput = document.getElementById('total_marks');
 
-            if (! marksInput || ! questionsInput || ! totalInput) {
+            if (! marksInput || ! totalInput) {
                 return;
             }
 
             const updateTotal = () => {
                 const marks = parseFloat(marksInput.value) || 0;
-                const count = parseInt(questionsInput.value, 10) || 0;
-                totalInput.value = (marks * count) || '';
+                totalInput.value = marks || '';
             };
 
             marksInput.addEventListener('input', updateTotal);
-            questionsInput.addEventListener('input', updateTotal);
             updateTotal();
         })();
     </script>

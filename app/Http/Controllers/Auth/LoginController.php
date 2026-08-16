@@ -55,6 +55,18 @@ class LoginController extends Controller
             }
 
             if ($expectedRole === 'Branch') {
+                $branch = $request->user()->branch;
+
+                if ($branch && ! $branch->isActive()) {
+                    Auth::logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+
+                    return back()
+                        ->with('login_error', 'This branch account has been deactivated. Please contact the administrator.')
+                        ->withInput($request->only('email', 'login_type'));
+                }
+
                 return redirect()
                     ->route('branch.dashboard')
                     ->with('success', 'Login successful. Welcome back!');
@@ -92,6 +104,18 @@ class LoginController extends Controller
         $validLoginCode = $student?->login_code_hash && Hash::check($credentials['password'], $student->login_code_hash);
 
         if ($student && ($validPassword || $validLoginCode)) {
+            if (! $student->isActive()) {
+                return back()
+                    ->with('login_error', 'This student account has been deactivated. Please contact your administrator.')
+                    ->withInput($request->only('email', 'login_type'));
+            }
+
+            if ($student->branch && ! $student->branch->isActive()) {
+                return back()
+                    ->with('login_error', 'This branch has been deactivated. Please contact your administrator.')
+                    ->withInput($request->only('email', 'login_type'));
+            }
+
             Auth::guard('student')->login($student);
             $request->session()->regenerate();
 

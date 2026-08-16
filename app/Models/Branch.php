@@ -9,7 +9,20 @@ class Branch extends Model
     protected $fillable = [
         'name',
         'email',
+        'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function isActive(): bool
+    {
+        return $this->is_active;
+    }
 
     public function user()
     {

@@ -29,6 +29,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Status</th>
                             <th>Created</th>
                             <th>Updated</th>
                             <th class="text-end">Actions</th>
@@ -39,6 +40,12 @@
                             <tr>
                                 <td><strong>{{ $branch->name }}</strong></td>
                                 <td>{{ $branch->email }}</td>
+                                <td>
+                                    <span class="status-badge {{ $branch->is_active ? 'status-published' : 'status-closed' }}">
+                                        <i class="bi {{ $branch->is_active ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
+                                        {{ $branch->is_active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </td>
                                 <td>{{ $branch->created_at->format('d M Y, h:i A') }}</td>
                                 <td>{{ $branch->updated_at->format('d M Y, h:i A') }}</td>
                                 <td class="text-end">
@@ -49,6 +56,12 @@
                                         <button type="button" class="btn btn-sm btn-soft" title="Edit" data-bs-toggle="offcanvas" data-bs-target="#editBranchDrawer{{ $branch->id }}" aria-controls="editBranchDrawer{{ $branch->id }}">
                                             <i class="bi bi-pencil-fill"></i>
                                         </button>
+                                        <form method="POST" action="{{ route('admin.branches.toggle-active', $branch) }}" data-confirm-toggle>
+                                            @csrf
+                                            <button class="btn btn-sm {{ $branch->is_active ? 'btn-danger-soft' : 'btn-soft' }}" type="submit" title="{{ $branch->is_active ? 'Deactivate' : 'Activate' }}">
+                                                <i class="bi {{ $branch->is_active ? 'bi-pause-circle-fill' : 'bi-play-circle-fill' }}"></i>
+                                            </button>
+                                        </form>
                                         <form method="POST" action="{{ route('admin.branches.destroy', $branch) }}" data-confirm-delete>
                                             @csrf
                                             @method('DELETE')

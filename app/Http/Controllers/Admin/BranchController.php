@@ -21,7 +21,7 @@ class BranchController extends Controller
     public function index(): View
     {
         return view('admin.branches.index', [
-            'branches' => Branch::latest()->paginate(10),
+            'branches' => Branch::latest()->paginate(20),
         ]);
     }
 
@@ -54,9 +54,13 @@ class BranchController extends Controller
             return $branch;
         });
 
-        Mail::to($branch->email)->send(new BranchCredentialsMail($branch, $temporaryPassword));
+        try {
+            Mail::to($branch->email)->send(new BranchCredentialsMail($branch, $temporaryPassword));
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.branches.index')->with('error', 'Branch created, but login credentials could not be sent to the email.');
+        }
 
-        return redirect()->route('admin.branches.index')->with('success', 'Branch created and login code sent successfully.');
+        return redirect()->route('admin.branches.index')->with('success', 'Branch login credentials have been sent to the registered email.');
     }
 
     /**
@@ -101,5 +105,16 @@ class BranchController extends Controller
         $branch->delete();
 
         return redirect()->route('admin.branches.index')->with('success', 'Branch deleted successfully.');
+    }
+
+    public function toggleActive(Branch $branch): RedirectResponse
+    {
+        $branch->update(['is_active' => ! $branch->is_active]);
+
+        $message = $branch->is_active
+            ? 'Branch activated successfully.'
+            : 'Branch deactivated successfully.';
+
+        return redirect()->route('admin.branches.index')->with('success', $message);
     }
 }

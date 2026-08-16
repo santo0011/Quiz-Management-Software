@@ -59,6 +59,17 @@
                 </div>
             </div>
         @endif
+        @if (session('error'))
+            <div class="toast admin-toast text-bg-danger border-0" role="status" aria-live="polite" aria-atomic="true" data-bs-delay="4500">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        {{ session('error') }}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
@@ -76,6 +87,60 @@
                     <button type="button" class="btn btn-danger" id="confirmDeleteButton">
                         <i class="bi bi-trash-fill"></i>
                         Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="toggleStatusModal" tabindex="-1" aria-labelledby="toggleStatusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content confirm-modal">
+                <div class="modal-header">
+                    <div>
+                        <span class="page-kicker">Status Change</span>
+                        <h2 class="modal-title fs-5" id="toggleStatusModalLabel">Confirm Status Change</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="toggle-confirm-icon">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </div>
+                    <p class="mb-0" id="toggleStatusMessage">Are you sure you want to change the status of this record?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmToggleButton">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="publishExamModal" tabindex="-1" aria-labelledby="publishExamModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content confirm-modal">
+                <div class="modal-header">
+                    <div>
+                        <span class="page-kicker">Exam Management</span>
+                        <h2 class="modal-title fs-5" id="publishExamModalLabel">Publish Exam</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="publish-confirm-icon">
+                        <i class="bi bi-rocket-takeoff-fill"></i>
+                    </div>
+                    <p class="mb-0">Once this exam is published, it cannot be edited or deleted. Are you sure you want to publish this exam?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmPublishButton">
+                        <i class="bi bi-rocket-takeoff-fill"></i>
+                        Publish Exam
                     </button>
                 </div>
             </div>
@@ -159,6 +224,85 @@
             pendingDeleteForm?.submit();
         });
 
+        const toggleModalEl = document.getElementById('toggleStatusModal');
+        const confirmToggleButton = document.getElementById('confirmToggleButton');
+        let pendingToggleForm = null;
+
+        document.querySelectorAll('[data-confirm-toggle]').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                pendingToggleForm = form;
+                const isActive = form.querySelector('button').title.includes('Deactivate');
+                document.getElementById('toggleStatusMessage').textContent = isActive
+                    ? 'Are you sure you want to deactivate this record? It will no longer be able to log in.'
+                    : 'Are you sure you want to activate this record?';
+                bootstrap.Modal.getOrCreateInstance(toggleModalEl).show();
+            });
+        });
+
+        confirmToggleButton?.addEventListener('click', () => {
+            pendingToggleForm?.submit();
+        });
+
+        const publishModalEl = document.getElementById('publishExamModal');
+        const confirmPublishButton = document.getElementById('confirmPublishButton');
+        let pendingPublishForm = null;
+
+        document.querySelectorAll('[data-publish-exam]').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                pendingPublishForm = form;
+                bootstrap.Modal.getOrCreateInstance(publishModalEl).show();
+            });
+        });
+
+        confirmPublishButton?.addEventListener('click', () => {
+            if (! pendingPublishForm) {
+                return;
+            }
+
+            const form = pendingPublishForm;
+            const button = confirmPublishButton;
+            const originalHtml = button.innerHTML;
+
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Publishing...';
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+                body: new FormData(form),
+            })
+            .then((response) => {
+                return response.json().then((data) => {
+                    if (! response.ok) {
+                        throw new Error(data.message || 'Publish failed');
+                    }
+                    return data;
+                });
+            })
+            .then((data) => {
+                bootstrap.Modal.getOrCreateInstance(publishModalEl).hide();
+                const toastEl = document.createElement('div');
+                toastEl.className = 'toast admin-toast text-bg-success border-0';
+                toastEl.setAttribute('role', 'status');
+                toastEl.setAttribute('aria-live', 'polite');
+                toastEl.setAttribute('aria-atomic', 'true');
+                toastEl.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="bi bi-check-circle-fill"></i> ' + (data.message || 'Exam published successfully.') + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+                document.querySelector('.toast-container').appendChild(toastEl);
+                bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3500 }).show();
+                setTimeout(() => window.location.reload(), 800);
+            })
+            .catch((error) => {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+                alert(error.message || 'Failed to publish exam. Please try again.');
+            });
+        });
+
         const logoutModalEl = document.getElementById('logoutConfirmModal');
         const confirmLogoutButton = document.getElementById('confirmLogoutButton');
         let pendingLogoutForm = null;
@@ -221,6 +365,7 @@
             });
         @endif
     </script>
+    @include('partials.global-forms')
     @stack('scripts')
 </body>
 </html>

@@ -82,9 +82,14 @@ class Exam extends Model
             });
     }
 
+    public function isPublished(): bool
+    {
+        return $this->status === self::STATUS_PUBLISHED;
+    }
+
     public function isOpen(): bool
     {
-        if ($this->status !== self::STATUS_PUBLISHED) {
+        if (! $this->isPublished()) {
             return false;
         }
 

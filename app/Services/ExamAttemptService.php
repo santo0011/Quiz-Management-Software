@@ -161,6 +161,14 @@ class ExamAttemptService
 
     private function ensureExamAvailableForStudent(Exam $exam, Student $student): void
     {
+        if (! $student->isActive()) {
+            throw ValidationException::withMessages(['exam' => 'Your student account has been deactivated. Please contact your administrator.']);
+        }
+
+        if ($student->branch && ! $student->branch->isActive()) {
+            throw ValidationException::withMessages(['exam' => 'Your branch has been deactivated. Please contact your administrator.']);
+        }
+
         if ($exam->branch_id !== $student->branch_id || $exam->school_class_id !== $student->class_id) {
             throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your class.']);
         }

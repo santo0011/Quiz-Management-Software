@@ -27,7 +27,7 @@ class StudentController extends Controller
             ->search($request->string('search')->toString())
             ->when($request->filled('class'), fn ($query) => $query->where('class', $request->string('class')->toString()))
             ->latest()
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         return view('admin.students.index', [
@@ -120,6 +120,19 @@ class StudentController extends Controller
         $student->delete();
 
         return redirect()->route('admin.students.index')->with('success', 'Student deleted successfully.');
+    }
+
+    public function toggleActive(Student $student): RedirectResponse
+    {
+        $this->authorizeSelectedBranch($student);
+
+        $student->update(['is_active' => ! $student->is_active]);
+
+        $message = $student->is_active
+            ? 'Student activated successfully.'
+            : 'Student deactivated successfully.';
+
+        return redirect()->route('admin.students.index')->with('success', $message);
     }
 
     private function selectedBranch(): ?Branch

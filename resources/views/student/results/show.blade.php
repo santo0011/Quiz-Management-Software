@@ -10,7 +10,10 @@
                 <span>{{ $attempt->student?->student_name }}</span>
                 <h2>{{ $attempt->exam?->title }}</h2>
             </div>
-            <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">{{ $attempt->is_passed ? 'Passed' : 'Failed' }}</span>
+            <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
+                <i class="bi {{ $attempt->is_passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
+                {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
+            </span>
         </div>
 
         <div class="student-stat-grid">
@@ -31,13 +34,44 @@
                 <span>Review</span>
                 <h2>Answer Summary</h2>
             </div>
+            <span class="question-count-badge">
+                <i class="bi bi-file-earmark-text"></i>
+                {{ $attempt->answers->count() }} {{ Str::plural('Answer', $attempt->answers->count()) }}
+            </span>
         </div>
         <div class="question-list">
             @foreach ($attempt->answers as $answer)
                 <article class="question-admin-item">
-                    <span class="page-kicker">{{ $answer->is_correct ? 'Correct' : ($answer->question_option_id ? 'Wrong' : 'Unanswered') }}</span>
-                    <h3 class="math-content">{{ $answer->question?->question_text }}</h3>
-                    <p class="math-content mb-0"><strong>Your answer:</strong> {{ $answer->selectedOption?->option_text ?? 'Not answered' }}</p>
+                    <div class="question-item-header">
+                        <div class="question-number-badge">
+                            {{ $loop->iteration }}
+                        </div>
+                        <div class="question-item-content">
+                            <div class="question-item-meta">
+                                <span class="question-marks-badge {{ $answer->is_correct ? 'correct' : ($answer->question_option_id ? 'wrong' : 'unanswered') }}">
+                                    <i class="bi {{ $answer->is_correct ? 'bi-check-circle-fill' : ($answer->question_option_id ? 'bi-x-circle-fill' : 'bi-dash-circle-fill') }}"></i>
+                                    {{ $answer->is_correct ? 'Correct' : ($answer->question_option_id ? 'Wrong' : 'Unanswered') }}
+                                </span>
+                            </div>
+                            <h3 class="math-content question-item-text">{{ $answer->question?->question_text }}</h3>
+                        </div>
+                    </div>
+                    <div class="option-preview">
+                        <div class="option-preview-item {{ $answer->is_correct ? 'correct' : '' }}">
+                            <span class="option-letter">
+                                <i class="bi bi-person-check-fill"></i>
+                            </span>
+                            <span class="math-content option-text"><strong>Your answer:</strong> {{ $answer->selectedOption?->option_text ?? 'Not answered' }}</span>
+                        </div>
+                        @if (!$answer->is_correct)
+                            <div class="option-preview-item correct">
+                                <span class="option-letter">
+                                    <i class="bi bi-check2-circle"></i>
+                                </span>
+                                <span class="math-content option-text"><strong>Correct:</strong> {{ $answer->question?->options?->firstWhere('is_correct', true)?->option_text }}</span>
+                            </div>
+                        @endif
+                    </div>
                 </article>
             @endforeach
         </div>

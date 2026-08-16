@@ -25,13 +25,14 @@ class QuestionController extends Controller
 
         return view('admin.questions.index', [
             'selectedBranch' => $branch,
-            'exams' => Exam::withCount('questions')->with('schoolClass')->forBranch($branch->id)->latest()->paginate(10),
+            'exams' => Exam::withCount('questions')->with('schoolClass')->forBranch($branch->id)->latest()->paginate(20),
         ]);
     }
 
     public function create(Exam $exam): View
     {
         $this->authorizeExam($exam);
+        abort_if($exam->isPublished(), 403, 'Questions cannot be added to a published exam.');
 
         return view('admin.questions.create', [
             'selectedBranch' => $exam->branch,
@@ -43,6 +44,7 @@ class QuestionController extends Controller
     public function store(MultiQuestionRequest $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($exam);
+        abort_if($exam->isPublished(), 403, 'Questions cannot be added to a published exam.');
 
         DB::transaction(function () use ($request, $exam): void {
             $exam->refresh();
@@ -86,6 +88,7 @@ class QuestionController extends Controller
     public function edit(Question $question): View
     {
         $this->authorizeExam($question->exam);
+        abort_if($question->exam->isPublished(), 403, 'Questions cannot be edited in a published exam.');
 
         return view('admin.questions.edit', [
             'selectedBranch' => $question->exam->branch,
@@ -97,6 +100,7 @@ class QuestionController extends Controller
     public function update(QuestionRequest $request, Question $question): RedirectResponse
     {
         $this->authorizeExam($question->exam);
+        abort_if($question->exam->isPublished(), 403, 'Questions cannot be edited in a published exam.');
         $this->saveQuestion($request, $question->exam, $question);
 
         return redirect()->route('admin.exams.show', $question->exam)->with('success', 'Question updated successfully.');
@@ -105,6 +109,7 @@ class QuestionController extends Controller
     public function destroy(Question $question): RedirectResponse
     {
         $this->authorizeExam($question->exam);
+        abort_if($question->exam->isPublished(), 403, 'Questions cannot be deleted from a published exam.');
         $exam = $question->exam;
         $question->delete();
         $exam->refresh();

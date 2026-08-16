@@ -1,10 +1,9 @@
 @php
     $links = [
         ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2-fill', 'route' => 'branch.dashboard', 'active' => 'branch.dashboard'],
-        ['label' => 'Students', 'icon' => 'bi-people-fill', 'route' => 'branch.students.index', 'active' => 'branch.students.*'],
         ['label' => 'Classes', 'icon' => 'bi-collection-fill', 'route' => 'branch.classes.index', 'active' => 'branch.classes.*'],
+        ['label' => 'Students', 'icon' => 'bi-people-fill', 'route' => 'branch.students.index', 'active' => 'branch.students.*'],
         ['label' => 'Exams', 'icon' => 'bi-journal-check', 'route' => 'branch.exams.index', 'active' => 'branch.exams.*'],
-        ['label' => 'Questions', 'icon' => 'bi-patch-question-fill', 'route' => 'branch.questions.index', 'active' => 'branch.questions.*'],
         ['label' => 'Results', 'icon' => 'bi-bar-chart-fill', 'route' => 'branch.results.index', 'active' => 'branch.results.*'],
         ['label' => 'Change Password', 'icon' => 'bi-key-fill', 'route' => 'branch.password.edit', 'active' => 'branch.password.*'],
     ];

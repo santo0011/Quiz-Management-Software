@@ -22,7 +22,7 @@ class ExamController extends Controller
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->latest()
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         return view('branch.exams.index', [
@@ -57,6 +57,7 @@ class ExamController extends Controller
     public function edit(Request $request, Exam $exam): View
     {
         $this->authorizeExam($request, $exam);
+        abort_if($exam->isPublished(), 403, 'Published exams cannot be edited.');
 
         return view('branch.exams.edit', [
             'branch' => $request->user()->branch,
@@ -68,6 +69,7 @@ class ExamController extends Controller
     public function update(ExamRequest $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
+        abort_if($exam->isPublished(), 403, 'Published exams cannot be edited.');
 
         $exam->update($request->validated());
 
@@ -77,11 +79,33 @@ class ExamController extends Controller
     public function destroy(Request $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
+        abort_if($exam->isPublished(), 403, 'Published exams cannot be deleted.');
         abort_if($exam->attempts()->exists(), 422, 'Cannot delete an exam that already has attempts.');
 
         $exam->delete();
 
         return redirect()->route('branch.exams.index')->with('success', 'Exam deleted successfully.');
+    }
+
+    public function publish(Request $request, Exam $exam): RedirectResponse|\Illuminate\Http\JsonResponse
+    {
+        $this->authorizeExam($request, $exam);
+
+        if ($exam->isPublished()) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'This exam is already published.'], 422);
+            }
+
+            abort(422, 'This exam is already published.');
+        }
+
+        $exam->update(['status' => Exam::STATUS_PUBLISHED]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Exam published successfully.']);
+        }
+
+        return redirect()->route('branch.exams.index')->with('success', 'Exam published successfully.');
     }
 
     private function authorizeExam(Request $request, Exam $exam): void

@@ -70,13 +70,19 @@ class StudentPasswordController extends Controller
             'updated_at' => now(),
         ]);
 
-        Mail::to($student->email)->send(new StudentOtpMail($otp));
+        try {
+            Mail::to($student->email)->send(new StudentOtpMail($otp));
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'OTP could not be sent. Please try again later.',
+            ], 500);
+        }
 
         $request->session()->put('student_password_email', $student->email);
         $request->session()->forget('student_password_verified_otp_id');
 
         return response()->json([
-            'message' => 'A 6-digit OTP has been sent to your registered email address.',
+            'message' => 'OTP has been sent to your registered email.',
         ]);
     }
 

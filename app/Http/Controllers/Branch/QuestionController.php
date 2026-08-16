@@ -21,13 +21,14 @@ class QuestionController extends Controller
 
         return view('branch.questions.index', [
             'branch' => $branch,
-            'exams' => Exam::withCount('questions')->with('schoolClass')->forBranch($branch->id)->latest()->paginate(10),
+            'exams' => Exam::withCount('questions')->with('schoolClass')->forBranch($branch->id)->latest()->paginate(20),
         ]);
     }
 
     public function create(Request $request, Exam $exam): View
     {
         $this->authorizeExam($request, $exam);
+        abort_if($exam->isPublished(), 403, 'Questions cannot be added to a published exam.');
 
         return view('branch.questions.create', [
             'branch' => $request->user()->branch,
@@ -39,6 +40,7 @@ class QuestionController extends Controller
     public function store(MultiQuestionRequest $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
+        abort_if($exam->isPublished(), 403, 'Questions cannot be added to a published exam.');
 
         DB::transaction(function () use ($request, $exam): void {
             $exam->refresh();
@@ -81,6 +83,7 @@ class QuestionController extends Controller
     public function edit(Request $request, Question $question): View
     {
         $this->authorizeExam($request, $question->exam);
+        abort_if($question->exam->isPublished(), 403, 'Questions cannot be edited in a published exam.');
 
         return view('branch.questions.edit', [
             'branch' => $request->user()->branch,
@@ -92,6 +95,7 @@ class QuestionController extends Controller
     public function update(QuestionRequest $request, Question $question): RedirectResponse
     {
         $this->authorizeExam($request, $question->exam);
+        abort_if($question->exam->isPublished(), 403, 'Questions cannot be edited in a published exam.');
         $this->saveQuestion($request, $question->exam, $question);
 
         return redirect()->route('branch.exams.show', $question->exam)->with('success', 'Question updated successfully.');
@@ -100,6 +104,7 @@ class QuestionController extends Controller
     public function destroy(Request $request, Question $question): RedirectResponse
     {
         $this->authorizeExam($request, $question->exam);
+        abort_if($question->exam->isPublished(), 403, 'Questions cannot be deleted from a published exam.');
         $exam = $question->exam;
         $question->delete();
         $exam->refresh();

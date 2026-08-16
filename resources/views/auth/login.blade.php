@@ -161,7 +161,7 @@
                     <span>Send OTP & Create Password</span>
                 </button>
 
-                <button type="submit" class="btn btn-primary w-100 login-submit" id="loginButton">
+                <button type="submit" class="btn btn-primary w-100 login-submit" id="loginButton" data-loading="Logging in...">
                     <i class="bi bi-shield-lock-fill" id="loginButtonIcon"></i>
                     <span>Login as Super Admin</span>
                 </button>

@@ -48,14 +48,27 @@ class PasswordResetController extends Controller
                 'updated_at' => now(),
             ]);
 
-            Mail::to($user->email)->send(new SuperAdminOtpMail($otp));
+            try {
+                Mail::to($user->email)->send(new SuperAdminOtpMail($otp));
+                $emailSent = true;
+            } catch (\Throwable $e) {
+                $emailSent = false;
+            }
+        } else {
+            $emailSent = true; // Pretend success to avoid user enumeration
         }
 
         $request->session()->put('password_reset_email', $validated['email']);
 
+        if (! $emailSent) {
+            return back()
+                ->with('error', 'Password reset instructions could not be sent. Please try again later.')
+                ->withInput($request->only('email'));
+        }
+
         return redirect()
             ->route('password.otp')
-            ->with('success', 'If the email is registered, a reset code has been sent.');
+            ->with('success', 'Password reset instructions have been sent to your email.');
     }
 
     public function otp(): View

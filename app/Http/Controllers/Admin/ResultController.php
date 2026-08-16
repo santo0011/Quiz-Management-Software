@@ -34,7 +34,7 @@ class ResultController extends Controller
             })
             ->when($request->filled('result'), fn ($query) => $query->where('is_passed', $request->string('result')->toString() === 'passed'))
             ->latest('submitted_at')
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         return view('admin.results.index', [

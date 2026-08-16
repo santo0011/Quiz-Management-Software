@@ -13,6 +13,10 @@ class ExamRequest extends FormRequest
     {
         $exam = $this->route('exam');
 
+        if ($exam && $exam->isPublished() && $this->isMethod('PUT')) {
+            return false;
+        }
+
         if ($this->user()?->role === 'Branch') {
             return ! $exam || $exam->branch_id === $this->user()->branch_id;
         }
@@ -31,7 +35,6 @@ class ExamRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'school_class_id' => ['required', 'exists:school_classes,id'],
             'marks_per_question' => ['required', 'numeric', 'min:0.01', 'max:9999.99'],
-            'total_questions' => ['nullable', 'integer', 'min:1'],
             'total_marks' => ['nullable', 'integer', 'min:0'],
             'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
             'starts_at' => ['nullable', 'date'],
@@ -88,13 +91,6 @@ class ExamRequest extends FormRequest
             : 0;
 
         $validated['marks_per_question'] = (float) ($validated['marks_per_question'] ?? 1);
-
-        if (($validated['total_questions'] ?? false)) {
-            $validated['total_marks'] = (int) round(
-                $validated['marks_per_question'] * (int) $validated['total_questions']
-            );
-            unset($validated['total_questions']);
-        }
 
         return $validated;
     }

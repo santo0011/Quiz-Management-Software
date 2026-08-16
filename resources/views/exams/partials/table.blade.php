@@ -29,17 +29,43 @@
                         <td>{{ $exam->schoolClass?->name }}</td>
                         <td>{{ $exam->questions_count ?? $exam->questions->count() }}</td>
                         <td>{{ $exam->total_marks }}</td>
-                        <td><span class="status-badge status-{{ $exam->status }}">{{ ucfirst($exam->status) }}</span></td>
+                        <td>
+                            @if ($exam->isPublished())
+                                <span class="status-badge status-published">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    Published
+                                </span>
+                            @elseif ($exam->status === 'closed')
+                                <span class="status-badge status-closed">
+                                    <i class="bi bi-x-circle-fill"></i>
+                                    Closed
+                                </span>
+                            @else
+                                <form method="POST" action="{{ route($prefix.'.exams.publish', $exam) }}" data-publish-exam>
+                                    @csrf
+                                    <button type="submit" class="status-badge status-draft-btn" title="Click to publish this exam">
+                                        <i class="bi bi-rocket-takeoff"></i>
+                                        Draft
+                                    </button>
+                                </form>
+                            @endif
+                        </td>
                         <td class="text-end">
                             <div class="action-group">
                                 <a href="{{ route($prefix.'.exams.show', $exam) }}" class="btn btn-sm btn-soft" title="View"><i class="bi bi-eye-fill"></i></a>
-                                <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-sm btn-soft" title="Add Question"><i class="bi bi-patch-plus-fill"></i></a>
-                                <a href="{{ route($prefix.'.exams.edit', $exam) }}" class="btn btn-sm btn-soft" title="Edit"><i class="bi bi-pencil-fill"></i></a>
-                                <form method="POST" action="{{ route($prefix.'.exams.destroy', $exam) }}" data-confirm-delete>
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-danger-soft" type="submit" title="Delete"><i class="bi bi-trash-fill"></i></button>
-                                </form>
+                                @if (!$exam->isPublished())
+                                    <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-sm btn-soft" title="Add Question"><i class="bi bi-patch-plus-fill"></i></a>
+                                    <a href="{{ route($prefix.'.exams.edit', $exam) }}" class="btn btn-sm btn-soft" title="Edit"><i class="bi bi-pencil-fill"></i></a>
+                                    <form method="POST" action="{{ route($prefix.'.exams.destroy', $exam) }}" data-confirm-delete>
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-danger-soft" type="submit" title="Delete"><i class="bi bi-trash-fill"></i></button>
+                                    </form>
+                                @else
+                                    <span class="publish-lock-hint" data-bs-toggle="tooltip" data-bs-title="Published exams are locked">
+                                        <i class="bi bi-lock-fill"></i>
+                                    </span>
+                                @endif
                             </div>
                         </td>
                     </tr>

@@ -50,10 +50,12 @@ Route::middleware(['auth', 'role:Super Admin'])->prefix('admin')->name('admin.')
     Route::post('/select-branch', [BranchSelectionController::class, 'store'])->name('branch-selection.store');
     Route::delete('/select-branch', [BranchSelectionController::class, 'clear'])->name('branch-selection.clear');
     Route::resource('branches', BranchController::class);
+    Route::post('/branches/{branch}/toggle-active', [BranchController::class, 'toggleActive'])->name('branches.toggle-active');
     Route::resource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
     Route::resource('students', AdminStudentController::class);
+    Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
     Route::resource('exams', AdminExamController::class);
-    Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
+    Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');
     Route::get('/exams/{exam}/questions/create', [AdminQuestionController::class, 'create'])->name('questions.create');
     Route::post('/exams/{exam}/questions', [AdminQuestionController::class, 'store'])->name('questions.store');
     Route::get('/questions/{question}/edit', [AdminQuestionController::class, 'edit'])->name('questions.edit');
@@ -69,7 +71,9 @@ Route::middleware(['auth', 'role:Branch'])->prefix('branch')->name('branch.')->g
     Route::put('/password', [BranchPasswordController::class, 'update'])->name('password.update');
     Route::resource('classes', BranchSchoolClassController::class)->parameters(['classes' => 'class']);
     Route::resource('students', BranchStudentController::class);
+    Route::post('/students/{student}/toggle-active', [BranchStudentController::class, 'toggleActive'])->name('students.toggle-active');
     Route::resource('exams', BranchExamController::class);
+    Route::post('/exams/{exam}/publish', [BranchExamController::class, 'publish'])->name('exams.publish');
     Route::get('/questions', [BranchQuestionController::class, 'index'])->name('questions.index');
     Route::get('/exams/{exam}/questions/create', [BranchQuestionController::class, 'create'])->name('questions.create');
     Route::post('/exams/{exam}/questions', [BranchQuestionController::class, 'store'])->name('questions.store');

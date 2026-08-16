@@ -15,6 +15,8 @@ class ExamController extends Controller
     public function show(Request $request, Exam $exam): View
     {
         $student = $request->user('student');
+        abort_if(! $student->isActive(), 403, 'Your student account has been deactivated.');
+        abort_if($student->branch && ! $student->branch->isActive(), 403, 'Your branch has been deactivated.');
         abort_if($exam->branch_id !== $student->branch_id || $exam->school_class_id !== $student->class_id || ! $exam->isOpen(), 403);
 
         return view('student.exams.show', [
@@ -50,7 +52,7 @@ class ExamController extends Controller
                 ->with(['exam', 'schoolClass'])
                 ->where('status', 'submitted')
                 ->latest('submitted_at')
-                ->paginate(10),
+                ->paginate(20),
         ]);
     }
 

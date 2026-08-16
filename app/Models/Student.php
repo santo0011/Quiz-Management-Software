@@ -20,6 +20,7 @@ class Student extends Authenticatable
         'zoho_student_id',
         'zoho_payload',
         'zoho_synced_at',
+        'is_active',
     ];
 
     protected $hidden = [
@@ -33,7 +34,13 @@ class Student extends Authenticatable
             'password' => 'hashed',
             'zoho_payload' => 'array',
             'zoho_synced_at' => 'datetime',
+            'is_active' => 'boolean',
         ];
+    }
+
+    public function isActive(): bool
+    {
+        return $this->is_active;
     }
 
     public function branch()

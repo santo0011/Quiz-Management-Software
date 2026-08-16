@@ -36,6 +36,13 @@
                 </div>
             @endif
 
+            @if (session('error'))
+                <div class="alert alert-danger feedback-alert" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
+
             @include($slot)
         </section>
     </main>
@@ -52,5 +59,6 @@
             });
         });
     </script>
+    @include('partials.global-forms')
 </body>
 </html>

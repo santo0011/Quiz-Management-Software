@@ -7,7 +7,6 @@
         ['label' => 'Classes', 'icon' => 'bi-collection-fill', 'route' => 'admin.classes.index', 'active' => 'admin.classes.*', 'requiresBranch' => true],
         ['label' => 'Students', 'icon' => 'bi-people-fill', 'route' => 'admin.students.index', 'active' => 'admin.students.*', 'requiresBranch' => true],
         ['label' => 'Exams', 'icon' => 'bi-journal-check', 'route' => 'admin.exams.index', 'active' => 'admin.exams.*', 'requiresBranch' => true],
-        ['label' => 'Questions', 'icon' => 'bi-patch-question-fill', 'route' => 'admin.questions.index', 'active' => 'admin.questions.*', 'requiresBranch' => true],
         ['label' => 'Results', 'icon' => 'bi-bar-chart-fill', 'route' => 'admin.results.index', 'active' => 'admin.results.*', 'requiresBranch' => true],
     ];
 @endphp

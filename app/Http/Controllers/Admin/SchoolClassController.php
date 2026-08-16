@@ -25,7 +25,7 @@ class SchoolClassController extends Controller
             ->where('branch_id', $branch->id)
             ->when($request->filled('search'), fn ($query) => $query->where('name', 'like', '%'.$request->string('search')->toString().'%'))
             ->latest()
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         return view('admin.classes.index', [
