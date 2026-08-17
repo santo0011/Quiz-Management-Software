@@ -16,26 +16,32 @@
         </a>
     </div>
 
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-4 dashboard-metric-row">
         <div class="col-md-4">
-            <div class="metric-card">
+            <div class="metric-card dashboard-metric-card metric-success">
                 <i class="bi bi-people-fill"></i>
-                <span>Students</span>
-                <strong>{{ $studentCount }}</strong>
+                <div>
+                    <span>Students</span>
+                    <strong>{{ $studentCount }}</strong>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card muted">
+            <div class="metric-card dashboard-metric-card metric-primary muted">
                 <i class="bi bi-journal-check"></i>
-                <span>Exams</span>
-                <strong>Coming Soon</strong>
+                <div>
+                    <span>Exams</span>
+                    <strong>Coming Soon</strong>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card muted">
+            <div class="metric-card dashboard-metric-card metric-accent muted">
                 <i class="bi bi-bar-chart-fill"></i>
-                <span>Results</span>
-                <strong>Coming Soon</strong>
+                <div>
+                    <span>Results</span>
+                    <strong>Coming Soon</strong>
+                </div>
             </div>
         </div>
     </div>

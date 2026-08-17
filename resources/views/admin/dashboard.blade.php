@@ -12,26 +12,32 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-4 dashboard-metric-row">
         <div class="col-md-4">
-            <div class="metric-card">
+            <div class="metric-card dashboard-metric-card metric-primary">
                 <i class="bi bi-diagram-3-fill"></i>
-                <span>Total Branches</span>
-                <strong>{{ $branchCount }}</strong>
+                <div>
+                    <span>Total Branches</span>
+                    <strong>{{ $branchCount }}</strong>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card">
+            <div class="metric-card dashboard-metric-card metric-success">
                 <i class="bi bi-people-fill"></i>
-                <span>Students</span>
-                <strong>{{ $studentCount }}</strong>
+                <div>
+                    <span>Students</span>
+                    <strong>{{ $studentCount }}</strong>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card">
+            <div class="metric-card dashboard-metric-card metric-accent">
                 <i class="bi bi-building-check"></i>
-                <span>{{ $selectedBranch ? 'Selected Branch Students' : 'Selected Branch' }}</span>
-                <strong>{{ $selectedBranch ? $selectedBranchStudentCount : 'None' }}</strong>
+                <div>
+                    <span>{{ $selectedBranch ? 'Selected Branch Students' : 'Selected Branch' }}</span>
+                    <strong>{{ $selectedBranch ? $selectedBranchStudentCount : 'None' }}</strong>
+                </div>
             </div>
         </div>
     </div>
