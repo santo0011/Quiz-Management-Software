@@ -100,6 +100,14 @@ class StudentController extends Controller
     public function destroy(Request $request, Student $student): RedirectResponse
     {
         $this->authorizeBranchStudent($request, $student);
+
+        $hasAttempts = $student->attempts()->exists();
+
+        if ($hasAttempts) {
+            return redirect()->route('branch.students.index')
+                ->with('error', 'This student has exam history and cannot be permanently deleted. Please deactivate the student instead.');
+        }
+
         $student->delete();
 
         return redirect()->route('branch.students.index')->with('success', 'Student deleted successfully.');

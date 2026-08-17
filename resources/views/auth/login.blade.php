@@ -148,7 +148,7 @@
                         <input class="form-check-input" type="checkbox" name="remember" id="remember">
                         <label class="form-check-label" for="remember">Remember me</label>
                     </div>
-                    <a href="{{ route('password.request') }}" class="auth-inline-link" id="forgotPasswordLink">Forgot password?</a>
+                    <a href="{{ route('password.request', ['type' => $selectedType]) }}" class="auth-inline-link" id="forgotPasswordLink">Forgot password?</a>
                 </div>
 
                 <button type="button" class="btn btn-primary w-100 login-submit d-none" id="studentContinueButton">
@@ -207,6 +207,11 @@
                 forgot: true,
             },
         };
+
+        const LOGIN_TYPE_KEY = 'quizcore.login.type';
+        const savedLoginType = localStorage.getItem(LOGIN_TYPE_KEY);
+        const validTypes = ['super_admin', 'branch', 'student'];
+        const initialType = validTypes.includes(savedLoginType) ? savedLoginType : 'super_admin';
 
         const typeInput = document.getElementById('loginType');
         const buttons = document.querySelectorAll('[data-login-type-button]');
@@ -387,6 +392,7 @@
             const config = loginConfigs[type] || loginConfigs.super_admin;
 
             typeInput.value = type;
+            localStorage.setItem(LOGIN_TYPE_KEY, type);
             document.getElementById('loginKicker').textContent = config.kicker;
             document.getElementById('loginTitle').textContent = config.title;
             document.getElementById('loginSubtitle').textContent = config.subtitle;
@@ -397,6 +403,8 @@
             email.placeholder = config.emailPlaceholder;
             password.placeholder = config.passwordPlaceholder;
             forgotPasswordLink.classList.toggle('d-none', !config.forgot);
+            const baseUrl = @json(route('password.request'));
+            forgotPasswordLink.href = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'type=' + type;
 
             if (type === 'student') {
                 resetStudentFlow();
@@ -424,7 +432,7 @@
             button.addEventListener('click', () => setLoginType(button.dataset.loginTypeButton));
         });
 
-        setLoginType(typeInput.value);
+        setLoginType(initialType);
 
         email.addEventListener('input', () => {
             if (typeInput.value === 'student') {

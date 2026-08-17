@@ -101,6 +101,16 @@ class BranchController extends Controller
      */
     public function destroy(Branch $branch): RedirectResponse
     {
+        $hasRelatedData = $branch->students()->exists()
+            || $branch->classes()->exists()
+            || $branch->exams()->exists()
+            || $branch->exams()->whereHas('attempts')->exists();
+
+        if ($hasRelatedData) {
+            return redirect()->route('admin.branches.index')
+                ->with('error', 'This branch cannot be deleted because related data exists. Please deactivate the branch instead.');
+        }
+
         $branch->user()->delete();
         $branch->delete();
 

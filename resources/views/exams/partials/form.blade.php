@@ -71,8 +71,7 @@
                 </div>
                 <div class="col-md-3">
                     <label for="total_marks" class="form-label">Total Marks <span class="required-mark">*</span></label>
-                    <input id="total_marks" type="number" min="1" name="total_marks" value="{{ old('total_marks', $exam->total_marks) }}" class="form-control total-marks-input @error('total_marks') is-invalid @enderror" readonly>
-                    <div class="form-text">Auto-calculated</div>
+                    <input id="total_marks" type="number" min="1" name="total_marks" value="{{ old('total_marks', $exam->total_marks) }}" class="form-control total-marks-input @error('total_marks') is-invalid @enderror" required>
                     @error('total_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-3">
@@ -167,21 +166,7 @@
 
 @push('scripts')
     <script>
-        (function () {
-            const marksInput = document.getElementById('marks_per_question');
-            const totalInput = document.getElementById('total_marks');
-
-            if (! marksInput || ! totalInput) {
-                return;
-            }
-
-            const updateTotal = () => {
-                const marks = parseFloat(marksInput.value) || 0;
-                totalInput.value = marks || '';
-            };
-
-            marksInput.addEventListener('input', updateTotal);
-            updateTotal();
-        })();
+        // Total Marks is now manually entered by the user.
+        // No auto-calculation needed.
     </script>
 @endpush

@@ -26,10 +26,10 @@
                 </div>
 
                 <div class="topbar-actions">
-                    <div class="current-branch-pill">
+                    <!-- <div class="current-branch-pill">
                         <i class="bi bi-building"></i>
                         <span>{{ auth('student')->user()?->branch?->name ?? 'Branch not assigned' }}</span>
-                    </div>
+                    </div> -->
                     <div class="admin-user">
                         <div class="avatar">{{ strtoupper(substr(auth('student')->user()?->student_name ?? 'S', 0, 1)) }}</div>
                         <div class="d-none d-sm-block">

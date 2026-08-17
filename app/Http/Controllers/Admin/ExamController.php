@@ -84,8 +84,16 @@ class ExamController extends Controller
     public function destroy(Exam $exam): RedirectResponse
     {
         $this->authorizeExam($exam);
-        abort_if($exam->isPublished(), 403, 'Published exams cannot be deleted.');
-        abort_if($exam->attempts()->exists(), 422, 'Cannot delete an exam that already has attempts.');
+
+        if ($exam->isPublished()) {
+            return redirect()->route('admin.exams.index')
+                ->with('error', 'Published exams cannot be deleted. The exam is locked.');
+        }
+
+        if ($exam->attempts()->exists()) {
+            return redirect()->route('admin.exams.index')
+                ->with('error', 'This exam has student attempts and cannot be permanently deleted. Please close the exam instead.');
+        }
 
         $exam->delete();
 

@@ -35,7 +35,7 @@ class ExamRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'school_class_id' => ['required', 'exists:school_classes,id'],
             'marks_per_question' => ['required', 'numeric', 'min:0.01', 'max:9999.99'],
-            'total_marks' => ['nullable', 'integer', 'min:0'],
+            'total_marks' => ['required', 'numeric', 'min:1'],
             'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],

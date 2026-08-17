@@ -23,7 +23,7 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary w-100">
+    <button type="submit" class="btn btn-primary w-100" data-loading="Resetting...">
         <i class="bi bi-check-circle-fill"></i>
         Reset Password
     </button>

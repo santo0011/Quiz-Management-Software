@@ -10,6 +10,18 @@
             <h1>Welcome, {{ $student->student_name }}</h1>
             <p>{{ $student->schoolClass?->name ?? $student->class }} · {{ $student->email }}</p>
         </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('student.profile') }}" class="btn btn-light">
+                <i class="bi bi-person-badge"></i> My Profile
+            </a>
+        </div>
+    </section>
+
+    <section class="student-stat-grid">
+        <div class="student-stat"><span>Available</span><strong>{{ $availableExams->count() }}</strong></div>
+        <div class="student-stat"><span>Upcoming</span><strong>{{ $upcomingExams->count() }}</strong></div>
+        <div class="student-stat"><span>Completed</span><strong>{{ $completedExams }}</strong></div>
+        <div class="student-stat"><span>Average Score</span><strong>{{ $averageScore }}%</strong></div>
     </section>
 
     <section class="student-section" id="performance-charts">
@@ -42,107 +54,6 @@
             </div>
         </div>
     </section>
-
-    <section class="student-section" id="available-exams">
-        <div class="student-section-header">
-            <div>
-                <span>Available Exams</span>
-                <h2>Ready To Attempt</h2>
-            </div>
-        </div>
-
-        @if ($availableExams->isEmpty())
-            <div class="empty-state">
-                <i class="bi bi-journal-check"></i>
-                <h3>No exams available</h3>
-                <p>Published exams for your class will appear here during their scheduled time.</p>
-            </div>
-        @else
-            <div class="exam-card-grid">
-                @foreach ($availableExams as $exam)
-                    <article class="exam-card">
-                        <span class="status-badge status-published">Available</span>
-                        <h3>{{ $exam->title }}</h3>
-                        <p>{{ $exam->description ?: 'Read the instructions and begin when ready.' }}</p>
-                        <dl>
-                            <div><dt>Total Marks</dt><dd>{{ $exam->total_marks }}</dd></div>
-                            <div><dt>Duration</dt><dd>{{ $exam->duration_minutes }} min</dd></div>
-                            <div><dt>Passing</dt><dd>{{ $exam->passing_marks ?? 'Not set' }}</dd></div>
-                            <div><dt>Questions</dt><dd>{{ $exam->questions_count }}</dd></div>
-                            <div><dt>Ends</dt><dd>{{ $exam->ends_at?->format('d M Y, h:i A') ?? 'Open' }}</dd></div>
-                            <div><dt>Attempts Left</dt><dd>{{ $exam->remainingAttemptsFor($student) }}</dd></div>
-                        </dl>
-                        <a href="{{ route('student.exams.show', $exam) }}" class="btn btn-primary w-100">
-                            <i class="bi bi-play-circle-fill"></i>
-                            Start Exam
-                        </a>
-                    </article>
-                @endforeach
-            </div>
-        @endif
-    </section>
-
-    @if ($upcomingExams->isNotEmpty())
-        <section class="student-section" id="upcoming-exams">
-            <div class="student-section-header">
-                <div>
-                    <span>Scheduled</span>
-                    <h2>Upcoming Exams</h2>
-                </div>
-            </div>
-            <div class="exam-card-grid">
-                @foreach ($upcomingExams as $exam)
-                    <article class="exam-card">
-                        <span class="status-badge status-upcoming">Upcoming</span>
-                        <h3>{{ $exam->title }}</h3>
-                        <p>{{ $exam->description ?: 'This exam will be available at the scheduled start time.' }}</p>
-                        <dl>
-                            <div><dt>Start</dt><dd>{{ $exam->starts_at?->format('d M Y, h:i A') }}</dd></div>
-                            <div><dt>Total Marks</dt><dd>{{ $exam->total_marks }}</dd></div>
-                            <div><dt>Duration</dt><dd>{{ $exam->duration_minutes }} min</dd></div>
-                            <div><dt>Passing</dt><dd>{{ $exam->passing_marks ?? 'Not set' }}</dd></div>
-                            <div><dt>Questions</dt><dd>{{ $exam->questions_count }}</dd></div>
-                            <div><dt>Attempts Left</dt><dd>{{ $exam->remainingAttemptsFor($student) }}</dd></div>
-                        </dl>
-                        <button class="btn btn-soft w-100" disabled>
-                            <i class="bi bi-clock"></i>
-                            Not Started Yet
-                        </button>
-                    </article>
-                @endforeach
-            </div>
-        </section>
-    @endif
-
-    @if ($expiredExams->isNotEmpty())
-        <section class="student-section" id="expired-exams">
-            <div class="student-section-header">
-                <div>
-                    <span>Expired</span>
-                    <h2>Expired Exams</h2>
-                </div>
-            </div>
-            <div class="exam-card-grid">
-                @foreach ($expiredExams as $exam)
-                    <article class="exam-card">
-                        <span class="status-badge status-closed">Expired</span>
-                        <h3>{{ $exam->title }}</h3>
-                        <p>{{ $exam->description ?: 'This exam window has passed.' }}</p>
-                        <dl>
-                            <div><dt>Total Marks</dt><dd>{{ $exam->total_marks }}</dd></div>
-                            <div><dt>Duration</dt><dd>{{ $exam->duration_minutes }} min</dd></div>
-                            <div><dt>Ended</dt><dd>{{ $exam->ends_at?->format('d M Y, h:i A') }}</dd></div>
-                            <div><dt>Questions</dt><dd>{{ $exam->questions_count }}</dd></div>
-                        </dl>
-                        <button class="btn btn-outline-secondary w-100" disabled>
-                            <i class="bi bi-x-circle"></i>
-                            Exam Closed
-                        </button>
-                    </article>
-                @endforeach
-            </div>
-        </section>
-    @endif
 
     <section class="student-section">
         <div class="student-section-header">

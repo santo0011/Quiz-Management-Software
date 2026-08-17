@@ -2,10 +2,11 @@
     $student = auth('student')->user();
     $links = [
         ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2-fill', 'url' => route('student.dashboard'), 'active' => request()->routeIs('student.dashboard')],
-        ['label' => 'Available Exams', 'icon' => 'bi-journal-check', 'url' => route('student.dashboard').'#available-exams', 'active' => request()->routeIs('student.exams.*')],
-        ['label' => 'My Exams', 'icon' => 'bi-clipboard-check-fill', 'url' => route('student.results.index'), 'active' => false],
+        ['label' => 'Available Exams', 'icon' => 'bi-journal-check', 'url' => route('student.exams.available'), 'active' => request()->routeIs('student.exams.available')],
+        ['label' => 'Upcoming Exams', 'icon' => 'bi-calendar-event', 'url' => route('student.exams.upcoming'), 'active' => request()->routeIs('student.exams.upcoming')],
+        ['label' => 'My Exams', 'icon' => 'bi-clipboard-check-fill', 'url' => route('student.exams.mine'), 'active' => request()->routeIs('student.exams.mine')],
         ['label' => 'Results', 'icon' => 'bi-bar-chart-fill', 'url' => route('student.results.index'), 'active' => request()->routeIs('student.results.*')],
-        ['label' => 'Profile', 'icon' => 'bi-person-badge-fill', 'url' => route('student.dashboard').'#student-profile', 'active' => false],
+        ['label' => 'Profile', 'icon' => 'bi-person-badge-fill', 'url' => route('student.profile'), 'active' => request()->routeIs('student.profile')],
     ];
 @endphp
 

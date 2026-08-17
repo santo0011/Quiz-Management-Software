@@ -86,6 +86,14 @@ class SchoolClassController extends Controller
     public function destroy(Request $request, SchoolClass $class): RedirectResponse
     {
         $this->authorizeBranchClass($request, $class);
+
+        $hasRelatedData = $class->students()->exists() || $class->exams()->exists();
+
+        if ($hasRelatedData) {
+            return redirect()->route('branch.classes.index')
+                ->with('error', 'This class cannot be deleted because it has related students or exams. Please deactivate the students instead.');
+        }
+
         $class->delete();
 
         return redirect()->route('branch.classes.index')->with('success', 'Class deleted successfully.');

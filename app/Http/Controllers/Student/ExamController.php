@@ -12,6 +12,62 @@ use Illuminate\View\View;
 
 class ExamController extends Controller
 {
+    public function dashboard(Request $request): View
+    {
+        $student = $request->user('student')->load(['branch', 'schoolClass']);
+
+        $baseExamQuery = Exam::where('branch_id', $student->branch_id)
+            ->where('school_class_id', $student->class_id)
+            ->where('status', Exam::STATUS_PUBLISHED);
+
+        $publishedExams = (clone $baseExamQuery)
+            ->withCount('questions')
+            ->with('schoolClass')
+            ->latest()
+            ->get();
+
+        $availableExams = $publishedExams
+            ->filter(fn (Exam $exam) => $exam->isOpen())
+            ->filter(fn (Exam $exam) => $exam->remainingAttemptsFor($student) > 0)
+            ->values();
+
+        $upcomingExams = $publishedExams
+            ->filter(fn (Exam $exam) => ! $exam->isOpen() && $exam->starts_at && $exam->starts_at->isFuture())
+            ->filter(fn (Exam $exam) => $exam->remainingAttemptsFor($student) > 0)
+            ->values();
+
+        $completedAttempts = ExamAttempt::where('student_id', $student->id)
+            ->where('status', 'submitted');
+
+        $allAttempts = (clone $completedAttempts)
+            ->with(['exam'])
+            ->latest('submitted_at')
+            ->get();
+
+        $performanceData = $allAttempts->map(fn ($attempt) => [
+            'label' => $attempt->exam?->title ?? 'Exam #'.$attempt->exam_id,
+            'percentage' => (float) $attempt->percentage,
+            'obtained' => (float) $attempt->obtained_marks,
+            'total' => (float) ($attempt->exam?->total_marks ?? 0),
+        ])->values();
+
+        $passedCount = (clone $completedAttempts)->where('is_passed', true)->count();
+        $failedCount = (clone $completedAttempts)->where('is_passed', false)->count();
+
+        return view('student.dashboard', [
+            'student' => $student,
+            'availableExams' => $availableExams,
+            'upcomingExams' => $upcomingExams,
+            'totalExams' => $publishedExams->count(),
+            'completedExams' => (clone $completedAttempts)->count(),
+            'averageScore' => round((float) (clone $completedAttempts)->avg('percentage'), 2),
+            'recentResults' => (clone $completedAttempts)->with('exam')->latest('submitted_at')->take(5)->get(),
+            'performanceData' => $performanceData,
+            'passedCount' => $passedCount,
+            'failedCount' => $failedCount,
+        ]);
+    }
+
     public function show(Request $request, Exam $exam): View
     {
         $student = $request->user('student');
@@ -42,17 +98,90 @@ class ExamController extends Controller
         ]);
     }
 
+    public function available(Request $request): View
+    {
+        $student = $request->user('student')->load(['branch', 'schoolClass']);
+
+        $exams = Exam::where('branch_id', $student->branch_id)
+            ->where('school_class_id', $student->class_id)
+            ->where('status', Exam::STATUS_PUBLISHED)
+            ->withCount('questions')
+            ->with('schoolClass')
+            ->where(function ($query): void {
+                $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            })
+            ->where(function ($query): void {
+                $query->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+            })
+            ->latest()
+            ->paginate(12)
+            ->withQueryString();
+
+        $exams = $exams->through(fn (Exam $exam) => $exam);
+
+        return view('student.exams.available', [
+            'student' => $student,
+            'exams' => $exams,
+        ]);
+    }
+
+    public function upcoming(Request $request): View
+    {
+        $student = $request->user('student')->load(['branch', 'schoolClass']);
+
+        $exams = Exam::where('branch_id', $student->branch_id)
+            ->where('school_class_id', $student->class_id)
+            ->where('status', Exam::STATUS_PUBLISHED)
+            ->where('starts_at', '>', now())
+            ->withCount('questions')
+            ->with('schoolClass')
+            ->latest('starts_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('student.exams.upcoming', [
+            'student' => $student,
+            'exams' => $exams,
+        ]);
+    }
+
+    public function mine(Request $request): View
+    {
+        $student = $request->user('student')->load(['branch', 'schoolClass']);
+
+        $attempts = ExamAttempt::with(['exam', 'schoolClass'])
+            ->where('student_id', $student->id)
+            ->where('status', 'submitted')
+            ->latest('submitted_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('student.exams.mine', [
+            'student' => $student,
+            'attempts' => $attempts,
+        ]);
+    }
+
     public function results(Request $request): View
     {
         $student = $request->user('student');
 
+        $attempts = $student->attempts()
+            ->with(['exam', 'schoolClass'])
+            ->where('status', 'submitted')
+            ->when($request->filled('search'), function ($query) use ($request): void {
+                $search = $request->string('search')->toString();
+                $query->whereHas('exam', fn ($examQuery) => $examQuery->where('title', 'like', "%{$search}%"));
+            })
+            ->when($request->filled('result'), fn ($query) => $query->where('is_passed', $request->string('result')->toString() === 'passed'))
+            ->latest('submitted_at')
+            ->paginate(20)
+            ->withQueryString();
+
         return view('student.results.index', [
             'student' => $student->load(['branch', 'schoolClass']),
-            'attempts' => $student->attempts()
-                ->with(['exam', 'schoolClass'])
-                ->where('status', 'submitted')
-                ->latest('submitted_at')
-                ->paginate(20),
+            'attempts' => $attempts,
+            'filters' => $request->only(['search', 'result']),
         ]);
     }
 
@@ -63,6 +192,15 @@ class ExamController extends Controller
         return view('student.results.show', [
             'student' => $request->user('student')->load(['branch', 'schoolClass']),
             'attempt' => $attempt->load(['exam', 'schoolClass', 'answers.question.options', 'answers.selectedOption']),
+        ]);
+    }
+
+    public function profile(Request $request): View
+    {
+        $student = $request->user('student')->load(['branch', 'schoolClass']);
+
+        return view('student.profile', [
+            'student' => $student,
         ]);
     }
 }

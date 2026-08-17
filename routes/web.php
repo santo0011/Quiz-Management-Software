@@ -44,7 +44,7 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:web,student')->name('logout');
 
-Route::middleware(['auth', 'role:Super Admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/select-branch', [BranchSelectionController::class, 'index'])->name('branch-selection.index');
     Route::post('/select-branch', [BranchSelectionController::class, 'store'])->name('branch-selection.store');
@@ -65,7 +65,7 @@ Route::middleware(['auth', 'role:Super Admin'])->prefix('admin')->name('admin.')
     Route::get('/results/{attempt}', [AdminResultController::class, 'show'])->name('results.show');
 });
 
-Route::middleware(['auth', 'role:Branch'])->prefix('branch')->name('branch.')->group(function () {
+Route::middleware(['auth', 'active', 'role:Branch'])->prefix('branch')->name('branch.')->group(function () {
     Route::get('/dashboard', BranchDashboardController::class)->name('dashboard');
     Route::get('/password', [BranchPasswordController::class, 'edit'])->name('password.edit');
     Route::put('/password', [BranchPasswordController::class, 'update'])->name('password.update');
@@ -84,14 +84,18 @@ Route::middleware(['auth', 'role:Branch'])->prefix('branch')->name('branch.')->g
     Route::get('/results/{attempt}', [BranchResultController::class, 'show'])->name('results.show');
 });
 
-Route::middleware('auth:student')->prefix('student')->name('student.')->group(function () {
-    Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
+Route::middleware(['auth:student', 'active'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/dashboard', [StudentExamController::class, 'dashboard'])->name('dashboard');
+    Route::get('/exams/available', [StudentExamController::class, 'available'])->name('exams.available');
+    Route::get('/exams/upcoming', [StudentExamController::class, 'upcoming'])->name('exams.upcoming');
+    Route::get('/exams/mine', [StudentExamController::class, 'mine'])->name('exams.mine');
     Route::get('/exams/{exam}', [StudentExamController::class, 'show'])->name('exams.show');
     Route::post('/exams/{exam}/start', [StudentExamController::class, 'start'])->name('exams.start');
     Route::get('/attempts/{attempt}', [StudentExamController::class, 'attempt'])->name('attempts.show');
     Route::get('/attempts/{attempt}/state', [StudentExamApiController::class, 'state'])->name('attempts.state');
     Route::post('/attempts/{attempt}/answer', [StudentExamApiController::class, 'answer'])->name('attempts.answer');
     Route::post('/attempts/{attempt}/submit', [StudentExamApiController::class, 'submit'])->name('attempts.submit');
+    Route::get('/profile', [StudentExamController::class, 'profile'])->name('profile');
     Route::get('/results', [StudentExamController::class, 'results'])->name('results.index');
     Route::get('/results/{attempt}', [StudentExamController::class, 'result'])->name('results.show');
 });
