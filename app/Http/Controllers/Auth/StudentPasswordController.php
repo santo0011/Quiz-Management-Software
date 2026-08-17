@@ -149,7 +149,7 @@ class StudentPasswordController extends Controller
 
         session()->forget(['student_password_email', 'student_password_verified_otp_id']);
 
-        Auth::guard('student')->login($student);
+        Auth::guard('student')->login($student, true);
         $request->session()->regenerate();
 
         return response()->json([

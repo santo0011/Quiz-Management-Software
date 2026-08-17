@@ -41,7 +41,7 @@ class LoginController extends Controller
 
         $expectedRole = $loginType === 'super_admin' ? 'Super Admin' : 'Branch';
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (Auth::attempt($credentials, true)) {
             $request->session()->regenerate();
 
             if ($request->user()->role !== $expectedRole) {
@@ -116,7 +116,7 @@ class LoginController extends Controller
                     ->withInput($request->only('email', 'login_type'));
             }
 
-            Auth::guard('student')->login($student);
+            Auth::guard('student')->login($student, true);
             $request->session()->regenerate();
 
             return redirect()

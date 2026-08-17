@@ -26,6 +26,7 @@ class Student extends Authenticatable
     protected $hidden = [
         'password',
         'login_code_hash',
+        'remember_token',
     ];
 
     protected function casts(): array

@@ -42,10 +42,12 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+            'remember' => 10080,
         ],
         'student' => [
             'driver' => 'session',
             'provider' => 'students',
+            'remember' => 10080,
         ],
     ],
 

@@ -199,7 +199,7 @@ function StudentExamApp({ root }) {
                                 <div className="begin-exam-icon">
                                     <i className="bi bi-send-check-fill"></i>
                                 </div>
-                                <p className="mb-0 text-center">Are you sure you want to submit your exam? You will not be able to change your answers after submission.</p>
+                                <p className="mb-0 text-center">Are you sure you want to submit the exam? You cannot change your answers after submission.</p>
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-outline-secondary" onClick={() => setShowSubmitModal(false)}>Cancel</button>

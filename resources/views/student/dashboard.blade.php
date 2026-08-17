@@ -5,7 +5,8 @@
 
 @section('content')
     <section class="student-hero" id="student-profile">
-        <div>
+        <div class="student-hero-avatar">{{ strtoupper(substr($student->student_name, 0, 1)) }}</div>
+        <div class="student-hero-copy">
             <span>{{ $student->branch?->name ?? 'Branch not assigned' }}</span>
             <h1>Welcome, {{ $student->student_name }}</h1>
             <p>{{ $student->schoolClass?->name ?? $student->class }} · {{ $student->email }}</p>

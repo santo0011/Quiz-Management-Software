@@ -164,6 +164,7 @@
                 <button type="submit" class="btn btn-primary w-100 login-submit" id="loginButton" data-loading="Logging in...">
                     <i class="bi bi-shield-lock-fill" id="loginButtonIcon"></i>
                     <span>Login as Super Admin</span>
+                    <span class="spinner-border spinner-border-sm d-none ms-2" id="loginButtonSpinner" role="status" aria-hidden="true"></span>
                 </button>
             </form>
         </section>
@@ -232,6 +233,7 @@
         const studentError = document.getElementById('studentError');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        let isSubmitting = false;
         const endpoints = {
             checkEmail: @json(route('student-login.check-email')),
             sendOtp: @json(route('student-login.send-otp')),
@@ -260,6 +262,24 @@
             if (label) {
                 button.querySelector('span').textContent = loading ? 'Please wait...' : label;
             }
+        }
+
+        function setLoginButtonLoading(loading) {
+            const icon = document.getElementById('loginButtonIcon');
+            const spinner = document.getElementById('loginButtonSpinner');
+            const label = loginButton.querySelector('span');
+            const loadingText = loginButton.dataset.loading || 'Logging in...';
+            const normalText = (loginConfigs[typeInput.value] || loginConfigs.super_admin).button;
+
+            loginButton.disabled = loading;
+            icon.classList.toggle('d-none', loading);
+            spinner.classList.toggle('d-none', !loading);
+            label.textContent = loading ? loadingText : normalText;
+        }
+
+        function restoreLoginButton() {
+            isSubmitting = false;
+            setLoginButtonLoading(false);
         }
 
         function resetStudentFlow() {
@@ -406,6 +426,14 @@
             const baseUrl = @json(route('password.request'));
             forgotPasswordLink.href = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'type=' + type;
 
+            // Reset login button loading state when switching types
+            const spinner = document.getElementById('loginButtonSpinner');
+            const icon = document.getElementById('loginButtonIcon');
+            isSubmitting = false;
+            loginButton.disabled = false;
+            icon.classList.remove('d-none');
+            spinner.classList.add('d-none');
+
             if (type === 'student') {
                 resetStudentFlow();
             } else {
@@ -452,10 +480,19 @@
         createPasswordButton.addEventListener('click', createStudentPassword);
 
         document.getElementById('loginForm').addEventListener('submit', (event) => {
+            if (isSubmitting) {
+                event.preventDefault();
+                return;
+            }
+
             if (typeInput.value === 'student' && passwordGroup.classList.contains('d-none')) {
                 event.preventDefault();
                 checkStudentEmail();
+                return;
             }
+
+            isSubmitting = true;
+            setLoginButtonLoading(true);
         });
 
         forgotPasswordLink.addEventListener('click', (event) => {
@@ -494,6 +531,10 @@
         if (typeInput.value === 'student' && email.value.trim()) {
             checkStudentEmail();
         }
+
+        window.addEventListener('pageshow', () => {
+            restoreLoginButton();
+        });
     </script>
 </body>
 </html>
