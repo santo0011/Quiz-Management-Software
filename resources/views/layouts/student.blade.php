@@ -99,6 +99,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    @include('partials.mobile-tables')
     <script>
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((tooltipEl) => {
             bootstrap.Tooltip.getOrCreateInstance(tooltipEl, {

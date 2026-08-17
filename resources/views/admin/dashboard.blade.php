@@ -8,7 +8,7 @@
         <div>
             <span>Operational Overview</span>
             <h2>Quiz Management is ready for branch-based operations.</h2>
-            <p>Select a branch to manage branch-specific students now, with exams, questions, and results ready for later modules.</p>
+            <p class="mobile-hide">Select a branch to manage branch-specific students now, with exams, questions, and results ready for later modules.</p>
         </div>
     </div>
 
@@ -53,7 +53,7 @@
             </div>
         @else
             <div class="table-responsive">
-                <table class="table align-middle admin-table">
+                <table class="table align-middle admin-table" data-mobile-direct-details>
                     <thead>
                         <tr>
                             <th>Name</th>

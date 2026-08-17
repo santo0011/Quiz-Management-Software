@@ -57,7 +57,7 @@
             </div>
         @else
             <div class="table-responsive">
-                <table class="table align-middle admin-table">
+                <table class="table align-middle admin-table" data-mobile-direct-details>
                     <thead>
                         <tr>
                             <th>Student</th>
