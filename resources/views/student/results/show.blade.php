@@ -4,6 +4,7 @@
 @section('page-title', 'Result Details')
 
 @section('content')
+    @include('partials.format-time')
     <section class="student-section">
         <div class="student-section-header">
             <div>
@@ -16,15 +17,63 @@
             </span>
         </div>
 
-        <div class="student-stat-grid">
-            <div class="student-stat"><span>Total Marks</span><strong>{{ $attempt->exam?->total_marks }}</strong></div>
-            <div class="student-stat"><span>Obtained</span><strong>{{ $attempt->obtained_marks }}</strong></div>
-            <div class="student-stat"><span>Percentage</span><strong>{{ $attempt->percentage }}%</strong></div>
-            <div class="student-stat"><span>Correct</span><strong>{{ $attempt->correct_count }}</strong></div>
-            <div class="student-stat"><span>Wrong</span><strong>{{ $attempt->wrong_count }}</strong></div>
-            <div class="student-stat"><span>Unanswered</span><strong>{{ $attempt->unanswered_count }}</strong></div>
-            <div class="student-stat"><span>Passing Marks</span><strong>{{ $attempt->exam?->passing_marks ?? 'Not set' }}</strong></div>
-            <div class="student-stat"><span>Time Taken</span><strong>{{ $attempt->submitted_at?->diffInMinutes($attempt->started_at) ?? 0 }} min</strong></div>
+        <div class="result-card-grid">
+            <div class="result-card color-blue">
+                <div class="result-card-left">
+                    <div class="result-card-icon"><i class="bi bi-trophy-fill"></i></div>
+                    <span>Total Marks</span>
+                </div>
+                <strong>{{ $attempt->exam?->total_marks }}</strong>
+            </div>
+            <div class="result-card color-green">
+                <div class="result-card-left">
+                    <div class="result-card-icon"><i class="bi bi-award-fill"></i></div>
+                    <span>Obtained</span>
+                </div>
+                <strong>{{ $attempt->obtained_marks }}</strong>
+            </div>
+            <div class="result-card color-orange">
+                <div class="result-card-left">
+                    <div class="result-card-icon"><i class="bi bi-percent"></i></div>
+                    <span>Percentage</span>
+                </div>
+                <strong>{{ $attempt->percentage }}<small>%</small></strong>
+            </div>
+            <div class="result-card color-purple">
+                <div class="result-card-left">
+                    <div class="result-card-icon"><i class="bi bi-check-circle-fill"></i></div>
+                    <span>Correct</span>
+                </div>
+                <strong>{{ $attempt->correct_count }}</strong>
+            </div>
+            <div class="result-card color-red">
+                <div class="result-card-left">
+                    <div class="result-card-icon"><i class="bi bi-x-circle-fill"></i></div>
+                    <span>Wrong</span>
+                </div>
+                <strong>{{ $attempt->wrong_count }}</strong>
+            </div>
+            <div class="result-card color-teal">
+                <div class="result-card-left">
+                    <div class="result-card-icon"><i class="bi bi-dash-circle-fill"></i></div>
+                    <span>Unanswered</span>
+                </div>
+                <strong>{{ $attempt->unanswered_count }}</strong>
+            </div>
+            <div class="result-card color-blue">
+                <div class="result-card-left">
+                    <div class="result-card-icon"><i class="bi bi-flag-fill"></i></div>
+                    <span>Passing Marks</span>
+                </div>
+                <strong>{{ $attempt->exam?->passing_marks ?? 'Not set' }}</strong>
+            </div>
+            <div class="result-card color-orange">
+                <div class="result-card-left">
+                    <div class="result-card-icon"><i class="bi bi-stopwatch-fill"></i></div>
+                    <span>Time Taken</span>
+                </div>
+                <strong>{{ format_time_taken($attempt) }}</strong>
+            </div>
         </div>
     </section>
 

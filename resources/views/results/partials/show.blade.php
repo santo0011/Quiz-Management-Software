@@ -1,4 +1,5 @@
 @php($prefix = $prefix ?? 'admin')
+@include('partials.format-time')
 
 <section class="content-panel exam-details-panel">
     <div class="panel-header">
@@ -46,7 +47,7 @@
             </div>
             <div class="exam-stat-body">
                 <span>Time Taken</span>
-                <strong>{{ $attempt->submitted_at?->diffInMinutes($attempt->started_at) ?? 0 }} <small>min</small></strong>
+                <strong>{{ format_time_taken($attempt) }}</strong>
             </div>
         </div>
     </div>

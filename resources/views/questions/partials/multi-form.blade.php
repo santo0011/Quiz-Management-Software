@@ -21,13 +21,13 @@
                     </button>
                 </div>
                 <div class="question-card-body">
-                    <div class="mb-3">
+                    <div class="question-field-group">
                         <label class="form-label">Question Text <span class="required-mark">*</span></label>
-                        <textarea name="questions[{{ $qIndex }}][question_text]" rows="4" class="form-control question-textarea math-input @error('questions.'.$qIndex.'.question_text') is-invalid @enderror" required>{{ $oldQ['question_text'] ?? '' }}</textarea>
+                        <textarea name="questions[{{ $qIndex }}][question_text]" rows="3" class="form-control question-textarea math-input @error('questions.'.$qIndex.'.question_text') is-invalid @enderror" required>{{ $oldQ['question_text'] ?? '' }}</textarea>
                         @error('questions.'.$qIndex.'.question_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
-                    <div class="row g-3 mb-3">
+                    <div class="row g-2 question-meta-row">
                         <div class="col-6">
                             <label class="form-label">Marks <span class="required-mark">*</span></label>
                             <input type="number" step="0.01" min="0.01" name="questions[{{ $qIndex }}][marks]" value="{{ $oldQ['marks'] ?? $defaultMarks }}" class="form-control @error('questions.'.$qIndex.'.marks') is-invalid @enderror" required>
@@ -69,9 +69,9 @@
                         </button>
                     </div>
 
-                    <div class="mt-3">
+                    <div class="question-explanation-field">
                         <label class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
-                        <textarea name="questions[{{ $qIndex }}][explanation]" rows="2" class="form-control math-input">{{ $oldQ['explanation'] ?? '' }}</textarea>
+                        <textarea name="questions[{{ $qIndex }}][explanation]" rows="1" class="form-control math-input">{{ $oldQ['explanation'] ?? '' }}</textarea>
                     </div>
                 </div>
             </section>
@@ -194,11 +194,11 @@
                         </button>
                     </div>
                     <div class="question-card-body">
-                        <div class="mb-3">
+                        <div class="question-field-group">
                             <label class="form-label">Question Text <span class="required-mark">*</span></label>
-                            <textarea name="questions[${qIdx}][question_text]" rows="4" class="form-control question-textarea math-input" required></textarea>
+                            <textarea name="questions[${qIdx}][question_text]" rows="3" class="form-control question-textarea math-input" required></textarea>
                         </div>
-                        <div class="row g-3 mb-3">
+                        <div class="row g-2 question-meta-row">
                             <div class="col-6">
                                 <label class="form-label">Marks <span class="required-mark">*</span></label>
                                 <input type="number" step="0.01" min="0.01" name="questions[${qIdx}][marks]" value="${form.dataset.defaultMarks || '1'}" class="form-control" required>
@@ -234,9 +234,9 @@
                                 Add Option
                             </button>
                         </div>
-                        <div class="mt-3">
+                        <div class="question-explanation-field">
                             <label class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
-                            <textarea name="questions[${qIdx}][explanation]" rows="2" class="form-control math-input"></textarea>
+                            <textarea name="questions[${qIdx}][explanation]" rows="1" class="form-control math-input"></textarea>
                         </div>
                     </div>
                 `;

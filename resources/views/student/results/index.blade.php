@@ -31,47 +31,45 @@
                 <p>Your submitted exam results will appear here.</p>
             </div>
         @else
-            <div class="table-responsive">
-                <table class="table align-middle admin-table">
-                    <thead>
-                        <tr>
-                            <th>Exam</th>
-                            <th>Total Marks</th>
-                            <th>Obtained</th>
-                            <th>Percentage</th>
-                            <th>Correct</th>
-                            <th>Wrong</th>
-                            <th>Unanswered</th>
-                            <th>Result</th>
-                            <th>Exam Date</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($attempts as $attempt)
-                            <tr>
-                                <td><strong>{{ $attempt->exam?->title }}</strong></td>
-                                <td>{{ $attempt->exam?->total_marks }}</td>
-                                <td>{{ $attempt->obtained_marks }}</td>
-                                <td>{{ $attempt->percentage }}%</td>
-                                <td><span class="text-success">{{ $attempt->correct_count }}</span></td>
-                                <td><span class="text-danger">{{ $attempt->wrong_count }}</span></td>
-                                <td>{{ $attempt->unanswered_count }}</td>
-                                <td>
-                                    <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
-                                        {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-                                    </span>
-                                </td>
-                                <td>{{ $attempt->submitted_at?->format('d M Y, h:i A') }}</td>
-                                <td class="text-end">
-                                    <a href="{{ route('student.results.show', $attempt) }}" class="btn btn-sm btn-soft">
-                                        <i class="bi bi-eye-fill"></i> View
-                                    </a>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            <div class="performance-list">
+                @foreach ($attempts as $attempt)
+                    <div class="performance-item">
+                        <div class="performance-main">
+                            <div class="performance-icon {{ $attempt->is_passed ? 'passed' : 'failed' }}">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                            <div class="performance-info">
+                                <h4>{{ $attempt->exam?->title }}</h4>
+                                <span class="performance-date {{ $attempt->is_passed ? 'passed' : 'failed' }}">
+                                    <i class="bi {{ $attempt->is_passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
+                                    {{ $attempt->is_passed ? 'Passed performance' : 'Needs improvement' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="performance-metrics">
+                            <div class="performance-metric">
+                                <span>Marks</span>
+                                <strong>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</strong>
+                            </div>
+                            <div class="performance-metric">
+                                <span>Percentage</span>
+                                <strong class="{{ $attempt->percentage >= 50 ? 'text-success' : 'text-danger' }}">{{ $attempt->percentage }}%</strong>
+                            </div>
+                            <div class="performance-meter" aria-label="Result percentage">
+                                <span style="width: {{ min(100, max(0, $attempt->percentage)) }}%"></span>
+                            </div>
+                        </div>
+                        <div class="performance-status">
+                            <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
+                                <i class="bi {{ $attempt->is_passed ? 'bi-patch-check-fill' : 'bi-exclamation-circle-fill' }}"></i>
+                                {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
+                            </span>
+                        </div>
+                        <a href="{{ route('student.results.show', $attempt) }}" class="btn btn-sm btn-soft performance-action">
+                            <i class="bi bi-eye-fill"></i> View Details
+                        </a>
+                    </div>
+                @endforeach
             </div>
             {{ $attempts->links() }}
         @endif

@@ -11,6 +11,7 @@ function formatTime(seconds) {
 function StudentExamApp({ root }) {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [payload, setPayload] = useState(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const [remainingSeconds, setRemainingSeconds] = useState(0);
@@ -22,6 +23,9 @@ function StudentExamApp({ root }) {
 
     const activeQuestion = payload?.questions?.[activeIndex];
     const answeredCount = useMemo(() => payload?.questions?.filter((question) => question.selected_option_id).length || 0, [payload]);
+
+    // Submit button is only enabled when on the LAST question
+    const isOnLastQuestion = payload?.questions && activeIndex === payload.questions.length - 1;
 
     const loadState = async () => {
         const response = await fetch(stateUrl, { headers: { Accept: 'application/json' } });
@@ -36,6 +40,7 @@ function StudentExamApp({ root }) {
     const submitExam = async () => {
         if (submitting) return;
         setSubmitting(true);
+        setShowSubmitModal(false);
         const response = await fetch(submitUrl, {
             method: 'POST',
             headers: {
@@ -146,7 +151,13 @@ function StudentExamApp({ root }) {
                             Next
                             <i className="bi bi-arrow-right"></i>
                         </button>
-                        <button type="button" className="btn btn-primary" onClick={() => window.confirm('Submit this exam now?') && submitExam()} disabled={submitting}>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            disabled={!isOnLastQuestion || submitting}
+                            title={!isOnLastQuestion ? 'Submit is available on the last question' : 'Submit your exam'}
+                            onClick={() => setShowSubmitModal(true)}
+                        >
                             <i className="bi bi-send-fill"></i>
                             Submit Exam
                         </button>
@@ -172,6 +183,35 @@ function StudentExamApp({ root }) {
                     </div>
                 </aside>
             </div>
+
+            {showSubmitModal && (
+                <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered" role="document">
+                        <div className="modal-content confirm-modal">
+                            <div className="modal-header">
+                                <div>
+                                    <span className="page-kicker">Final Step</span>
+                                    <h2 className="modal-title fs-5">Submit Exam</h2>
+                                </div>
+                                <button type="button" className="btn-close" onClick={() => setShowSubmitModal(false)} aria-label="Close"></button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="begin-exam-icon">
+                                    <i className="bi bi-send-check-fill"></i>
+                                </div>
+                                <p className="mb-0 text-center">Are you sure you want to submit your exam? You will not be able to change your answers after submission.</p>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-outline-secondary" onClick={() => setShowSubmitModal(false)}>Cancel</button>
+                                <button type="button" className="btn btn-primary" onClick={submitExam} disabled={submitting}>
+                                    {submitting ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-send-fill"></i>}
+                                    Submit Exam
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
