@@ -1,6 +1,13 @@
 @php($prefix = $prefix ?? 'admin')
 @php($contextBranch = $selectedBranch ?? $branch)
 
+<div class="student-profile-top-actions">
+    <a href="{{ route($prefix.'.exams.index') }}" class="btn btn-outline-secondary btn-student-back">
+        <i class="bi bi-arrow-left"></i>
+        Back
+    </a>
+</div>
+
 <section class="exam-hero">
     <div class="exam-hero-overlay"></div>
     <div class="exam-hero-content">
@@ -213,13 +220,6 @@
                                 <a href="{{ route($prefix.'.questions.edit', $question) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit question">
                                     <i class="bi bi-pencil-fill"></i>
                                 </a>
-                                <form method="POST" action="{{ route($prefix.'.questions.destroy', $question) }}" data-confirm-delete>
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-danger-soft" type="submit" data-bs-toggle="tooltip" data-bs-title="Delete question">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                </form>
                             </div>
                         @endif
                     </div>

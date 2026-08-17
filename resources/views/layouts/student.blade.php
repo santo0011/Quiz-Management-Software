@@ -32,7 +32,7 @@
                     </div> -->
                     <div class="admin-user">
                         <div class="avatar">{{ strtoupper(substr(auth('student')->user()?->student_name ?? 'S', 0, 1)) }}</div>
-                        <div class="d-none d-sm-block">
+                        <div class="admin-user-copy">
                             <strong>{{ auth('student')->user()?->student_name }}</strong>
                             <span>{{ auth('student')->user()?->email }}</span>
                         </div>

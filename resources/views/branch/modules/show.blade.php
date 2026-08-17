@@ -4,6 +4,13 @@
 @section('page-title', $module)
 
 @section('content')
+    <div class="student-profile-top-actions">
+        <a href="{{ route('branch.dashboard') }}" class="btn btn-outline-secondary btn-student-back">
+            <i class="bi bi-arrow-left"></i>
+            Back
+        </a>
+    </div>
+
     <section class="content-panel">
         <div class="panel-header">
             <div>

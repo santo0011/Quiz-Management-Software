@@ -27,7 +27,7 @@
                 <div class="topbar-actions">
                     <div class="admin-user">
                     <div class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
-                    <div class="d-none d-sm-block">
+                    <div class="admin-user-copy">
                         <strong>{{ auth()->user()->name }}</strong>
                         <span>{{ auth()->user()->email }}</span>
                     </div>

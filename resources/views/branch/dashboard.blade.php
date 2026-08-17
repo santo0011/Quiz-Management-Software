@@ -8,9 +8,9 @@
         <div>
             <span>Branch Workspace</span>
             <h2>{{ $branch?->name ?? 'Branch' }} workspace is ready.</h2>
-            <p>Manage branch students here. Exams, questions, and results are reserved for the next stages.</p>
+            <p class="mobile-hide">Manage branch students here. Exams, questions, and results are reserved for the next stages.</p>
         </div>
-        <a href="{{ route('branch.students.index') }}" class="btn btn-light">
+        <a href="{{ route('branch.students.index') }}" class="btn btn-light mobile-hide">
             <i class="bi bi-people-fill"></i>
             Manage Students
         </a>

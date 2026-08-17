@@ -4,6 +4,13 @@
 @section('page-title', 'Branch Details')
 
 @section('content')
+    <div class="student-profile-top-actions">
+        <a href="{{ route('admin.branches.index') }}" class="btn btn-outline-secondary btn-student-back">
+            <i class="bi bi-arrow-left"></i>
+            Back
+        </a>
+    </div>
+
     <section class="content-panel narrow-panel">
         <div class="panel-header">
             <div>
@@ -34,21 +41,6 @@
                 <dd>{{ $branch->updated_at->format('d M Y, h:i A') }}</dd>
             </div>
         </dl>
-
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ route('admin.branches.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i>
-                Back
-            </a>
-            <form method="POST" action="{{ route('admin.branches.destroy', $branch) }}" data-confirm-delete>
-                @csrf
-                @method('DELETE')
-                <button class="btn btn-outline-danger" type="submit">
-                    <i class="bi bi-trash-fill"></i>
-                    Delete
-                </button>
-            </form>
-        </div>
     </section>
 
     <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editBranchDrawer{{ $branch->id }}" aria-labelledby="editBranchDrawerLabel{{ $branch->id }}">

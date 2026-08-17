@@ -204,8 +204,31 @@ body {
     min-height: 44px;
     border-radius: 8px;
     background: rgba(255, 255, 255, .1);
-    color: #fff;
+    color: #ef4444;
     white-space: nowrap;
+    border-color: rgba(255, 255, 255, .12);
+}
+
+.sidebar-logout .btn i,
+.sidebar-logout .btn span {
+    color: #fff8f8;
+}
+
+.sidebar-logout .btn:hover,
+.sidebar-logout .btn:focus,
+.sidebar-logout .btn:active {
+    background: rgba(255, 255, 255, .14);
+    border-color: rgba(255, 255, 255, .18);
+    color: #dc2626;
+}
+
+.sidebar-logout .btn:hover i,
+.sidebar-logout .btn:hover span,
+.sidebar-logout .btn:focus i,
+.sidebar-logout .btn:focus span,
+.sidebar-logout .btn:active i,
+.sidebar-logout .btn:active span {
+    color: #dc2626;
 }
 
 .sidebar-collapsed .admin-sidebar {
@@ -300,6 +323,11 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
+}
+
+.admin-user-copy {
+    min-width: 0;
 }
 
 .topbar-actions {
@@ -339,6 +367,14 @@ body {
     display: block;
     color: var(--muted);
     font-size: .82rem;
+}
+
+.admin-user strong,
+.admin-user span {
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .avatar {
@@ -1213,6 +1249,20 @@ body {
 .empty-state i {
     font-size: 2rem;
     color: var(--primary);
+}
+
+.logout-modal #confirmLogoutButton {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+.logout-modal #confirmLogoutButton:hover,
+.logout-modal #confirmLogoutButton:focus,
+.logout-modal #confirmLogoutButton:active {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    color: #fff;
 }
 
 .empty-state h3 {
@@ -2655,11 +2705,14 @@ body {
 .exam-hero-content {
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
     padding: 28px 30px;
     color: #fff;
 }
 
 .exam-hero-top {
+    order: 1;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -2728,6 +2781,7 @@ body {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .btn-exam-action {
@@ -2759,6 +2813,7 @@ body {
 }
 
 .exam-hero-title {
+    order: 2;
     margin: 0;
     font-size: clamp(1.6rem, 3vw, 2.4rem);
     font-weight: 850;
@@ -2768,6 +2823,7 @@ body {
 }
 
 .exam-hero-desc {
+    order: 3;
     margin: 10px 0 0;
     max-width: 720px;
     color: rgba(255, 255, 255, 0.85);
@@ -3639,6 +3695,18 @@ body {
     box-shadow: 0 18px 45px rgba(23, 59, 157, 0.22);
 }
 
+.student-profile-top-actions {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 12px;
+}
+
+.btn-student-back {
+    min-height: 40px;
+    padding: 0 16px;
+    font-weight: 800;
+}
+
 .student-profile-overlay {
     position: absolute;
     inset: 0;
@@ -3960,15 +4028,25 @@ body {
 @media (max-width: 767.98px) {
     .exam-hero-content {
         padding: 22px 20px;
+        gap: 12px;
     }
 
     .exam-hero-top {
+        order: 2;
         flex-direction: column;
         align-items: stretch;
+        gap: 12px;
+        margin-bottom: 0;
+    }
+
+    .exam-hero-title {
+        order: 1;
+        margin: 0;
     }
 
     .exam-hero-actions {
         width: 100%;
+        justify-content: stretch;
     }
 
     .btn-exam-action {
@@ -4048,9 +4126,9 @@ body {
     }
 
     .admin-topbar {
-        min-height: 62px;
-        padding: 10px 12px;
-        gap: 10px;
+        min-height: 58px;
+        padding: 8px 10px;
+        gap: 8px;
         align-items: center;
     }
 
@@ -4058,27 +4136,78 @@ body {
         min-width: 0;
     }
 
+    body:not(.super-admin-panel) .admin-topbar > div:not(.topbar-actions):not(:first-child) {
+        flex: 1 1 0;
+        max-width: calc(100% - 168px);
+    }
+
     .admin-topbar h1 {
-        font-size: clamp(1.05rem, 6vw, 1.35rem);
+        font-size: clamp(0.98rem, 5.2vw, 1.2rem);
         line-height: 1.15;
-        overflow-wrap: anywhere;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .page-kicker {
-        font-size: 0.66rem;
+        font-size: 0.6rem;
+        line-height: 1.1;
     }
 
     .btn-icon {
-        flex: 0 0 38px;
-        width: 38px;
-        height: 38px;
-        min-height: 38px;
-        border-radius: 10px;
+        flex: 0 0 34px;
+        width: 34px;
+        height: 34px;
+        min-height: 34px;
+        border-radius: 9px;
+        font-size: 0.95rem;
     }
 
     .topbar-actions {
         max-width: 44%;
         gap: 8px;
+    }
+
+    body:not(.super-admin-panel) .topbar-actions {
+        flex: 0 0 auto;
+        max-width: 156px;
+    }
+
+    body:not(.super-admin-panel) .admin-user {
+        gap: 6px;
+        max-width: 156px;
+    }
+
+    body:not(.super-admin-panel) .admin-user .avatar {
+        flex: 0 0 32px;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        font-size: 0.86rem;
+    }
+
+    body:not(.super-admin-panel) .admin-user-copy {
+        display: block;
+        line-height: 1.1;
+    }
+
+    body:not(.super-admin-panel) .admin-user strong,
+    body:not(.super-admin-panel) .admin-user span {
+        max-width: 118px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    body:not(.super-admin-panel) .admin-user strong {
+        display: block;
+        font-size: 0.74rem;
+        line-height: 1.12;
+    }
+
+    body:not(.super-admin-panel) .admin-user span {
+        font-size: 0.61rem;
+        line-height: 1.12;
     }
 
     .current-branch-pill {
@@ -4375,11 +4504,11 @@ body {
     }
 
     .super-admin-panel .btn-icon {
-        flex-basis: 36px;
-        width: 36px;
-        height: 36px;
-        min-height: 36px;
-        font-size: 0.95rem;
+        flex-basis: 42px;
+        width: 42px;
+        height: 42px;
+        min-height: 42px;
+        font-size: 1.12rem;
     }
 
     .super-admin-panel .topbar-actions {
@@ -4441,19 +4570,19 @@ body {
 
     .super-admin-panel .mobile-sidebar .sidebar-nav a,
     .super-admin-panel .mobile-sidebar .sidebar-nav .disabled {
-        min-height: 42px;
+        min-height: 46px;
         padding: 0 10px;
         gap: 10px;
         border-radius: 9px;
-        font-size: 1rem;
+        font-size: 1.08rem;
         overflow: hidden;
     }
 
     .super-admin-panel .mobile-sidebar .sidebar-nav i,
     .super-admin-panel .mobile-sidebar .sidebar-logout i {
-        flex: 0 0 21px;
-        width: 21px;
-        font-size: 1.08rem;
+        flex: 0 0 23px;
+        width: 23px;
+        font-size: 1.18rem;
     }
 
     .super-admin-panel .mobile-sidebar .sidebar-nav span,
@@ -4469,9 +4598,9 @@ body {
     }
 
     .super-admin-panel .mobile-sidebar .sidebar-logout .btn {
-        min-height: 42px;
+        min-height: 46px;
         gap: 10px;
-        font-size: 1rem;
+        font-size: 1.08rem;
         border-radius: 9px;
     }
 
@@ -4496,10 +4625,24 @@ body {
 
     .sidebar-nav a,
     .sidebar-nav .disabled {
-        min-height: 42px;
+        min-height: 46px;
         padding: 0 12px;
         border-radius: 10px;
-        font-size: 0.9rem;
+        font-size: 1.05rem;
+        gap: 11px;
+    }
+
+    .mobile-sidebar .sidebar-nav i,
+    .mobile-sidebar .sidebar-logout i {
+        flex: 0 0 23px;
+        width: 23px;
+        font-size: 1.16rem;
+    }
+
+    .mobile-sidebar .sidebar-logout .btn {
+        min-height: 46px;
+        gap: 11px;
+        font-size: 1.05rem;
     }
 
     .sidebar-logout {
@@ -4791,7 +4934,22 @@ body {
         padding: 18px;
     }
 
-    .exam-hero,
+    .student-profile-top-actions + .exam-hero {
+        margin-bottom: 10px;
+    }
+
+    .exam-hero {
+        margin-bottom: 14px;
+        overflow: hidden;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #173b9d 0%, #1d5fd8 45%, #0f9f8f 100%);
+        box-shadow: 0 12px 28px rgba(23, 59, 157, 0.18);
+    }
+
+    .exam-hero-overlay {
+        display: block;
+    }
+
     .student-profile-hero {
         border-radius: 14px;
         margin-bottom: 14px;
@@ -4802,14 +4960,206 @@ body {
         width: 100%;
     }
 
+    .exam-hero-content {
+        gap: 13px;
+        color: #fff;
+    }
+
+    .exam-hero-top {
+        order: 2;
+        gap: 12px;
+        margin-bottom: 0;
+    }
+
+    .exam-hero-badges {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .exam-status-badge,
+    .exam-meta-chip {
+        width: 100%;
+        justify-content: center;
+        min-height: 42px;
+        padding: 8px 9px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        line-height: 1.2;
+        text-transform: none;
+        letter-spacing: 0;
+        color: rgba(255, 255, 255, 0.94);
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(6px);
+    }
+
+    .exam-status-badge {
+        grid-column: 1 / -1;
+        justify-self: start;
+        width: auto;
+        min-height: 30px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .exam-status-badge i,
+    .exam-meta-chip i {
+        flex: 0 0 auto;
+        font-size: 0.92rem;
+        color: rgba(255, 255, 255, 0.92);
+        opacity: 1;
+    }
+
+    .exam-status-badge.status-draft {
+        color: #fff7ed;
+        background: rgba(245, 158, 11, 0.28);
+        border-color: rgba(251, 191, 36, 0.45);
+    }
+
+    .exam-status-badge.status-published {
+        color: #ecfdf5;
+        background: rgba(16, 185, 129, 0.28);
+        border-color: rgba(52, 211, 153, 0.45);
+    }
+
+    .exam-status-badge.status-closed {
+        color: #fff1f2;
+        background: rgba(239, 68, 68, 0.28);
+        border-color: rgba(248, 113, 113, 0.45);
+    }
+
+    .exam-status-badge.status-draft i {
+        color: #fde68a;
+    }
+
+    .exam-status-badge.status-published i {
+        color: #a7f3d0;
+    }
+
+    .exam-status-badge.status-closed i {
+        color: #fecaca;
+    }
+
+    .exam-hero-title {
+        order: 1;
+        margin: 0;
+        color: #fff;
+        font-size: clamp(1.28rem, 6.2vw, 1.55rem);
+        line-height: 1.16;
+        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+        overflow-wrap: anywhere;
+    }
+
+    .exam-hero-desc {
+        order: 3;
+        margin: -2px 0 0;
+        color: rgba(255, 255, 255, 0.84);
+    }
+
+    .exam-hero-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .exam-hero-actions form {
+        width: 100%;
+    }
+
+    .exam-hero-actions form .btn-exam-action,
+    .exam-hero-actions > .btn-exam-action {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .exam-hero-actions > .btn-exam-action:first-child {
+        grid-column: 1 / -1;
+    }
+
+    .exam-hero-actions .btn-light,
+    .exam-hero-actions .btn-outline-light {
+        color: #173b9d;
+        background: rgba(255, 255, 255, 0.94);
+        border-color: rgba(255, 255, 255, 0.7);
+    }
+
+    .exam-hero-actions .btn-success {
+        color: #fff;
+        background: #059669;
+        border-color: #059669;
+    }
+
     .btn-exam-action,
     .btn-student-action {
         flex: 1 1 100%;
-        min-height: 40px;
+        min-height: 38px;
+        padding: 0 12px;
+        font-size: 0.82rem;
     }
 
     .student-profile-main {
         gap: 12px;
+    }
+
+    .branch-student-show .student-profile-hero {
+        margin-bottom: 12px;
+        background: linear-gradient(135deg, #173b6d 0%, #1d6fd8 54%, #0f9f8f 100%);
+        box-shadow: 0 12px 28px rgba(23, 32, 51, 0.14);
+    }
+
+    .branch-student-show .student-profile-top-actions {
+        margin-bottom: 10px;
+    }
+
+    .branch-student-show .btn-student-back {
+        min-height: 38px;
+        padding: 0 13px;
+        font-size: 0.86rem;
+    }
+
+    .branch-student-show .student-profile-overlay {
+        display: none;
+    }
+
+    .branch-student-show .student-profile-content {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .branch-student-show .student-profile-top {
+        display: contents;
+    }
+
+    .branch-student-show .student-profile-badges {
+        order: 2;
+        gap: 6px;
+        margin-top: 12px;
+    }
+
+    .branch-student-show .student-profile-chip {
+        max-width: 100%;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+    }
+
+    .branch-student-show .student-profile-chip i {
+        font-size: 0.82rem;
+    }
+
+    .branch-student-show .student-profile-main {
+        order: 1;
+        display: grid;
+        grid-template-columns: 50px minmax(0, 1fr);
+        align-items: center;
+        gap: 11px;
     }
 
     .student-profile-avatar,
@@ -4821,10 +5171,129 @@ body {
         font-size: 1.35rem;
     }
 
+    .branch-student-show .student-profile-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 13px;
+        font-size: 1.28rem;
+    }
+
+    .branch-student-show .student-profile-name {
+        font-size: clamp(1.15rem, 6vw, 1.45rem);
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+    }
+
+    .branch-student-show .student-profile-subtitle {
+        margin-top: 5px;
+        font-size: 0.78rem;
+    }
+
+    .branch-student-show .student-profile-actions {
+        order: 3;
+        width: 100%;
+        margin-top: 12px;
+    }
+
+    .branch-student-show .btn-student-action {
+        width: 100%;
+        min-height: 38px;
+        justify-content: center;
+        font-size: 0.86rem;
+    }
+
+    .branch-student-show .student-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 9px;
+        margin: 0 0 12px;
+    }
+
+    .branch-student-show .student-stat-card {
+        min-height: 68px;
+        padding: 11px 12px;
+        gap: 10px;
+        border-radius: 11px;
+    }
+
+    .branch-student-show .student-stat-icon {
+        flex: 0 0 34px;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        font-size: 0.92rem;
+    }
+
+    .branch-student-show .student-stat-body span {
+        font-size: 0.68rem;
+    }
+
+    .branch-student-show .student-stat-body strong {
+        margin-top: 2px;
+        font-size: 0.92rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .branch-student-show .student-details-panel {
+        padding: 14px;
+    }
+
+    .branch-student-show .student-details-panel .panel-header {
+        margin-bottom: 10px;
+    }
+
+    .branch-student-show .student-details-panel .panel-header p {
+        display: none;
+    }
+
+    .branch-student-show .student-details-panel h2 {
+        font-size: 1rem;
+    }
+
+    .branch-student-show .student-details-grid {
+        gap: 8px;
+    }
+
     .student-detail-item,
     .exam-detail-item {
         padding: 12px;
         border-radius: 10px;
+    }
+
+    .branch-student-show .student-detail-item {
+        padding: 10px 11px;
+        gap: 9px;
+        align-items: center;
+    }
+
+    .branch-student-show .student-detail-icon {
+        flex: 0 0 32px;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        font-size: 0.86rem;
+    }
+
+    .branch-student-show .student-detail-item dt {
+        font-size: 0.66rem;
+    }
+
+    .branch-student-show .student-detail-item dd {
+        margin-top: 2px;
+        font-size: 0.86rem;
+        overflow-wrap: anywhere;
+    }
+
+    .branch-student-show .student-profile-footer {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 8px !important;
+        margin-top: 12px;
+    }
+
+    .branch-student-show .student-profile-footer form,
+    .branch-student-show .student-profile-footer .btn {
+        width: 100%;
     }
 
     .result-card-grid {
@@ -4928,6 +5397,49 @@ body {
 }
 
 @media (max-width: 359.98px) {
+    body:not(.super-admin-panel) .admin-topbar {
+        gap: 6px;
+        padding-inline: 8px;
+    }
+
+    body:not(.super-admin-panel) .admin-topbar > div:not(.topbar-actions):not(:first-child) {
+        max-width: calc(100% - 144px);
+    }
+
+    body:not(.super-admin-panel) .topbar-actions,
+    body:not(.super-admin-panel) .admin-user {
+        max-width: 136px;
+    }
+
+    body:not(.super-admin-panel) .admin-user .avatar {
+        flex-basis: 30px;
+        width: 30px;
+        height: 30px;
+        font-size: 0.8rem;
+    }
+
+    body:not(.super-admin-panel) .admin-user strong,
+    body:not(.super-admin-panel) .admin-user span {
+        max-width: 100px;
+    }
+
+    body:not(.super-admin-panel) .admin-user strong {
+        font-size: 0.7rem;
+    }
+
+    body:not(.super-admin-panel) .admin-user span {
+        font-size: 0.58rem;
+    }
+
+    .exam-hero-badges,
+    .exam-hero-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .exam-hero-actions > .btn-exam-action:first-child {
+        grid-column: auto;
+    }
+
     .admin-content,
     .student-content {
         padding-left: 10px;

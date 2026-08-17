@@ -5,6 +5,13 @@
 
 @section('content')
     @include('partials.format-time')
+    <div class="student-profile-top-actions">
+        <a href="{{ route('student.results.index') }}" class="btn btn-outline-secondary btn-student-back">
+            <i class="bi bi-arrow-left"></i>
+            Back
+        </a>
+    </div>
+
     <section class="student-section">
         <div class="student-section-header">
             <div>

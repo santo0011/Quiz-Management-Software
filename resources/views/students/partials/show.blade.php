@@ -1,6 +1,13 @@
 @php($prefix = $prefix ?? 'admin')
 @php($contextBranch = $selectedBranch ?? $branch)
 
+<div class="student-profile-top-actions">
+    <a href="{{ route($prefix.'.students.index') }}" class="btn btn-outline-secondary btn-student-back">
+        <i class="bi bi-arrow-left"></i>
+        Back
+    </a>
+</div>
+
 <section class="student-profile-hero">
     <div class="student-profile-overlay"></div>
     <div class="student-profile-content">
@@ -152,18 +159,3 @@
         </div>
     </div>
 </section>
-
-<div class="d-flex gap-2 flex-wrap student-profile-footer">
-    <a href="{{ route($prefix.'.students.index') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i>
-        Back to Students
-    </a>
-    <form method="POST" action="{{ route($prefix.'.students.destroy', $student) }}" data-confirm-delete>
-        @csrf
-        @method('DELETE')
-        <button class="btn btn-outline-danger" type="submit">
-            <i class="bi bi-trash-fill"></i>
-            Delete Student
-        </button>
-    </form>
-</div>
