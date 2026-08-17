@@ -4,6 +4,13 @@
 @section('page-title', 'Class Details')
 
 @section('content')
+    <div class="student-profile-top-actions">
+        <a href="{{ route('branch.classes.index') }}" class="btn btn-outline-secondary btn-student-back">
+            <i class="bi bi-arrow-left"></i>
+            Back
+        </a>
+    </div>
+
     <section class="content-panel narrow-panel">
         <div class="panel-header">
             <div>
@@ -30,21 +37,6 @@
                 <dd>{{ $class->created_at->format('d M Y, h:i A') }}</dd>
             </div>
         </dl>
-
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ route('branch.classes.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i>
-                Back
-            </a>
-            <form method="POST" action="{{ route('branch.classes.destroy', $class) }}" data-confirm-delete>
-                @csrf
-                @method('DELETE')
-                <button class="btn btn-outline-danger" type="submit">
-                    <i class="bi bi-trash-fill"></i>
-                    Delete
-                </button>
-            </form>
-        </div>
     </section>
 
     <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editClassDrawer{{ $class->id }}" aria-labelledby="editClassDrawerLabel{{ $class->id }}">

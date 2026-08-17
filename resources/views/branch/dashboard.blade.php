@@ -8,34 +8,40 @@
         <div>
             <span>Branch Workspace</span>
             <h2>{{ $branch?->name ?? 'Branch' }} workspace is ready.</h2>
-            <p>Manage branch students here. Exams, questions, and results are reserved for the next stages.</p>
+            <p class="mobile-hide">Manage branch students here. Exams, questions, and results are reserved for the next stages.</p>
         </div>
-        <a href="{{ route('branch.students.index') }}" class="btn btn-light">
+        <a href="{{ route('branch.students.index') }}" class="btn btn-light mobile-hide">
             <i class="bi bi-people-fill"></i>
             Manage Students
         </a>
     </div>
 
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-4 dashboard-metric-row">
         <div class="col-md-4">
-            <div class="metric-card">
+            <div class="metric-card dashboard-metric-card metric-success">
                 <i class="bi bi-people-fill"></i>
-                <span>Students</span>
-                <strong>{{ $studentCount }}</strong>
+                <div>
+                    <span>Students</span>
+                    <strong>{{ $studentCount }}</strong>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card muted">
+            <div class="metric-card dashboard-metric-card metric-primary muted">
                 <i class="bi bi-journal-check"></i>
-                <span>Exams</span>
-                <strong>Coming Soon</strong>
+                <div>
+                    <span>Exams</span>
+                    <strong>Coming Soon</strong>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card muted">
+            <div class="metric-card dashboard-metric-card metric-accent muted">
                 <i class="bi bi-bar-chart-fill"></i>
-                <span>Results</span>
-                <strong>Coming Soon</strong>
+                <div>
+                    <span>Results</span>
+                    <strong>Coming Soon</strong>
+                </div>
             </div>
         </div>
     </div>
@@ -57,7 +63,7 @@
             </div>
         @else
             <div class="table-responsive">
-                <table class="table align-middle admin-table">
+                <table class="table align-middle admin-table" data-mobile-direct-details>
                     <thead>
                         <tr>
                             <th>Student</th>

@@ -4,6 +4,13 @@
 @section('page-title', 'Exam Instructions')
 
 @section('content')
+    <div class="student-profile-top-actions">
+        <a href="{{ route('student.exams.available') }}" class="btn btn-outline-secondary btn-student-back">
+            <i class="bi bi-arrow-left"></i>
+            Back
+        </a>
+    </div>
+
     <section class="student-section exam-instructions">
         <div class="student-section-header">
             <div>

@@ -8,30 +8,36 @@
         <div>
             <span>Operational Overview</span>
             <h2>Quiz Management is ready for branch-based operations.</h2>
-            <p>Select a branch to manage branch-specific students now, with exams, questions, and results ready for later modules.</p>
+            <p class="mobile-hide">Select a branch to manage branch-specific students now, with exams, questions, and results ready for later modules.</p>
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-4 dashboard-metric-row">
         <div class="col-md-4">
-            <div class="metric-card">
+            <div class="metric-card dashboard-metric-card metric-primary">
                 <i class="bi bi-diagram-3-fill"></i>
-                <span>Total Branches</span>
-                <strong>{{ $branchCount }}</strong>
+                <div>
+                    <span>Total Branches</span>
+                    <strong>{{ $branchCount }}</strong>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card">
+            <div class="metric-card dashboard-metric-card metric-success">
                 <i class="bi bi-people-fill"></i>
-                <span>Students</span>
-                <strong>{{ $studentCount }}</strong>
+                <div>
+                    <span>Students</span>
+                    <strong>{{ $studentCount }}</strong>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card">
+            <div class="metric-card dashboard-metric-card metric-accent">
                 <i class="bi bi-building-check"></i>
-                <span>{{ $selectedBranch ? 'Selected Branch Students' : 'Selected Branch' }}</span>
-                <strong>{{ $selectedBranch ? $selectedBranchStudentCount : 'None' }}</strong>
+                <div>
+                    <span>{{ $selectedBranch ? 'Selected Branch Students' : 'Selected Branch' }}</span>
+                    <strong>{{ $selectedBranch ? $selectedBranchStudentCount : 'None' }}</strong>
+                </div>
             </div>
         </div>
     </div>
@@ -53,7 +59,7 @@
             </div>
         @else
             <div class="table-responsive">
-                <table class="table align-middle admin-table">
+                <table class="table align-middle admin-table" data-mobile-direct-details>
                     <thead>
                         <tr>
                             <th>Name</th>

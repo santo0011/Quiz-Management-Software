@@ -4,11 +4,13 @@
 @section('page-title', 'Student Details')
 
 @section('content')
-    @include('students.partials.show', [
-        'prefix' => 'branch',
-        'student' => $student,
-        'branch' => $branch,
-    ])
+    <div class="branch-student-show">
+        @include('students.partials.show', [
+            'prefix' => 'branch',
+            'student' => $student,
+            'branch' => $branch,
+        ])
+    </div>
 
     <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editStudentDrawer{{ $student->id }}" aria-labelledby="editStudentDrawerLabel{{ $student->id }}">
         <div class="offcanvas-header student-drawer-header">

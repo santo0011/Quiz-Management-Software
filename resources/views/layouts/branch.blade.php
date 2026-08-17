@@ -27,7 +27,7 @@
                 <div class="topbar-actions">
                     <div class="admin-user">
                     <div class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
-                    <div class="d-none d-sm-block">
+                    <div class="admin-user-copy">
                         <strong>{{ auth()->user()->name }}</strong>
                         <span>{{ auth()->user()->email }}</span>
                     </div>
@@ -169,6 +169,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    @include('partials.mobile-tables')
     <script>
         document.querySelectorAll('.admin-toast').forEach((toastEl) => {
             bootstrap.Toast.getOrCreateInstance(toastEl).show();

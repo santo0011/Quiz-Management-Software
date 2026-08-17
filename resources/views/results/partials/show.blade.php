@@ -1,6 +1,13 @@
 @php($prefix = $prefix ?? 'admin')
 @include('partials.format-time')
 
+<div class="student-profile-top-actions">
+    <a href="{{ route($prefix.'.results.index') }}" class="btn btn-outline-secondary btn-student-back">
+        <i class="bi bi-arrow-left"></i>
+        Back
+    </a>
+</div>
+
 <section class="content-panel exam-details-panel">
     <div class="panel-header">
         <div>
