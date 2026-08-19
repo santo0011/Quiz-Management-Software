@@ -8,6 +8,7 @@
         ['label' => 'Students', 'icon' => 'bi-people-fill', 'route' => 'admin.students.index', 'active' => 'admin.students.*', 'requiresBranch' => true],
         ['label' => 'Exams', 'icon' => 'bi-journal-check', 'route' => 'admin.exams.index', 'active' => 'admin.exams.*', 'requiresBranch' => true],
         ['label' => 'Results', 'icon' => 'bi-bar-chart-fill', 'route' => 'admin.results.index', 'active' => 'admin.results.*', 'requiresBranch' => true],
+        ['label' => 'Change Password', 'icon' => 'bi-key-fill', 'route' => 'admin.password.edit', 'active' => 'admin.password.*'],
     ];
 @endphp
 

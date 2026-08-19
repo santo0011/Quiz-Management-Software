@@ -26,7 +26,10 @@
         function format_time_taken($attempt)
         {
             if ($attempt?->submitted_at && $attempt->started_at) {
-                $seconds = $attempt->submitted_at->diffInSeconds($attempt->started_at);
+                // Carbon 3's diffInSeconds() returns a signed value.
+                // Since submitted_at is always after started_at, the result
+                // is negative. Use abs() to get the correct positive duration.
+                $seconds = abs($attempt->submitted_at->diffInSeconds($attempt->started_at));
                 return format_time_taken_seconds($seconds);
             }
 
