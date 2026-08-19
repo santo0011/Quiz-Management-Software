@@ -99,6 +99,44 @@ class Exam extends Model
             && (! $this->ends_at || $this->ends_at->gte($now));
     }
 
+    /**
+     * Determine the dynamic exam status based on the actual scheduled date/time.
+     *
+     * - 'upcoming'   → scheduled start time has not arrived yet
+     * - 'available'  → exam is currently within its allowed time window
+     * - 'expired'    → exam end time has passed
+     * - 'completed'  → student has already submitted the exam (requires student)
+     */
+    public function dynamicStatus(?Student $student = null): string
+    {
+        if (! $this->isPublished()) {
+            return 'closed';
+        }
+
+        $now = Carbon::now();
+
+        // If the student has already submitted this exam → completed
+        if ($student && $this->attempts()
+            ->where('student_id', $student->id)
+            ->where('status', 'submitted')
+            ->exists()) {
+            return 'completed';
+        }
+
+        // If the exam has a start time and it hasn't arrived yet → upcoming
+        if ($this->starts_at && $this->starts_at->gt($now)) {
+            return 'upcoming';
+        }
+
+        // If the exam has an end time and it has passed → expired
+        if ($this->ends_at && $this->ends_at->lt($now)) {
+            return 'expired';
+        }
+
+        // Otherwise the exam is currently available
+        return 'available';
+    }
+
     public function remainingAttemptsFor(Student $student): int
     {
         $usedAttempts = $this->attempts()

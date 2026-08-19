@@ -2,9 +2,13 @@
 
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,5 +23,30 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Redirect unauthenticated users to the login page with a friendly message.
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
+            return redirect()->guest(route('login'))->with('login_error', 'Please login to continue.');
+        });
+
+        // For 401 Unauthorized HTTP exceptions, redirect to login with a clean message.
+        $exceptions->render(function (UnauthorizedHttpException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthorized.'], 401);
+            }
+
+            return redirect()->guest(route('login'))->with('login_error', 'Please login to continue.');
+        });
+
+        // For 404s, redirect non-API users to a clean custom 404 page.
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Route not found.'], 404);
+            }
+
+            return response()->view('errors.404', [], 404);
+        });
     })->create();

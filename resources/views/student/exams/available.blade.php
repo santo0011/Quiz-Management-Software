@@ -22,8 +22,17 @@
             <div class="student-exam-grid-2">
                 @foreach ($exams as $exam)
                     @php($remainingAttempts = $exam->remainingAttemptsFor($student))
+                    @php($dynamicStatus = $exam->dynamic_status ?? $exam->dynamicStatus($student))
                     <article class="exam-card">
-                        <span class="status-badge status-published">Available</span>
+                        @if ($dynamicStatus === 'upcoming')
+                            <span class="status-badge status-upcoming">Upcoming</span>
+                        @elseif ($dynamicStatus === 'expired')
+                            <span class="status-badge status-closed">Expired</span>
+                        @elseif ($dynamicStatus === 'completed')
+                            <span class="status-badge status-published">Completed</span>
+                        @else
+                            <span class="status-badge status-published">Available</span>
+                        @endif
                         <h3>{{ $exam->title }}</h3>
                         <p>{{ $exam->description ?: 'Read the instructions and begin when ready.' }}</p>
                         <dl>
@@ -34,10 +43,15 @@
                             <div><dt>Ends</dt><dd>{{ $exam->ends_at?->format('d M Y, h:i A') ?? 'Open' }}</dd></div>
                             <div><dt>Attempts Left</dt><dd>{{ $remainingAttempts }}</dd></div>
                         </dl>
-                        @if ($remainingAttempts <= 0)
+                        @if ($dynamicStatus === 'upcoming')
+                            <button class="btn btn-soft w-100" disabled>
+                                <i class="bi bi-clock"></i>
+                                Not Started Yet
+                            </button>
+                        @elseif ($dynamicStatus === 'expired' || $remainingAttempts <= 0)
                             <button class="btn btn-outline-secondary w-100" disabled>
-                                <i class="bi bi-check-circle-fill"></i>
-                                Completed
+                                <i class="bi {{ $dynamicStatus === 'expired' ? 'bi-hourglass-split' : 'bi-check-circle-fill' }}"></i>
+                                {{ $dynamicStatus === 'expired' ? 'Expired' : 'Completed' }}
                             </button>
                         @else
                             <a href="{{ route('student.exams.show', $exam) }}" class="btn btn-primary w-100">
