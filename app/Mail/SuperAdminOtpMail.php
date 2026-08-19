@@ -18,11 +18,14 @@ class SuperAdminOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your Super Admin password reset code');
+        return new Envelope(subject: 'Your QuizCore Password Reset Code');
     }
 
     public function content(): Content
     {
-        return new Content(view: 'emails.super-admin-otp');
+        return new Content(
+            view: 'emails.super-admin-otp',
+            with: ['subject' => 'Your QuizCore Password Reset Code'],
+        );
     }
 }

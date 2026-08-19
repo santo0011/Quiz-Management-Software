@@ -19,11 +19,14 @@ class BranchCredentialsMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your Branch Panel login code');
+        return new Envelope(subject: 'Your Branch Panel Login Credentials');
     }
 
     public function content(): Content
     {
-        return new Content(view: 'emails.branch-credentials');
+        return new Content(
+            view: 'emails.branch-credentials',
+            with: ['subject' => 'Your Branch Panel Login Credentials'],
+        );
     }
 }

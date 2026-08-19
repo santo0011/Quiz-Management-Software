@@ -56,6 +56,7 @@ class StudentPasswordController extends Controller
 
         DB::table('password_reset_otps')
             ->where('email', $student->email)
+            ->where('user_type', 'student')
             ->whereNull('used_at')
             ->update([
                 'used_at' => now(),
@@ -64,6 +65,7 @@ class StudentPasswordController extends Controller
 
         DB::table('password_reset_otps')->insert([
             'email' => $student->email,
+            'user_type' => 'student',
             'otp_hash' => Hash::make($otp),
             'expires_at' => now()->addMinutes(10),
             'created_at' => now(),
@@ -71,7 +73,7 @@ class StudentPasswordController extends Controller
         ]);
 
         try {
-            Mail::to($student->email)->send(new StudentOtpMail($otp));
+            Mail::to($student->email)->send(new StudentOtpMail($otp, $student));
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'OTP could not be sent. Please try again later.',
@@ -98,6 +100,7 @@ class StudentPasswordController extends Controller
 
         $record = DB::table('password_reset_otps')
             ->where('email', $validated['email'])
+            ->where('user_type', 'student')
             ->whereNull('used_at')
             ->latest()
             ->first();

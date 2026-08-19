@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Mail\SuperAdminOtpMail;
-use App\Mail\StudentOtpMail;
 use App\Http\Controllers\Controller;
+use App\Mail\BranchOtpMail;
+use App\Mail\StudentOtpMail;
+use App\Mail\SuperAdminOtpMail;
+use App\Models\Branch;
 use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
@@ -14,10 +16,47 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PasswordResetController extends Controller
 {
+    /**
+     * Map the selected login type to its user_type value stored in OTP records.
+     */
+    protected function otpUserType(string $type): string
+    {
+        return match ($type) {
+            'branch' => 'branch',
+            'student' => 'student',
+            default => 'super_admin',
+        };
+    }
+
+    /**
+     * Get the type-specific account lookup closure.
+     */
+    protected function findAccountForType(string $type, string $email): User|Student|null
+    {
+        return match ($type) {
+            'branch' => User::where('email', $email)->where('role', 'Branch')->first(),
+            'student' => Student::where('email', $email)->first(),
+            default => User::where('email', $email)->where('role', 'Super Admin')->first(),
+        };
+    }
+
+    /**
+     * Get the type-specific "account not found" error message.
+     */
+    protected function notFoundMessage(string $type): string
+    {
+        return match ($type) {
+            'branch' => 'No Branch account found with this email address.',
+            'student' => 'No Student account found with this email address.',
+            default => 'No Super Admin account found with this email address.',
+        };
+    }
+
     public function request(Request $request): View
     {
         $type = $request->query('type', 'super_admin');
@@ -70,44 +109,50 @@ class PasswordResetController extends Controller
         $type = $validated['type'];
         $email = $validated['email'];
 
-        $user = null;
-        $student = null;
+        // Only search the table/model that matches the selected login type.
+        // This prevents cross-type lookups (e.g. a Super Admin email used for Branch reset).
+        $account = $this->findAccountForType($type, $email);
 
-        if ($type === 'super_admin') {
-            $user = User::where('email', $email)->where('role', 'Super Admin')->first();
-        } elseif ($type === 'branch') {
-            $user = User::where('email', $email)->where('role', 'Branch')->first();
-        } else {
-            $student = Student::where('email', $email)->first();
+        if (! $account) {
+            throw ValidationException::withMessages([
+                'email' => $this->notFoundMessage($type),
+            ]);
         }
 
-        if ($user || $student) {
-            $otp = (string) random_int(100000, 999999);
+        $otp = (string) random_int(100000, 999999);
+        $userType = $this->otpUserType($type);
 
-            DB::table('password_reset_otps')->where('email', $email)->whereNull('used_at')->update([
+        DB::table('password_reset_otps')
+            ->where('email', $email)
+            ->where('user_type', $userType)
+            ->whereNull('used_at')
+            ->update([
                 'used_at' => now(),
-            ]);
-
-            DB::table('password_reset_otps')->insert([
-                'email' => $email,
-                'otp_hash' => Hash::make($otp),
-                'expires_at' => now()->addMinutes(10),
-                'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            try {
-                if ($student) {
-                    Mail::to($student->email)->send(new StudentOtpMail($otp));
-                } else {
-                    Mail::to($user->email)->send(new SuperAdminOtpMail($otp));
-                }
-                $emailSent = true;
-            } catch (\Throwable $e) {
-                $emailSent = false;
+        DB::table('password_reset_otps')->insert([
+            'email' => $email,
+            'user_type' => $userType,
+            'otp_hash' => Hash::make($otp),
+            'expires_at' => now()->addMinutes(10),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            if ($type === 'branch') {
+                $branch = Branch::where('email', $email)->first()
+                    ?? new Branch(['name' => 'Branch', 'email' => $email]);
+                Mail::to($email)->send(new BranchOtpMail($branch, $otp));
+            } elseif ($type === 'student') {
+                Mail::to($email)->send(new StudentOtpMail($otp, $account instanceof Student ? $account : null));
+            } else {
+                Mail::to($email)->send(new SuperAdminOtpMail($otp));
             }
-        } else {
-            $emailSent = true; // Pretend success to avoid user enumeration
+            $emailSent = true;
+        } catch (\Throwable $e) {
+            $emailSent = false;
         }
 
         $request->session()->put('password_reset_email', $email);
@@ -169,8 +214,14 @@ class PasswordResetController extends Controller
             'otp.digits' => 'Reset code must be 6 digits.',
         ]);
 
+        $type = $validated['type'];
+        $email = $validated['email'];
+
+        // Only look up OTP records matching the selected account type.
+        // This prevents a Branch OTP from being used for Student or Super Admin reset.
         $record = DB::table('password_reset_otps')
-            ->where('email', $validated['email'])
+            ->where('email', $email)
+            ->where('user_type', $this->otpUserType($type))
             ->whereNull('used_at')
             ->latest()
             ->first();
@@ -178,16 +229,16 @@ class PasswordResetController extends Controller
         if (! $record || Carbon::parse($record->expires_at)->isPast() || ! Hash::check($validated['otp'], $record->otp_hash)) {
             return back()
                 ->with('reset_error', 'Invalid or expired reset code. Please request a new code.')
-                ->withInput(['email' => $validated['email'], 'type' => $validated['type']]);
+                ->withInput(['email' => $email, 'type' => $type]);
         }
 
         session([
-            'password_reset_email' => $validated['email'],
-            'password_reset_type' => $validated['type'],
+            'password_reset_email' => $email,
+            'password_reset_type' => $type,
             'password_reset_verified_otp_id' => $record->id,
         ]);
 
-        return redirect()->route('password.reset.form', ['type' => $validated['type']])->with('success', 'Reset code verified. Please set a new password.');
+        return redirect()->route('password.reset.form', ['type' => $type])->with('success', 'Reset code verified. Please set a new password.');
     }
 
     public function resetForm(Request $request): View
