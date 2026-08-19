@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\BranchSelectionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
+use App\Http\Controllers\Admin\PasswordController as AdminPasswordController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
 use App\Http\Controllers\Admin\ResultController as AdminResultController;
 use App\Http\Controllers\Admin\SchoolClassController;
@@ -49,6 +50,8 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/select-branch', [BranchSelectionController::class, 'index'])->name('branch-selection.index');
     Route::post('/select-branch', [BranchSelectionController::class, 'store'])->name('branch-selection.store');
     Route::delete('/select-branch', [BranchSelectionController::class, 'clear'])->name('branch-selection.clear');
+    Route::get('/password', [AdminPasswordController::class, 'edit'])->name('password.edit');
+    Route::put('/password', [AdminPasswordController::class, 'update'])->name('password.update');
     Route::resource('branches', BranchController::class);
     Route::post('/branches/{branch}/toggle-active', [BranchController::class, 'toggleActive'])->name('branches.toggle-active');
     Route::resource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);

@@ -209,6 +209,18 @@
             bootstrap.Tooltip.getOrCreateInstance(sidebarToggle, { boundary: document.body });
         });
 
+        document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const input = button.closest('.password-field').querySelector('input');
+                const icon = button.querySelector('i');
+                const showPassword = input.type === 'password';
+
+                input.type = showPassword ? 'text' : 'password';
+                button.setAttribute('aria-label', showPassword ? 'Hide password' : 'Show password');
+                icon.className = showPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill';
+            });
+        });
+
         const deleteModalEl = document.getElementById('deleteConfirmModal');
         const confirmDeleteButton = document.getElementById('confirmDeleteButton');
         let pendingDeleteForm = null;
