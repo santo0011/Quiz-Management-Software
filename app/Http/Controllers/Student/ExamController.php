@@ -27,12 +27,12 @@ class ExamController extends Controller
             ->get();
 
         $availableExams = $publishedExams
-            ->filter(fn (Exam $exam) => $exam->isOpen())
+            ->filter(fn (Exam $exam) => $exam->dynamicStatus($student) === 'available')
             ->filter(fn (Exam $exam) => $exam->remainingAttemptsFor($student) > 0)
             ->values();
 
         $upcomingExams = $publishedExams
-            ->filter(fn (Exam $exam) => ! $exam->isOpen() && $exam->starts_at && $exam->starts_at->isFuture())
+            ->filter(fn (Exam $exam) => $exam->dynamicStatus($student) === 'upcoming')
             ->filter(fn (Exam $exam) => $exam->remainingAttemptsFor($student) > 0)
             ->values();
 
@@ -113,11 +113,21 @@ class ExamController extends Controller
             ->where(function ($query): void {
                 $query->whereNull('ends_at')->orWhere('ends_at', '>=', now());
             })
+            // Exclude exams the student has already submitted
+            ->whereDoesntHave('attempts', function ($query) use ($student): void {
+                $query->where('student_id', $student->id)
+                    ->where('status', 'submitted');
+            })
             ->latest()
             ->paginate(12)
             ->withQueryString();
 
-        $exams = $exams->through(fn (Exam $exam) => $exam);
+        // Additional safety filter using dynamic status to remove any expired/completed exams
+        $exams->getCollection()->transform(function (Exam $exam) use ($student) {
+            $exam->setAttribute('dynamic_status', $exam->dynamicStatus($student));
+
+            return $exam;
+        });
 
         return view('student.exams.available', [
             'student' => $student,
@@ -133,11 +143,30 @@ class ExamController extends Controller
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED)
             ->where('starts_at', '>', now())
+            // Exclude exams the student has already submitted
+            ->whereDoesntHave('attempts', function ($query) use ($student): void {
+                $query->where('student_id', $student->id)
+                    ->where('status', 'submitted');
+            })
             ->withCount('questions')
             ->with('schoolClass')
             ->latest('starts_at')
             ->paginate(20)
             ->withQueryString();
+
+        // Filter out exams that are no longer upcoming (e.g. already started or completed)
+        $exams->getCollection()->transform(function (Exam $exam) use ($student) {
+            $status = $exam->dynamicStatus($student);
+            $exam->setAttribute('dynamic_status', $status);
+
+            // Only keep exams that are actually still upcoming
+            return $status === 'upcoming' ? $exam : null;
+        });
+
+        // Remove any null entries (exams that are no longer upcoming)
+        $exams->setCollection(
+            $exams->getCollection()->filter()
+        );
 
         return view('student.exams.upcoming', [
             'student' => $student,
