@@ -20,8 +20,16 @@
         <div class="question-card-body">
             <div class="mb-3">
                 <label for="question_text" class="form-label">Question Text <span class="required-mark">*</span></label>
-                <textarea id="question_text" name="question_text" rows="5" class="form-control form-control-lg question-textarea @error('question_text') is-invalid @enderror math-input" required>{{ old('question_text', $question->question_text) }}</textarea>
-                <div class="form-text">Use MathJax syntax like <code>\sqrt{25}</code>, <code>x^2 + 2x + 1</code>, or <code>\frac{a}{b}</code>.</div>
+                @include('partials.math-editor', [
+                    'mathId' => 'question_text',
+                    'mathName' => 'question_text',
+                    'mathValue' => old('question_text', $question->question_text),
+                    'mathPlaceholder' => 'Enter question text or math expression...',
+                    'mathRows' => 3,
+                    'mathRequired' => true,
+                    'mathClass' => $errors->has('question_text') ? 'is-invalid' : '',
+                ])
+                <div class="form-text">Use the toolbar or type LaTeX like <code>\sqrt{25}</code>, <code>x^2 + 2x + 1</code>, or <code>\frac{a}{b}</code>.</div>
                 @error('question_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 
@@ -59,7 +67,14 @@
                     <div class="option-row" data-option-row>
                         <label class="option-badge">{{ chr(65 + $index) }}</label>
                         <div class="option-input-wrap">
-                            <textarea name="options[]" rows="1" class="form-control math-input" placeholder="Option {{ chr(65 + $index) }} text" required>{{ $optionValue }}</textarea>
+                            @include('partials.math-editor', [
+                                'mathId' => 'option_' . $index,
+                                'mathName' => 'options[]',
+                                'mathValue' => $optionValue,
+                                'mathPlaceholder' => 'Option ' . chr(65 + $index) . ' text or math expression',
+                                'mathRows' => 1,
+                                'mathRequired' => true,
+                            ])
                         </div>
                         <label class="correct-answer-label" title="Mark as correct">
                             <input type="radio" name="correct_option" value="{{ $index }}" class="form-check-input correct-radio" @checked((int) $correctIndex === $index) aria-label="Correct option">
@@ -90,7 +105,14 @@
         </div>
         <div class="question-card-body">
             <label for="explanation" class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
-            <textarea id="explanation" name="explanation" rows="3" class="form-control math-input">{{ old('explanation', $question->explanation) }}</textarea>
+            @include('partials.math-editor', [
+                'mathId' => 'explanation',
+                'mathName' => 'explanation',
+                'mathValue' => old('explanation', $question->explanation),
+                'mathPlaceholder' => 'Enter explanation text or math expression...',
+                'mathRows' => 2,
+                'mathRequired' => false,
+            ])
         </div>
     </section>
 
@@ -112,9 +134,11 @@
             const renumberOptions = () => {
                 list.querySelectorAll('[data-option-row]').forEach((row, index) => {
                     const badge = row.querySelector('.option-badge');
-                    const input = row.querySelector('textarea');
+                    const input = row.querySelector('textarea, math-field');
                     badge.textContent = LETTERS[index % 26];
-                    input.placeholder = 'Option ' + LETTERS[index % 26];
+                    if (input) {
+                        input.placeholder = 'Option ' + LETTERS[index % 26];
+                    }
                     row.querySelector('input[type="radio"]').value = index;
                 });
             };
@@ -128,7 +152,10 @@
                 row.innerHTML = `
                     <label class="option-badge">${letter}</label>
                     <div class="option-input-wrap">
-                        <textarea name="options[]" rows="1" class="form-control math-input" placeholder="Option ${letter}" required></textarea>
+                        <div class="math-editor-wrap" data-math-editor>
+                            <math-field class="math-field-editor" data-math-field data-math-name="options[]" data-math-required="true" data-math-placeholder="Option ${letter} text or math expression" data-math-rows="1" virtual-keyboard-mode="manual" smart-mode="true"></math-field>
+                            <input type="hidden" name="options[]" value="" data-math-hidden>
+                        </div>
                     </div>
                     <label class="correct-answer-label" title="Mark as correct">
                         <input type="radio" name="correct_option" value="${count}" class="form-check-input correct-radio" aria-label="Correct option">
@@ -140,7 +167,10 @@
                 `;
                 list.appendChild(row);
                 renumberOptions();
-                row.querySelector('textarea').focus();
+                const mathField = row.querySelector('math-field');
+                if (mathField) {
+                    mathField.focus();
+                }
             });
 
             list.addEventListener('click', (event) => {

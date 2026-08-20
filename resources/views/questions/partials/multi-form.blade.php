@@ -23,7 +23,15 @@
                 <div class="question-card-body">
                     <div class="question-field-group">
                         <label class="form-label">Question Text <span class="required-mark">*</span></label>
-                        <textarea name="questions[{{ $qIndex }}][question_text]" rows="3" class="form-control question-textarea math-input @error('questions.'.$qIndex.'.question_text') is-invalid @enderror" required>{{ $oldQ['question_text'] ?? '' }}</textarea>
+                        @include('partials.math-editor', [
+                            'mathId' => 'q' . $qIndex . '_question_text',
+                            'mathName' => 'questions[' . $qIndex . '][question_text]',
+                            'mathValue' => $oldQ['question_text'] ?? '',
+                            'mathPlaceholder' => 'Enter question text or math expression...',
+                            'mathRows' => 2,
+                            'mathRequired' => true,
+                            'mathClass' => $errors->has('questions.' . $qIndex . '.question_text') ? 'is-invalid' : '',
+                        ])
                         @error('questions.'.$qIndex.'.question_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
@@ -51,7 +59,14 @@
                                 <div class="option-row" data-option-row>
                                     <label class="option-badge">{{ chr(65 + (int) $optIndex) }}</label>
                                     <div class="option-input-wrap">
-                                        <textarea name="questions[{{ $qIndex }}][options][]" rows="1" class="form-control math-input" placeholder="Option {{ chr(65 + (int) $optIndex) }} text" required>{{ $optValue }}</textarea>
+                                        @include('partials.math-editor', [
+                                            'mathId' => 'q' . $qIndex . '_option_' . $optIndex,
+                                            'mathName' => 'questions[' . $qIndex . '][options][]',
+                                            'mathValue' => $optValue,
+                                            'mathPlaceholder' => 'Option ' . chr(65 + (int) $optIndex) . ' text or math expression',
+                                            'mathRows' => 1,
+                                            'mathRequired' => true,
+                                        ])
                                     </div>
                                     <label class="correct-answer-label" title="Mark as correct">
                                         <input type="radio" name="questions[{{ $qIndex }}][correct_option]" value="{{ (int) $optIndex }}" class="form-check-input correct-radio" @checked($qCorrect === (int) $optIndex) aria-label="Correct option">
@@ -71,7 +86,14 @@
 
                     <div class="question-explanation-field">
                         <label class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
-                        <textarea name="questions[{{ $qIndex }}][explanation]" rows="1" class="form-control math-input">{{ $oldQ['explanation'] ?? '' }}</textarea>
+                        @include('partials.math-editor', [
+                            'mathId' => 'q' . $qIndex . '_explanation',
+                            'mathName' => 'questions[' . $qIndex . '][explanation]',
+                            'mathValue' => $oldQ['explanation'] ?? '',
+                            'mathPlaceholder' => 'Enter explanation text or math expression...',
+                            'mathRows' => 1,
+                            'mathRequired' => false,
+                        ])
                     </div>
                 </div>
             </section>
@@ -104,7 +126,6 @@
             const renumberAll = () => {
                 list.querySelectorAll('[data-question-block]').forEach((block, qIdx) => {
                     block.querySelector('[data-question-number]').textContent = 'Question ' + (qIdx + 1);
-                    const radiosByName = block.querySelectorAll('input[type="radio"]');
                     const headers = ['question_text', 'marks', 'question_type', 'explanation'];
                     headers.forEach((field) => {
                         const el = block.querySelector('[name*="[' + field + ']"]');
@@ -113,19 +134,19 @@
                             el.name = name;
                         }
                     });
-                    const texts = block.querySelectorAll('textarea');
-                    texts.forEach((el) => {
+                    // Update textareas for math fields
+                    block.querySelectorAll('[data-math-textarea]').forEach((el) => {
                         const name = el.name.replace(/questions\[\d+\]\[/g, 'questions[' + qIdx + '][');
                         el.name = name;
                     });
                     block.querySelectorAll('[data-option-row]').forEach((row, optIdx) => {
                         const badge = row.querySelector('.option-badge');
-                        const textarea = row.querySelector('textarea');
+                        const textarea = row.querySelector('[data-math-textarea]');
                         const radio = row.querySelector('input[type="radio"]');
                         badge.textContent = LETTERS[optIdx % 26];
-                        textarea.placeholder = 'Option ' + LETTERS[optIdx % 26];
-                        const textName = textarea.name.replace(/questions\[\d+\]\[options\]\[\]/g, 'questions[' + qIdx + '][options][]');
-                        textarea.name = textName;
+                        if (textarea) {
+                            textarea.placeholder = 'Option ' + LETTERS[optIdx % 26] + ' text or math expression';
+                        }
                         const radioName = radio.name.replace(/questions\[\d+\]\[correct_option\]/g, 'questions[' + qIdx + '][correct_option]');
                         radio.name = radioName;
                         radio.value = optIdx;
@@ -149,7 +170,67 @@
                     row.innerHTML = `
                         <label class="option-badge">${letter}</label>
                         <div class="option-input-wrap">
-                            <textarea name="questions[${qIdx}][options][]" rows="1" class="form-control math-input" placeholder="Option ${letter}" required></textarea>
+                            <div class="math-input-wrap" data-math-input-wrap>
+                                <textarea name="questions[${qIdx}][options][]" rows="1" class="form-control" placeholder="Option ${letter} text or math expression" required data-math-textarea></textarea>
+                                <button type="button" class="math-toolbar-toggle" data-math-toggle aria-label="Math tools" title="Math tools"><i class="bi bi-123"></i></button>
+                                <div class="math-toolbar-popover" data-math-toolbar hidden>
+                                    <div class="math-toolbar-header"><span>Math Tools</span><button type="button" class="btn-close btn-close-sm" data-math-close aria-label="Close"></button></div>
+                                    <div class="math-toolbar-grid">
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\frac{}{}" title="Fraction">a/b</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="^{}" title="Superscript">x²</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="_{}" title="Subscript">x₂</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sqrt{}" title="Square Root">√</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\pi" title="Pi">π</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\alpha" title="Alpha">α</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\beta" title="Beta">β</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\theta" title="Theta">θ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\pm" title="±">±</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\times" title="×">×</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\div" title="÷">÷</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\leq" title="≤">≤</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\geq" title="≥">≥</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\neq" title="≠">≠</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\infty" title="∞">∞</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sum_{}^{}" title="Σ">Σ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\int_{}^{}" title="∫">∫</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\rightarrow" title="→">→</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\left( \\right)" title="( )">( )</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\left[ \\right]" title="[ ]">[ ]</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\left\\{ \\right\\}" title="{ }">{ }</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cdot" title="·">·</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\Delta" title="Δ">Δ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\lambda" title="λ">λ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\mu" title="μ">μ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sigma" title="σ">σ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\omega" title="ω">ω</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\degree" title="°">°</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\angle" title="∠">∠</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\perp" title="⊥">⊥</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\parallel" title="∥">∥</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cong" title="≅">≅</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sim" title="∼">∼</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\in" title="∈">∈</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\notin" title="∉">∉</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\subset" title="⊂">⊂</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cup" title="∪">∪</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cap" title="∩">∩</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\emptyset" title="∅">∅</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\therefore" title="∴">∴</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\because" title="∵">∵</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\forall" title="∀">∀</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\exists" title="∃">∃</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\neg" title="¬">¬</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\land" title="∧">∧</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\lor" title="∨">∨</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\implies" title="⇒">⇒</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\iff" title="⇔">⇔</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\overline{}" title="‾">‾</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\overrightarrow{}" title="→">→</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\begin{cases} & \\\\ & \\end{cases}" title="{ }">{ }</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\begin{matrix} & \\\\ & \\end{matrix}" title="[ ]">[ ]</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <label class="correct-answer-label" title="Mark as correct">
                             <input type="radio" name="questions[${qIdx}][correct_option]" value="${optCount}" class="form-check-input correct-radio" aria-label="Correct option">
@@ -161,7 +242,10 @@
                     `;
                     optionList.appendChild(row);
                     renumberAll();
-                    row.querySelector('textarea').focus();
+                    const textarea = row.querySelector('[data-math-textarea]');
+                    if (textarea) {
+                        textarea.focus();
+                    }
                 });
 
                 optionList.addEventListener('click', (event) => {
@@ -196,7 +280,67 @@
                     <div class="question-card-body">
                         <div class="question-field-group">
                             <label class="form-label">Question Text <span class="required-mark">*</span></label>
-                            <textarea name="questions[${qIdx}][question_text]" rows="3" class="form-control question-textarea math-input" required></textarea>
+                            <div class="math-input-wrap" data-math-input-wrap>
+                                <textarea name="questions[${qIdx}][question_text]" rows="2" class="form-control" placeholder="Enter question text or math expression..." required data-math-textarea></textarea>
+                                <button type="button" class="math-toolbar-toggle" data-math-toggle aria-label="Math tools" title="Math tools"><i class="bi bi-123"></i></button>
+                                <div class="math-toolbar-popover" data-math-toolbar hidden>
+                                    <div class="math-toolbar-header"><span>Math Tools</span><button type="button" class="btn-close btn-close-sm" data-math-close aria-label="Close"></button></div>
+                                    <div class="math-toolbar-grid">
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\frac{}{}" title="Fraction">a/b</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="^{}" title="Superscript">x²</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="_{}" title="Subscript">x₂</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sqrt{}" title="Square Root">√</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\pi" title="Pi">π</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\alpha" title="Alpha">α</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\beta" title="Beta">β</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\theta" title="Theta">θ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\pm" title="±">±</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\times" title="×">×</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\div" title="÷">÷</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\leq" title="≤">≤</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\geq" title="≥">≥</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\neq" title="≠">≠</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\infty" title="∞">∞</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sum_{}^{}" title="Σ">Σ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\int_{}^{}" title="∫">∫</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\rightarrow" title="→">→</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\left( \\right)" title="( )">( )</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\left[ \\right]" title="[ ]">[ ]</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\left\\{ \\right\\}" title="{ }">{ }</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cdot" title="·">·</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\Delta" title="Δ">Δ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\lambda" title="λ">λ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\mu" title="μ">μ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sigma" title="σ">σ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\omega" title="ω">ω</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\degree" title="°">°</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\angle" title="∠">∠</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\perp" title="⊥">⊥</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\parallel" title="∥">∥</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cong" title="≅">≅</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sim" title="∼">∼</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\in" title="∈">∈</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\notin" title="∉">∉</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\subset" title="⊂">⊂</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cup" title="∪">∪</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cap" title="∩">∩</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\emptyset" title="∅">∅</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\therefore" title="∴">∴</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\because" title="∵">∵</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\forall" title="∀">∀</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\exists" title="∃">∃</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\neg" title="¬">¬</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\land" title="∧">∧</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\lor" title="∨">∨</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\implies" title="⇒">⇒</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\iff" title="⇔">⇔</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\overline{}" title="‾">‾</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\overrightarrow{}" title="→">→</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\begin{cases} & \\\\ & \\end{cases}" title="{ }">{ }</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\begin{matrix} & \\\\ & \\end{matrix}" title="[ ]">[ ]</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="row g-2 question-meta-row">
                             <div class="col-6">
@@ -217,7 +361,67 @@
                                     <div class="option-row" data-option-row>
                                         <label class="option-badge">${letter}</label>
                                         <div class="option-input-wrap">
-                                            <textarea name="questions[${qIdx}][options][]" rows="1" class="form-control math-input" placeholder="Option ${letter}" required></textarea>
+                                            <div class="math-input-wrap" data-math-input-wrap>
+                                                <textarea name="questions[${qIdx}][options][]" rows="1" class="form-control" placeholder="Option ${letter} text or math expression" required data-math-textarea></textarea>
+                                                <button type="button" class="math-toolbar-toggle" data-math-toggle aria-label="Math tools" title="Math tools"><i class="bi bi-123"></i></button>
+                                                <div class="math-toolbar-popover" data-math-toolbar hidden>
+                                                    <div class="math-toolbar-header"><span>Math Tools</span><button type="button" class="btn-close btn-close-sm" data-math-close aria-label="Close"></button></div>
+                                                    <div class="math-toolbar-grid">
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\frac{}{}" title="Fraction">a/b</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="^{}" title="Superscript">x²</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="_{}" title="Subscript">x₂</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\sqrt{}" title="Square Root">√</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\pi" title="Pi">π</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\alpha" title="Alpha">α</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\beta" title="Beta">β</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\theta" title="Theta">θ</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\pm" title="±">±</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\times" title="×">×</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\div" title="÷">÷</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\leq" title="≤">≤</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\geq" title="≥">≥</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\neq" title="≠">≠</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\infty" title="∞">∞</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\sum_{}^{}" title="Σ">Σ</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\int_{}^{}" title="∫">∫</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\rightarrow" title="→">→</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\left( \\right)" title="( )">( )</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\left[ \\right]" title="[ ]">[ ]</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\left\\{ \\right\\}" title="{ }">{ }</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\cdot" title="·">·</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\Delta" title="Δ">Δ</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\lambda" title="λ">λ</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\mu" title="μ">μ</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\sigma" title="σ">σ</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\omega" title="ω">ω</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\degree" title="°">°</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\angle" title="∠">∠</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\perp" title="⊥">⊥</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\parallel" title="∥">∥</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\cong" title="≅">≅</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\sim" title="∼">∼</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\in" title="∈">∈</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\notin" title="∉">∉</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\subset" title="⊂">⊂</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\cup" title="∪">∪</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\cap" title="∩">∩</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\emptyset" title="∅">∅</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\therefore" title="∴">∴</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\because" title="∵">∵</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\forall" title="∀">∀</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\exists" title="∃">∃</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\neg" title="¬">¬</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\land" title="∧">∧</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\lor" title="∨">∨</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\implies" title="⇒">⇒</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\iff" title="⇔">⇔</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\overline{}" title="‾">‾</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\overrightarrow{}" title="→">→</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\begin{cases} & \\\\ & \\end{cases}" title="{ }">{ }</button>
+                                                        <button type="button" class="math-tool-btn" data-math-insert="\\begin{matrix} & \\\\ & \\end{matrix}" title="[ ]">[ ]</button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <label class="correct-answer-label" title="Mark as correct">
                                             <input type="radio" name="questions[${qIdx}][correct_option]" value="${i}" class="form-check-input correct-radio" ${i === 0 ? 'checked' : ''} aria-label="Correct option">
@@ -236,15 +440,78 @@
                         </div>
                         <div class="question-explanation-field">
                             <label class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
-                            <textarea name="questions[${qIdx}][explanation]" rows="1" class="form-control math-input"></textarea>
+                            <div class="math-input-wrap" data-math-input-wrap>
+                                <textarea name="questions[${qIdx}][explanation]" rows="1" class="form-control" placeholder="Enter explanation text or math expression..." data-math-textarea></textarea>
+                                <button type="button" class="math-toolbar-toggle" data-math-toggle aria-label="Math tools" title="Math tools"><i class="bi bi-123"></i></button>
+                                <div class="math-toolbar-popover" data-math-toolbar hidden>
+                                    <div class="math-toolbar-header"><span>Math Tools</span><button type="button" class="btn-close btn-close-sm" data-math-close aria-label="Close"></button></div>
+                                    <div class="math-toolbar-grid">
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\frac{}{}" title="Fraction">a/b</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="^{}" title="Superscript">x²</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="_{}" title="Subscript">x₂</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sqrt{}" title="Square Root">√</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\pi" title="Pi">π</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\alpha" title="Alpha">α</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\beta" title="Beta">β</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\theta" title="Theta">θ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\pm" title="±">±</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\times" title="×">×</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\div" title="÷">÷</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\leq" title="≤">≤</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\geq" title="≥">≥</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\neq" title="≠">≠</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\infty" title="∞">∞</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sum_{}^{}" title="Σ">Σ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\int_{}^{}" title="∫">∫</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\rightarrow" title="→">→</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\left( \\right)" title="( )">( )</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\left[ \\right]" title="[ ]">[ ]</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\left\\{ \\right\\}" title="{ }">{ }</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cdot" title="·">·</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\Delta" title="Δ">Δ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\lambda" title="λ">λ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\mu" title="μ">μ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sigma" title="σ">σ</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\omega" title="ω">ω</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\degree" title="°">°</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\angle" title="∠">∠</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\perp" title="⊥">⊥</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\parallel" title="∥">∥</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cong" title="≅">≅</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\sim" title="∼">∼</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\in" title="∈">∈</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\notin" title="∉">∉</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\subset" title="⊂">⊂</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cup" title="∪">∪</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\cap" title="∩">∩</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\emptyset" title="∅">∅</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\therefore" title="∴">∴</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\because" title="∵">∵</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\forall" title="∀">∀</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\exists" title="∃">∃</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\neg" title="¬">¬</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\land" title="∧">∧</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\lor" title="∨">∨</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\implies" title="⇒">⇒</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\iff" title="⇔">⇔</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\overline{}" title="‾">‾</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\overrightarrow{}" title="→">→</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\begin{cases} & \\\\ & \\end{cases}" title="{ }">{ }</button>
+                                        <button type="button" class="math-tool-btn" data-math-insert="\\begin{matrix} & \\\\ & \\end{matrix}" title="[ ]">[ ]</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
                 list.appendChild(block);
                 wireOptions(block);
                 renumberAll();
-                block.querySelector('textarea').scrollIntoView({behavior: 'smooth', block: 'center'});
-                block.querySelector('textarea').focus();
+                const textarea = block.querySelector('[data-math-textarea]');
+                if (textarea) {
+                    textarea.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    textarea.focus();
+                }
             });
 
             // Remove question
