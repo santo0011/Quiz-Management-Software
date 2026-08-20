@@ -5537,3 +5537,118 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ===== Math Input Toolbar ===== */
+.math-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.math-input-wrap .form-control {
+    padding-right: 42px;
+}
+
+.math-toolbar-toggle {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all .18s ease;
+    z-index: 2;
+    padding: 0;
+}
+
+.math-toolbar-toggle:hover {
+    color: var(--primary);
+    background: #eef4ff;
+    border-color: var(--primary);
+}
+
+.math-toolbar-popover {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 50;
+    width: min(320px, calc(100vw - 24px));
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 16px 40px rgba(20, 32, 54, .16);
+    overflow: hidden;
+}
+
+.math-toolbar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--soft);
+    border-bottom: 1px solid var(--line);
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.math-toolbar-header .btn-close {
+    font-size: 0.6rem;
+}
+
+.math-toolbar-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    padding: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.math-tool-btn {
+    min-height: 34px;
+    padding: 4px 6px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #f8fafc;
+    color: var(--ink);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s ease;
+    display: grid;
+    place-items: center;
+    white-space: nowrap;
+}
+
+.math-tool-btn:hover {
+    background: #eef4ff;
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* Mobile responsive */
+@media (max-width: 576px) {
+    .math-toolbar-popover {
+        width: min(280px, calc(100vw - 20px));
+    }
+
+    .math-toolbar-grid {
+        grid-template-columns: repeat(5, 1fr);
+        max-height: 200px;
+    }
+
+    .math-tool-btn {
+        min-height: 32px;
+        font-size: 0.78rem;
+    }
+}
