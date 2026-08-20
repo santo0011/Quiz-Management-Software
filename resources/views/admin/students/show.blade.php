@@ -7,7 +7,7 @@
     @include('students.partials.show', [
         'prefix' => 'admin',
         'student' => $student,
-        'selectedBranch' => $selectedBranch,
+        'selectedBranch' => $student->branch,
     ])
 
     <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editStudentDrawer{{ $student->id }}" aria-labelledby="editStudentDrawerLabel{{ $student->id }}">
@@ -21,8 +21,8 @@
         <div class="offcanvas-body">
             @include('admin.students.partials.form', [
                 'student' => $student,
-                'selectedBranch' => $selectedBranch,
-                'classes' => $selectedBranch->classes()->orderBy('name')->get(),
+                'selectedBranch' => $student->branch,
+                'classes' => $student->branch->classes()->orderBy('name')->get(),
                 'action' => route('admin.students.update', $student),
                 'method' => 'PUT',
                 'button' => 'Update Student',

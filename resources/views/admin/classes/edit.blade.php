@@ -8,13 +8,13 @@
         <div class="panel-header">
             <div>
                 <h2>Edit Class</h2>
-                <p>Update this class for {{ $selectedBranch->name }}.</p>
+                <p>Update this class for {{ $class->branch->name }}.</p>
             </div>
         </div>
 
         @include('admin.classes.partials.form', [
             'class' => $class,
-            'selectedBranch' => $selectedBranch,
+            'selectedBranch' => $class->branch,
             'action' => route('admin.classes.update', $class),
             'method' => 'PUT',
             'button' => 'Update Class',

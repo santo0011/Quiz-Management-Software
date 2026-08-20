@@ -9,10 +9,25 @@
 
     @php($useOldInput = isset($drawerId) ? old('_drawer') === $drawerId : true)
 
-    <div class="feedback-alert success mb-4">
-        <i class="bi bi-building-check"></i>
-        <div><strong>Active Branch:</strong> {{ $selectedBranch->name }}</div>
-    </div>
+    @if (auth()->user()->role === 'Super Admin' && ! isset($selectedBranch))
+        <div class="mb-4">
+            <label for="branch_id" class="form-label">Branch <span class="required-mark">*</span></label>
+            <select id="branch_id" name="branch_id" class="form-select form-control{{ $useOldInput && $errors->has('branch_id') ? ' is-invalid' : '' }}" required>
+                <option value="">Select branch</option>
+                @foreach ($branches ?? [] as $branch)
+                    <option value="{{ $branch->id }}" @selected($useOldInput && old('branch_id') == $branch->id)>{{ $branch->name }}</option>
+                @endforeach
+            </select>
+            @if ($useOldInput)
+                @error('branch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            @endif
+        </div>
+    @else
+        <div class="feedback-alert success mb-4">
+            <i class="bi bi-building-check"></i>
+            <div><strong>Active Branch:</strong> {{ $selectedBranch->name }}</div>
+        </div>
+    @endif
 
     <div class="mb-4">
         <label for="name" class="form-label">Class Name <span class="required-mark">*</span></label>

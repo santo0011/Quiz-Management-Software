@@ -7,8 +7,8 @@
     <section class="content-panel">
         <div class="panel-header">
             <div>
-                <h2>{{ $selectedBranch->name }} Classes</h2>
-                <p>Classes are managed for the active branch selected in Select Branch.</p>
+                <h2>Classes</h2>
+                <p>Manage classes across all branches.</p>
             </div>
             <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addClassDrawer" aria-controls="addClassDrawer">
                 <i class="bi bi-plus-circle-fill"></i>
@@ -17,6 +17,12 @@
         </div>
 
         <form method="GET" action="{{ route('admin.classes.index') }}" class="filter-bar compact-filter-bar">
+            <select name="branch_id" class="form-select">
+                <option value="">All Branches</option>
+                @foreach ($branches as $branch)
+                    <option value="{{ $branch->id }}" @selected(($filters['branch_id'] ?? '') == $branch->id)>{{ $branch->name }}</option>
+                @endforeach
+            </select>
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search class name">
             <button type="submit" class="btn btn-soft">
                 <i class="bi bi-search"></i>
@@ -83,7 +89,7 @@
         <div class="offcanvas-body">
             @include('admin.classes.partials.form', [
                 'class' => $class,
-                'selectedBranch' => $selectedBranch,
+                'branches' => $branches,
                 'action' => route('admin.classes.store'),
                 'method' => 'POST',
                 'button' => 'Save Class',
@@ -105,7 +111,7 @@
             <div class="offcanvas-body">
                 @include('admin.classes.partials.form', [
                     'class' => $schoolClass,
-                    'selectedBranch' => $selectedBranch,
+                    'selectedBranch' => $schoolClass->branch,
                     'action' => route('admin.classes.update', $schoolClass),
                     'method' => 'PUT',
                     'button' => 'Update Class',

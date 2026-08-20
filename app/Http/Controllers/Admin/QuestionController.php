@@ -9,29 +9,28 @@ use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\Question;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class QuestionController extends Controller
 {
-    public function index(): View|RedirectResponse
+    public function index(Request $request): View
     {
-        $branch = $this->selectedBranch();
-
-        if (! $branch) {
-            return redirect()->route('admin.branch-selection.index')
-                ->with('success', 'Please select a branch first to manage branch-related data.');
-        }
+        $branchId = $request->integer('branch_id') ?: null;
 
         return view('admin.questions.index', [
-            'selectedBranch' => $branch,
-            'exams' => Exam::withCount('questions')->with('schoolClass')->forBranch($branch->id)->latest()->paginate(20),
+            'branches' => Branch::orderBy('name')->get(),
+            'selectedBranchId' => $branchId,
+            'exams' => Exam::withCount('questions')->with('schoolClass')
+                ->when($branchId, fn ($query) => $query->forBranch($branchId))
+                ->latest()->paginate(20),
+            'filters' => $request->only(['branch_id']),
         ]);
     }
 
     public function create(Exam $exam): View
     {
-        $this->authorizeExam($exam);
         abort_if($exam->isPublished(), 403, 'Questions cannot be added to a published exam.');
 
         return view('admin.questions.create', [
@@ -43,7 +42,6 @@ class QuestionController extends Controller
 
     public function store(MultiQuestionRequest $request, Exam $exam): RedirectResponse
     {
-        $this->authorizeExam($exam);
         abort_if($exam->isPublished(), 403, 'Questions cannot be added to a published exam.');
 
         DB::transaction(function () use ($request, $exam): void {
@@ -87,7 +85,6 @@ class QuestionController extends Controller
 
     public function edit(Question $question): View
     {
-        $this->authorizeExam($question->exam);
         abort_if($question->exam->isPublished(), 403, 'Questions cannot be edited in a published exam.');
 
         return view('admin.questions.edit', [
@@ -99,7 +96,6 @@ class QuestionController extends Controller
 
     public function update(QuestionRequest $request, Question $question): RedirectResponse
     {
-        $this->authorizeExam($question->exam);
         abort_if($question->exam->isPublished(), 403, 'Questions cannot be edited in a published exam.');
         $this->saveQuestion($request, $question->exam, $question);
 
@@ -108,7 +104,6 @@ class QuestionController extends Controller
 
     public function destroy(Question $question): RedirectResponse
     {
-        $this->authorizeExam($question->exam);
         abort_if($question->exam->isPublished(), 403, 'Questions cannot be deleted from a published exam.');
         $exam = $question->exam;
         $question->delete();
@@ -136,17 +131,4 @@ class QuestionController extends Controller
         });
     }
 
-    private function selectedBranch(): ?Branch
-    {
-        $branchId = session('admin_selected_branch_id');
-
-        return $branchId ? Branch::find($branchId) : null;
-    }
-
-    private function authorizeExam(Exam $exam): void
-    {
-        $branch = $this->selectedBranch();
-
-        abort_if(! $branch || $exam->branch_id !== $branch->id, 403, 'This exam is not in the selected branch.');
-    }
 }

@@ -7,8 +7,8 @@
     <section class="content-panel">
         <div class="panel-header">
             <div>
-                <h2>{{ $selectedBranch->name }} Exams</h2>
-                <p>Create, schedule, publish, and monitor exams for the active branch.</p>
+                <h2>Exams</h2>
+                <p>Create, schedule, publish, and monitor exams across all branches.</p>
             </div>
             <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addExamDrawer">
                 <i class="bi bi-plus-circle-fill"></i>
@@ -17,6 +17,12 @@
         </div>
 
         <form method="GET" action="{{ route('admin.exams.index') }}" class="filter-bar compact-filter-bar">
+            <select name="branch_id" class="form-select">
+                <option value="">All Branches</option>
+                @foreach ($branches as $branch)
+                    <option value="{{ $branch->id }}" @selected(($filters['branch_id'] ?? '') == $branch->id)>{{ $branch->name }}</option>
+                @endforeach
+            </select>
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search exam title">
             <select name="status" class="form-select form-control">
                 <option value="">All statuses</option>
@@ -41,6 +47,8 @@
         <div class="offcanvas-body">
             @include('exams.partials.form', [
                 'prefix' => 'admin',
+                'branches' => $branches,
+                'selectedBranchId' => $selectedBranchId,
                 'action' => route('admin.exams.store'),
                 'method' => 'POST',
                 'button' => 'Save Exam',

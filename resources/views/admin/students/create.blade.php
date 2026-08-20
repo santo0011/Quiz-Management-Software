@@ -8,13 +8,13 @@
         <div class="panel-header">
             <div>
                 <h2>New Student</h2>
-                <p>Add a student under the currently selected branch.</p>
+                <p>Add a student under a branch.</p>
             </div>
         </div>
 
         @include('admin.students.partials.form', [
             'student' => $student,
-            'selectedBranch' => $selectedBranch,
+            'branches' => $branches,
             'classes' => $classes,
             'action' => route('admin.students.store'),
             'method' => 'POST',

@@ -12,64 +12,43 @@ use Illuminate\View\View;
 
 class SchoolClassController extends Controller
 {
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request): View
     {
-        $branch = $this->selectedBranch();
-
-        if (! $branch) {
-            return redirect()->route('admin.branch-selection.index')
-                ->with('success', 'Please select a branch first to manage branch-related data.');
-        }
+        $branchId = $request->integer('branch_id') ?: null;
 
         $classes = SchoolClass::with('branch')
-            ->where('branch_id', $branch->id)
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->when($request->filled('search'), fn ($query) => $query->where('name', 'like', '%'.$request->string('search')->toString().'%'))
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
         return view('admin.classes.index', [
-            'selectedBranch' => $branch,
+            'branches' => Branch::orderBy('name')->get(),
+            'selectedBranchId' => $branchId,
             'class' => new SchoolClass,
             'classes' => $classes,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'branch_id']),
         ]);
     }
 
-    public function create(): View|RedirectResponse
+    public function create(): View
     {
-        $branch = $this->selectedBranch();
-
-        if (! $branch) {
-            return redirect()->route('admin.branch-selection.index')
-                ->with('success', 'Please select a branch first to manage branch-related data.');
-        }
-
         return view('admin.classes.create', [
-            'selectedBranch' => $branch,
+            'branches' => Branch::orderBy('name')->get(),
             'class' => new SchoolClass,
         ]);
     }
 
     public function store(SchoolClassRequest $request): RedirectResponse
     {
-        $branch = $this->selectedBranch();
-
-        if (! $branch) {
-            return redirect()->route('admin.branch-selection.index');
-        }
-
-        SchoolClass::create($request->validated() + [
-            'branch_id' => $branch->id,
-        ]);
+        SchoolClass::create($request->validated());
 
         return redirect()->route('admin.classes.index')->with('success', 'Class added successfully.');
     }
 
     public function show(SchoolClass $class): View
     {
-        $this->authorizeSelectedBranch($class);
-
         return view('admin.classes.show', [
             'class' => $class->load('branch'),
         ]);
@@ -77,8 +56,6 @@ class SchoolClassController extends Controller
 
     public function edit(SchoolClass $class): View
     {
-        $this->authorizeSelectedBranch($class);
-
         return view('admin.classes.edit', [
             'selectedBranch' => $class->branch,
             'class' => $class,
@@ -87,8 +64,6 @@ class SchoolClassController extends Controller
 
     public function update(SchoolClassRequest $request, SchoolClass $class): RedirectResponse
     {
-        $this->authorizeSelectedBranch($class);
-
         $class->update($request->validated());
 
         return redirect()->route('admin.classes.index')->with('success', 'Class updated successfully.');
@@ -96,8 +71,6 @@ class SchoolClassController extends Controller
 
     public function destroy(SchoolClass $class): RedirectResponse
     {
-        $this->authorizeSelectedBranch($class);
-
         $hasRelatedData = $class->students()->exists() || $class->exams()->exists();
 
         if ($hasRelatedData) {
@@ -108,19 +81,5 @@ class SchoolClassController extends Controller
         $class->delete();
 
         return redirect()->route('admin.classes.index')->with('success', 'Class deleted successfully.');
-    }
-
-    private function selectedBranch(): ?Branch
-    {
-        $branchId = session('admin_selected_branch_id');
-
-        return $branchId ? Branch::find($branchId) : null;
-    }
-
-    private function authorizeSelectedBranch(SchoolClass $class): void
-    {
-        $branch = $this->selectedBranch();
-
-        abort_if(! $branch || $class->branch_id !== $branch->id, 403, 'This class is not in the selected branch.');
     }
 }

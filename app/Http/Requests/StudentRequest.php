@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Branch;
 use App\Models\SchoolClass;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,10 +27,12 @@ class StudentRequest extends FormRequest
     public function rules(): array
     {
         $studentId = $this->route('student')?->id;
+        $isBranch = $this->user()?->role === 'Branch';
 
         return [
             'student_name' => ['required', 'string', 'max:255'],
             'guardian_name' => ['required', 'string', 'max:255'],
+            'branch_id' => $isBranch ? ['nullable'] : ['sometimes', 'required', 'exists:branches,id'],
             'class_id' => ['nullable', 'required_without:class', 'exists:school_classes,id'],
             'class' => ['nullable', 'required_without:class_id', 'string', 'max:100'],
             'phone_number' => ['required', 'string', 'max:30'],
@@ -46,7 +49,7 @@ class StudentRequest extends FormRequest
 
             $targetBranchId = $this->user()?->role === 'Branch'
                 ? $this->user()?->branch_id
-                : ($this->route('student')?->branch_id ?: $this->session()->get('admin_selected_branch_id'));
+                : ($this->route('student')?->branch_id ?: $this->input('branch_id'));
 
             $classBelongsToBranch = SchoolClass::whereKey($this->input('class_id'))
                 ->where('branch_id', $targetBranchId)

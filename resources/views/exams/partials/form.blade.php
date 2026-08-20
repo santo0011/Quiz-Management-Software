@@ -1,6 +1,8 @@
 @php($prefix = $prefix ?? 'admin')
 @php($contextBranch = $selectedBranch ?? $branch)
 @php($isPublished = $exam->exists && $exam->isPublished())
+@php($isSuperAdmin = auth()->user()->role === 'Super Admin')
+@php($isNewExam = ! $exam->exists)
 
 @if ($isPublished)
     <div class="feedback-alert info mb-4">
@@ -20,6 +22,40 @@
     <fieldset {{ $isPublished ? 'disabled' : '' }}>
 
     <div class="exam-form-sections">
+        @if ($isSuperAdmin && $isNewExam)
+            <section class="exam-form-section">
+                <div class="exam-form-section-title">
+                    <span>00</span>
+                    <h3>Branch</h3>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="branch_id" class="form-label">Branch <span class="required-mark">*</span></label>
+                        <select id="branch_id" name="branch_id" class="form-select form-control @error('branch_id') is-invalid @enderror" required>
+                            <option value="">Select branch</option>
+                            @foreach ($branches ?? [] as $branchOption)
+                                <option value="{{ $branchOption->id }}" @selected(old('branch_id', $selectedBranchId ?? '') == $branchOption->id)>{{ $branchOption->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('branch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+            </section>
+        @elseif ($isSuperAdmin && ! $isNewExam)
+            <section class="exam-form-section">
+                <div class="exam-form-section-title">
+                    <span>00</span>
+                    <h3>Branch</h3>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Branch</label>
+                        <input type="text" class="form-control" value="{{ $contextBranch->name }}" disabled>
+                    </div>
+                </div>
+            </section>
+        @endif
+
         <section class="exam-form-section">
             <div class="exam-form-section-title">
                 <span>01</span>
@@ -94,13 +130,13 @@
             </div>
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="starts_at" class="form-label">Start Date & Time</label>
-                    <input id="starts_at" type="datetime-local" name="starts_at" value="{{ old('starts_at', $exam->starts_at?->format('Y-m-d\\TH:i')) }}" class="form-control @error('starts_at') is-invalid @enderror">
+                    <label for="starts_at" class="form-label">Start Date & Time <span class="required-mark">*</span></label>
+                    <input id="starts_at" type="datetime-local" name="starts_at" value="{{ old('starts_at', $exam->starts_at?->format('Y-m-d\\TH:i')) }}" class="form-control @error('starts_at') is-invalid @enderror" required>
                     @error('starts_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6">
-                    <label for="ends_at" class="form-label">End Date & Time</label>
-                    <input id="ends_at" type="datetime-local" name="ends_at" value="{{ old('ends_at', $exam->ends_at?->format('Y-m-d\\TH:i')) }}" class="form-control @error('ends_at') is-invalid @enderror">
+                    <label for="ends_at" class="form-label">End Date & Time <span class="required-mark">*</span></label>
+                    <input id="ends_at" type="datetime-local" name="ends_at" value="{{ old('ends_at', $exam->ends_at?->format('Y-m-d\\TH:i')) }}" class="form-control @error('ends_at') is-invalid @enderror" required>
                     @error('ends_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             </div>
@@ -133,22 +169,6 @@
             </div>
         </section>
 
-        <section class="exam-form-section">
-            <div class="exam-form-section-title">
-                <span>06</span>
-                <h3>Publish/Status</h3>
-            </div>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="status" class="form-label">Status</label>
-                    <select id="status" name="status" class="form-select form-control">
-                        @foreach (['draft' => 'Draft', 'published' => 'Published', 'closed' => 'Closed'] as $value => $label)
-                            <option value="{{ $value }}" @selected(old('status', $exam->status ?? 'draft') === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-        </section>
     </div>
 
     </fieldset>
@@ -166,7 +186,11 @@
 
 @push('scripts')
     <script>
-        // Total Marks is now manually entered by the user.
-        // No auto-calculation needed.
+        // Disable mouse-wheel number changes on all number input fields.
+        document.querySelectorAll('input[type="number"]').forEach(function (input) {
+            input.addEventListener('wheel', function (event) {
+                event.preventDefault();
+            }, { passive: false });
+        });
     </script>
 @endpush

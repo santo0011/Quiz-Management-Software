@@ -2,10 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Exam;
 use App\Models\SchoolClass;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class ExamRequest extends FormRequest
 {
@@ -22,7 +20,7 @@ class ExamRequest extends FormRequest
         }
 
         if ($this->user()?->role === 'Super Admin') {
-            return ! $exam || $exam->branch_id === $this->session()->get('admin_selected_branch_id');
+            return true;
         }
 
         return false;
@@ -30,22 +28,24 @@ class ExamRequest extends FormRequest
 
     public function rules(): array
     {
+        $isBranch = $this->user()?->role === 'Branch';
+
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'branch_id' => $isBranch ? ['nullable'] : ['sometimes', 'required', 'exists:branches,id'],
             'school_class_id' => ['required', 'exists:school_classes,id'],
             'marks_per_question' => ['required', 'numeric', 'min:0.01', 'max:9999.99'],
             'total_marks' => ['required', 'numeric', 'min:1'],
             'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
-            'starts_at' => ['nullable', 'date'],
-            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'passing_marks' => ['nullable', 'integer', 'min:0'],
             'maximum_attempts' => ['required', 'integer', 'min:1', 'max:20'],
             'randomize_questions' => ['nullable', 'boolean'],
             'randomize_answers' => ['nullable', 'boolean'],
             'negative_marking_enabled' => ['nullable', 'boolean'],
             'negative_marks' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['required', Rule::in([Exam::STATUS_DRAFT, Exam::STATUS_PUBLISHED, Exam::STATUS_CLOSED])],
         ];
     }
 
@@ -54,7 +54,7 @@ class ExamRequest extends FormRequest
         $validator->after(function ($validator): void {
             $branchId = $this->user()?->role === 'Branch'
                 ? $this->user()?->branch_id
-                : $this->session()->get('admin_selected_branch_id');
+                : ($this->route('exam')?->branch_id ?: $this->input('branch_id'));
 
             if (! $branchId) {
                 $validator->errors()->add('school_class_id', 'Please select a branch first to manage branch-related data.');

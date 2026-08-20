@@ -8,11 +8,12 @@
         <div class="panel-header">
             <div>
                 <h2>{{ $exam->title }}</h2>
-                <p>Update exam conditions for {{ $selectedBranch->name }}.</p>
+                <p>Update exam conditions for {{ $exam->branch->name }}.</p>
             </div>
         </div>
         @include('exams.partials.form', [
             'prefix' => 'admin',
+            'selectedBranch' => $exam->branch,
             'action' => route('admin.exams.update', $exam),
             'method' => 'PUT',
             'button' => 'Update Exam',

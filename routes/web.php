@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Admin\BranchController;
-use App\Http\Controllers\Admin\BranchSelectionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
 use App\Http\Controllers\Admin\PasswordController as AdminPasswordController;
@@ -47,9 +46,6 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:web
 
 Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-    Route::get('/select-branch', [BranchSelectionController::class, 'index'])->name('branch-selection.index');
-    Route::post('/select-branch', [BranchSelectionController::class, 'store'])->name('branch-selection.store');
-    Route::delete('/select-branch', [BranchSelectionController::class, 'clear'])->name('branch-selection.clear');
     Route::get('/password', [AdminPasswordController::class, 'edit'])->name('password.edit');
     Route::put('/password', [AdminPasswordController::class, 'update'])->name('password.update');
     Route::resource('branches', BranchController::class);

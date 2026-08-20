@@ -8,13 +8,13 @@
         <div class="panel-header">
             <div>
                 <h2>New Class</h2>
-                <p>Add a class under {{ $selectedBranch->name }}.</p>
+                <p>Add a class under a branch.</p>
             </div>
         </div>
 
         @include('admin.classes.partials.form', [
             'class' => $class,
-            'selectedBranch' => $selectedBranch,
+            'branches' => $branches,
             'action' => route('admin.classes.store'),
             'method' => 'POST',
             'button' => 'Create Class',

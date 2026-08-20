@@ -9,15 +9,30 @@
 
     @php($useOldInput = isset($drawerId) ? old('_drawer') === $drawerId : true)
 
-    <div class="feedback-alert success mb-4">
-        <i class="bi bi-building-check"></i>
-        <div><strong>Current Branch:</strong> {{ $selectedBranch->name }}</div>
-    </div>
+    @if (auth()->user()->role === 'Super Admin' && ! isset($selectedBranch))
+        <div class="mb-3">
+            <label for="branch_id" class="form-label">Branch <span class="required-mark">*</span></label>
+            <select id="branch_id" name="branch_id" class="form-select form-control{{ $useOldInput && $errors->has('branch_id') ? ' is-invalid' : '' }}" required data-branch-select>
+                <option value="">Select branch</option>
+                @foreach ($branches ?? [] as $branch)
+                    <option value="{{ $branch->id }}" @selected($useOldInput && old('branch_id') == $branch->id)>{{ $branch->name }}</option>
+                @endforeach
+            </select>
+            @if ($useOldInput)
+                @error('branch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            @endif
+        </div>
+    @else
+        <div class="feedback-alert success mb-4">
+            <i class="bi bi-building-check"></i>
+            <div><strong>Current Branch:</strong> {{ $selectedBranch->name }}</div>
+        </div>
 
-    <div class="mb-3">
-        <label for="branch_display" class="form-label">Branch <span class="required-mark">*</span></label>
-        <input id="branch_display" type="text" class="form-control" value="{{ $selectedBranch->name }}" disabled>
-    </div>
+        <div class="mb-3">
+            <label for="branch_display" class="form-label">Branch <span class="required-mark">*</span></label>
+            <input id="branch_display" type="text" class="form-control" value="{{ $selectedBranch->name }}" disabled>
+        </div>
+    @endif
 
     <div class="row g-3">
         <div class="col-md-6">
@@ -38,7 +53,7 @@
             <label for="class_id" class="form-label">Class <span class="required-mark">*</span></label>
             <select id="class_id" name="class_id" class="form-select form-control{{ $useOldInput && $errors->has('class_id') ? ' is-invalid' : '' }}" required data-class-select data-selected-class="{{ $useOldInput ? old('class_id', $student->class_id) : $student->class_id }}">
                 <option value="">Select class</option>
-                @foreach (($classes ?? $selectedBranch->classes()->orderBy('name')->get()) as $class)
+                @foreach (($classes ?? ($selectedBranch?->classes()->orderBy('name')->get() ?? collect())) as $class)
                     <option value="{{ $class->id }}" @selected(($useOldInput ? old('class_id', $student->class_id) : $student->class_id) == $class->id)>{{ $class->name }}</option>
                 @endforeach
             </select>
