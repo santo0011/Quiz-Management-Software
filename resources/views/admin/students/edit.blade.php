@@ -8,13 +8,13 @@
         <div class="panel-header">
             <div>
                 <h2>Edit Student</h2>
-                <p>Update student information for {{ $selectedBranch->name }}.</p>
+                <p>Update student information for {{ $student->branch->name }}.</p>
             </div>
         </div>
 
         @include('admin.students.partials.form', [
             'student' => $student,
-            'selectedBranch' => $selectedBranch,
+            'selectedBranch' => $student->branch,
             'classes' => $classes,
             'action' => route('admin.students.update', $student),
             'method' => 'PUT',

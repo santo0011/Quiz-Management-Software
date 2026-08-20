@@ -24,12 +24,10 @@
                     <h1>@yield('page-title', 'Dashboard')</h1>
                 </div>
 
-                @php($currentBranch = session('admin_selected_branch_id') ? \App\Models\Branch::find(session('admin_selected_branch_id')) : null)
-
                 <div class="topbar-actions">
-                    <div class="current-branch-pill" aria-label="Current branch">
-                        <i class="bi bi-building-check"></i>
-                        <span>Current Branch: {{ $currentBranch?->name ?? 'Not selected' }}</span>
+                    <div class="current-branch-pill" aria-label="Branch scope">
+                        <i class="bi bi-diagram-3-fill"></i>
+                        <span>All Branches</span>
                     </div>
                     <div class="admin-user">
                     <div class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
@@ -176,6 +174,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     @include('partials.mobile-tables')
+    <script>
+        window.quizcoreBranchClasses = @json(\App\Models\Branch::with('classes')->get()->mapWithKeys(fn ($branch) => [$branch->id => $branch->classes->map(fn ($class) => ['id' => $class->id, 'name' => $class->name])->toArray()])->toArray());
+    </script>
     <script>
         document.querySelectorAll('.admin-toast').forEach((toastEl) => {
             bootstrap.Toast.getOrCreateInstance(toastEl).show();

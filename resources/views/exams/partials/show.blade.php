@@ -192,11 +192,11 @@
                 <i class="bi bi-patch-question"></i>
             </div>
             <h3>No questions added</h3>
-            <p>Add at least one MCQ before publishing this exam to students.</p>
-            <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-primary mt-3">
+            <!-- <p>Add at least one MCQ before publishing this exam to students.</p> -->
+            <!-- <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-primary mt-3">
                 <i class="bi bi-patch-plus-fill"></i>
                 Add First Question
-            </a>
+            </a> -->
         </div>
     @else
         <div class="question-list">

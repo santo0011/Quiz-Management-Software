@@ -7,13 +7,13 @@
     <div class="dashboard-hero">
         <div>
             <span>Operational Overview</span>
-            <h2>Quiz Management is ready for branch-based operations.</h2>
-            <p class="mobile-hide">Select a branch to manage branch-specific students now, with exams, questions, and results ready for later modules.</p>
+            <h2>Quiz Management is ready for all-branch operations.</h2>
+            <p class="mobile-hide">Manage students, exams, questions, and results across all branches from one place.</p>
         </div>
     </div>
 
     <div class="row g-3 mb-4 dashboard-metric-row">
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="metric-card dashboard-metric-card metric-primary">
                 <i class="bi bi-diagram-3-fill"></i>
                 <div>
@@ -22,21 +22,12 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="metric-card dashboard-metric-card metric-success">
                 <i class="bi bi-people-fill"></i>
                 <div>
-                    <span>Students</span>
+                    <span>Total Students</span>
                     <strong>{{ $studentCount }}</strong>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="metric-card dashboard-metric-card metric-accent">
-                <i class="bi bi-building-check"></i>
-                <div>
-                    <span>{{ $selectedBranch ? 'Selected Branch Students' : 'Selected Branch' }}</span>
-                    <strong>{{ $selectedBranch ? $selectedBranchStudentCount : 'None' }}</strong>
                 </div>
             </div>
         </div>

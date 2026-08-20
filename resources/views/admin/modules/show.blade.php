@@ -14,15 +14,15 @@
     <section class="content-panel">
         <div class="panel-header">
             <div>
-                <h2>{{ $selectedBranch->name }} {{ $module }}</h2>
-                <p>{{ $module }} will use the active branch selected in Select Branch.</p>
+                <h2>{{ $module }}</h2>
+                <p>Manage {{ strtolower($module) }} across all branches.</p>
             </div>
         </div>
 
         <div class="empty-state">
             <i class="bi {{ $icon }}"></i>
             <h3>{{ $module }} module ready</h3>
-            <p>This area is scoped to {{ $selectedBranch->name }}.</p>
+            <p>This area is available across all branches.</p>
         </div>
     </section>
 @endsection

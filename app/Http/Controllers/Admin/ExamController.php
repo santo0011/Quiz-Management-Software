@@ -13,17 +13,12 @@ use Illuminate\View\View;
 
 class ExamController extends Controller
 {
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request): View
     {
-        $branch = $this->selectedBranch();
-
-        if (! $branch) {
-            return redirect()->route('admin.branch-selection.index')
-                ->with('success', 'Please select a branch first to manage branch-related data.');
-        }
+        $branchId = $request->integer('branch_id') ?: null;
 
         $exams = Exam::with(['schoolClass', 'questions'])
-            ->forBranch($branch->id)
+            ->when($branchId, fn ($query) => $query->forBranch($branchId))
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->latest()
@@ -31,28 +26,26 @@ class ExamController extends Controller
             ->withQueryString();
 
         return view('admin.exams.index', [
-            'selectedBranch' => $branch,
+            'branches' => Branch::orderBy('name')->get(),
+            'selectedBranchId' => $branchId,
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
-            'classes' => SchoolClass::where('branch_id', $branch->id)->orderBy('name')->get(),
-            'filters' => $request->only(['search', 'status']),
+            'classes' => SchoolClass::when($branchId, fn ($query) => $query->where('branch_id', $branchId))->orderBy('name')->get(),
+            'filters' => $request->only(['search', 'status', 'branch_id']),
         ]);
     }
 
     public function store(ExamRequest $request): RedirectResponse
     {
-        $branch = $this->selectedBranch();
-        abort_if(! $branch, 403);
-
-        Exam::create($request->validated() + ['branch_id' => $branch->id]);
+        Exam::create($request->validated() + [
+            'status' => Exam::STATUS_DRAFT,
+        ]);
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam created successfully.');
     }
 
     public function show(Exam $exam): View
     {
-        $this->authorizeExam($exam);
-
         return view('admin.exams.show', [
             'selectedBranch' => $exam->branch,
             'exam' => $exam->load(['schoolClass', 'questions.options']),
@@ -61,7 +54,6 @@ class ExamController extends Controller
 
     public function edit(Exam $exam): View
     {
-        $this->authorizeExam($exam);
         abort_if($exam->isPublished(), 403, 'Published exams cannot be edited.');
 
         return view('admin.exams.edit', [
@@ -73,7 +65,6 @@ class ExamController extends Controller
 
     public function update(ExamRequest $request, Exam $exam): RedirectResponse
     {
-        $this->authorizeExam($exam);
         abort_if($exam->isPublished(), 403, 'Published exams cannot be edited.');
 
         $exam->update($request->validated());
@@ -83,8 +74,6 @@ class ExamController extends Controller
 
     public function destroy(Exam $exam): RedirectResponse
     {
-        $this->authorizeExam($exam);
-
         if ($exam->isPublished()) {
             return redirect()->route('admin.exams.index')
                 ->with('error', 'Published exams cannot be deleted. The exam is locked.');
@@ -102,8 +91,6 @@ class ExamController extends Controller
 
     public function publish(Exam $exam): RedirectResponse|\Illuminate\Http\JsonResponse
     {
-        $this->authorizeExam($exam);
-
         if ($exam->isPublished()) {
             if ($this->wantsJson()) {
                 return response()->json(['message' => 'This exam is already published.'], 422);
@@ -119,19 +106,5 @@ class ExamController extends Controller
         }
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam published successfully.');
-    }
-
-    private function selectedBranch(): ?Branch
-    {
-        $branchId = session('admin_selected_branch_id');
-
-        return $branchId ? Branch::find($branchId) : null;
-    }
-
-    private function authorizeExam(Exam $exam): void
-    {
-        $branch = $this->selectedBranch();
-
-        abort_if(! $branch || $exam->branch_id !== $branch->id, 403, 'This exam is not in the selected branch.');
     }
 }

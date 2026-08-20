@@ -39,7 +39,10 @@ class ExamController extends Controller
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
-        Exam::create($request->validated() + ['branch_id' => $branch->id]);
+        Exam::create($request->validated() + [
+            'branch_id' => $branch->id,
+            'status' => Exam::STATUS_DRAFT,
+        ]);
 
         return redirect()->route('branch.exams.index')->with('success', 'Exam created successfully.');
     }

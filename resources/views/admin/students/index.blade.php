@@ -7,8 +7,8 @@
     <section class="content-panel">
         <div class="panel-header">
             <div>
-                <h2>{{ $selectedBranch->name }} Students</h2>
-                <p>Current Branch: {{ $selectedBranch->name }}</p>
+                <h2>Students</h2>
+                <p>Manage students across all branches.</p>
             </div>
             <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addStudentDrawer" aria-controls="addStudentDrawer">
                 <i class="bi bi-person-plus-fill"></i>
@@ -17,6 +17,12 @@
         </div>
 
         <form method="GET" action="{{ route('admin.students.index') }}" class="filter-bar">
+            <select name="branch_id" class="form-select">
+                <option value="">All Branches</option>
+                @foreach ($branches as $branch)
+                    <option value="{{ $branch->id }}" @selected(($filters['branch_id'] ?? '') == $branch->id)>{{ $branch->name }}</option>
+                @endforeach
+            </select>
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search name, guardian, email, phone">
             <select name="class" class="form-select">
                 <option value="">All classes</option>
@@ -44,7 +50,7 @@
         <div class="offcanvas-body">
             @include('admin.students.partials.form', [
                 'student' => $student,
-                'selectedBranch' => $selectedBranch,
+                'branches' => $branches,
                 'action' => route('admin.students.store'),
                 'method' => 'POST',
                 'button' => 'Save Student',
@@ -64,16 +70,16 @@
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">
-                @include('admin.students.partials.form', [
-                    'student' => $studentRecord,
-                    'selectedBranch' => $selectedBranch,
-                    'classes' => $classes,
-                    'action' => route('admin.students.update', $studentRecord),
-                    'method' => 'PUT',
-                    'button' => 'Update Student',
-                    'drawer' => true,
-                    'drawerId' => 'editStudentDrawer'.$studentRecord->id,
-                ])
+            @include('admin.students.partials.form', [
+                'student' => $studentRecord,
+                'selectedBranch' => $studentRecord->branch,
+                'classes' => $studentRecord->branch->classes()->orderBy('name')->get(),
+                'action' => route('admin.students.update', $studentRecord),
+                'method' => 'PUT',
+                'button' => 'Update Student',
+                'drawer' => true,
+                'drawerId' => 'editStudentDrawer'.$studentRecord->id,
+            ])
             </div>
         </div>
     @endforeach

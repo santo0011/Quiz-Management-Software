@@ -11,18 +11,10 @@
 
 <nav class="sidebar-nav">
     @foreach ($links as $link)
-        @php($isBranchLocked = ($link['requiresBranch'] ?? false) && ! $hasSelectedBranch)
-        @if ($link['route'] && ! $isBranchLocked)
-            <a href="{{ route($link['route']) }}" class="{{ request()->routeIs($link['active']) ? 'active' : '' }}">
-                <i class="bi {{ $link['icon'] }}"></i>
-                <span>{{ $link['label'] }}</span>
-            </a>
-        @else
-            <span class="disabled" role="link" aria-disabled="true">
-                <i class="bi {{ $link['icon'] }}"></i>
-                <span>{{ $link['label'] }}</span>
-            </span>
-        @endif
+        <a href="{{ route($link['route']) }}" class="{{ request()->routeIs($link['active']) ? 'active' : '' }}">
+            <i class="bi {{ $link['icon'] }}"></i>
+            <span>{{ $link['label'] }}</span>
+        </a>
     @endforeach
 </nav>
 
