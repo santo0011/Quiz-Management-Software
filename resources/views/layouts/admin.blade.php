@@ -338,7 +338,7 @@
         const classOptionsByBranch = window.quizcoreBranchClasses || {};
 
         if (branchSelect && classSelect) {
-            const classHint = classSelect.closest('.col-md-6')?.querySelector('.empty-class-hint');
+            const classHint = classSelect.closest('.col-md-6, .col-12')?.querySelector('.empty-class-hint');
 
             const renderClassOptions = () => {
                 const selectedClass = classSelect.dataset.selectedClass || classSelect.value;
