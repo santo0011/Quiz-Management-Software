@@ -7,7 +7,6 @@
     <title>@yield('title', 'Admin Panel') - {{ config('app.name') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/mathlive@0.101.0/dist/mathlive.min.css" rel="stylesheet">
     <link href="{{ asset('css/admin.css') }}" rel="stylesheet">
 </head>
 <body class="super-admin-panel">
@@ -174,7 +173,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mathlive@0.101.0/dist/mathlive.min.js"></script>
     @include('partials.mobile-tables')
     <script>
         window.quizcoreBranchClasses = @json(\App\Models\Branch::with('classes')->get()->mapWithKeys(fn ($branch) => [$branch->id => $branch->classes->map(fn ($class) => ['id' => $class->id, 'name' => $class->name])->toArray()])->toArray());
