@@ -30,7 +30,9 @@ class ExamController extends Controller
             'selectedBranchId' => $branchId,
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
-            'classes' => SchoolClass::when($branchId, fn ($query) => $query->where('branch_id', $branchId))->orderBy('name')->get(),
+            'classes' => $branchId
+                ? SchoolClass::where('branch_id', $branchId)->orderBy('name')->get()
+                : collect(),
             'filters' => $request->only(['search', 'status', 'branch_id']),
         ]);
     }
