@@ -134,7 +134,7 @@
             const renumberOptions = () => {
                 list.querySelectorAll('[data-option-row]').forEach((row, index) => {
                     const badge = row.querySelector('.option-badge');
-                    const input = row.querySelector('textarea, math-field');
+                    const input = row.querySelector('textarea');
                     badge.textContent = LETTERS[index % 26];
                     if (input) {
                         input.placeholder = 'Option ' + LETTERS[index % 26];
@@ -146,17 +146,18 @@
             form.querySelector('[data-add-option]')?.addEventListener('click', () => {
                 const count = list.querySelectorAll('[data-option-row]').length;
                 const letter = LETTERS[count % 26];
+
+                // Clone an existing, already-initialized math input so the new
+                // option gets the identical toolbar without duplicating its markup.
+                const templateWrap = form.querySelector('[data-math-input-wrap]');
+                const wrapHtml = templateWrap ? templateWrap.outerHTML : '';
+
                 const row = document.createElement('div');
                 row.className = 'option-row';
                 row.setAttribute('data-option-row', '');
                 row.innerHTML = `
                     <label class="option-badge">${letter}</label>
-                    <div class="option-input-wrap">
-                        <div class="math-editor-wrap" data-math-editor>
-                            <math-field class="math-field-editor" data-math-field data-math-name="options[]" data-math-required="true" data-math-placeholder="Option ${letter} text or math expression" data-math-rows="1" virtual-keyboard-mode="manual" smart-mode="true"></math-field>
-                            <input type="hidden" name="options[]" value="" data-math-hidden>
-                        </div>
-                    </div>
+                    <div class="option-input-wrap">${wrapHtml}</div>
                     <label class="correct-answer-label" title="Mark as correct">
                         <input type="radio" name="correct_option" value="${count}" class="form-check-input correct-radio" aria-label="Correct option">
                         <span class="correct-answer-mark"><i class="bi bi-check-lg"></i></span>
@@ -165,11 +166,27 @@
                         <i class="bi bi-x-lg"></i>
                     </button>
                 `;
+
+                const wrap = row.querySelector('[data-math-input-wrap]');
+                if (wrap) {
+                    delete wrap.dataset.initialized;
+                    wrap.removeAttribute('data-math-id');
+                    wrap.querySelector('[data-math-toolbar]')?.setAttribute('hidden', '');
+                    const textarea = wrap.querySelector('[data-math-textarea]');
+                    if (textarea) {
+                        textarea.removeAttribute('id');
+                        textarea.name = 'options[]';
+                        textarea.value = '';
+                        textarea.placeholder = 'Option ' + letter + ' text or math expression';
+                        textarea.required = true;
+                    }
+                }
+
                 list.appendChild(row);
                 renumberOptions();
-                const mathField = row.querySelector('math-field');
-                if (mathField) {
-                    mathField.focus();
+                const textarea = row.querySelector('textarea');
+                if (textarea) {
+                    textarea.focus();
                 }
             });
 

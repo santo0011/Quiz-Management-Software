@@ -21,7 +21,7 @@ class QuestionRequest extends FormRequest
         }
 
         if ($this->user()?->role === 'Super Admin') {
-            return $exam->branch_id === $this->session()->get('admin_selected_branch_id');
+            return true;
         }
 
         return false;
