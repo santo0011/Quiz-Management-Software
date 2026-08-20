@@ -42,6 +42,7 @@
                     <thead>
                         <tr>
                             <th>Class Name</th>
+                            <th>Branch</th>
                             <th>Created</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -50,6 +51,16 @@
                         @foreach ($classes as $schoolClass)
                             <tr>
                                 <td><strong>{{ $schoolClass->name }}</strong></td>
+                                <td>
+                                    @if ($schoolClass->isGlobal())
+                                        <span class="status-badge status-published">
+                                            <i class="bi bi-globe2"></i>
+                                            All Branches
+                                        </span>
+                                    @else
+                                        {{ $schoolClass->branch?->name }}
+                                    @endif
+                                </td>
                                 <td>{{ $schoolClass->created_at->format('d M Y, h:i A') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">

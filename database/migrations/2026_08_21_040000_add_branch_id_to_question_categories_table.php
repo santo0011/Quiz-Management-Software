@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('question_categories', function (Blueprint $table) {
+            $table->dropUnique('question_categories_name_unique');
+            $table->foreignId('branch_id')->after('id')->constrained()->cascadeOnDelete();
+            $table->unique(['branch_id', 'name']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('question_categories', function (Blueprint $table) {
+            $table->dropUnique(['branch_id', 'name']);
+            $table->dropConstrainedForeignId('branch_id');
+            $table->unique('name');
+        });
+    }
+};

@@ -113,6 +113,14 @@ body {
     font-weight: 800;
 }
 
+.brand-logo {
+    flex: 0 0 44px;
+    max-width: 44px;
+    max-height: 44px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
 .brand-copy {
     min-width: 0;
 }
@@ -1277,10 +1285,20 @@ body {
 }
 
 .admin-form .form-control,
-.login-form .form-control {
+.login-form .form-control,
+.password-change-form .form-control {
     min-height: 48px;
     border-radius: 8px;
     border-color: var(--line);
+}
+
+.change-password-card {
+    background: #fbfcfe;
+}
+
+.change-password-card .exam-form-section-title span {
+    color: #b45309;
+    background: #fffbeb;
 }
 
 .password-field {
@@ -3012,6 +3030,36 @@ body {
     font-size: 0.85rem;
     font-weight: 800;
     white-space: nowrap;
+}
+
+/* Existing questions panel (shown on add-question page) */
+.existing-questions-panel {
+    display: grid;
+    gap: 18px;
+}
+
+.existing-question-card {
+    background: #fbfcfe;
+}
+
+.existing-question-card .form-control,
+.existing-question-card .form-select {
+    background: #f3f5f9;
+    color: var(--muted);
+}
+
+.badge-saved {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #067647;
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    vertical-align: middle;
 }
 
 /* Question list */

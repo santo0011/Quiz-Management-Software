@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExamRequest;
+use App\Http\Requests\ExamSettingsRequest;
 use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\SchoolClass;
@@ -31,7 +32,7 @@ class ExamController extends Controller
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
             'classes' => $branchId
-                ? SchoolClass::where('branch_id', $branchId)->orderBy('name')->get()
+                ? SchoolClass::visibleToBranch($branchId)->orderBy('name')->get()
                 : collect(),
             'filters' => $request->only(['search', 'status', 'branch_id']),
         ]);
@@ -41,6 +42,9 @@ class ExamController extends Controller
     {
         Exam::create($request->validated() + [
             'status' => Exam::STATUS_DRAFT,
+            'total_marks' => 0,
+            'marks_per_question' => 1,
+            'duration_minutes' => 30,
         ]);
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam created successfully.');
@@ -61,7 +65,7 @@ class ExamController extends Controller
         return view('admin.exams.edit', [
             'selectedBranch' => $exam->branch,
             'exam' => $exam,
-            'classes' => SchoolClass::where('branch_id', $exam->branch_id)->orderBy('name')->get(),
+            'classes' => SchoolClass::visibleToBranch($exam->branch_id)->orderBy('name')->get(),
         ]);
     }
 
@@ -72,6 +76,14 @@ class ExamController extends Controller
         $exam->update($request->validated());
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam updated successfully.');
+    }
+
+    public function updateSettings(ExamSettingsRequest $request, Exam $exam): RedirectResponse
+    {
+        $exam->update($request->validated());
+        $exam->recalculateTotalMarks();
+
+        return redirect()->route('admin.exams.show', $exam)->with('success', 'Exam settings updated successfully.');
     }
 
     public function destroy(Exam $exam): RedirectResponse

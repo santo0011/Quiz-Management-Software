@@ -4,9 +4,11 @@ use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
 use App\Http\Controllers\Admin\PasswordController as AdminPasswordController;
+use App\Http\Controllers\Admin\QuestionCategoryController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
 use App\Http\Controllers\Admin\ResultController as AdminResultController;
 use App\Http\Controllers\Admin\SchoolClassController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -14,6 +16,7 @@ use App\Http\Controllers\Auth\StudentPasswordController;
 use App\Http\Controllers\Branch\DashboardController as BranchDashboardController;
 use App\Http\Controllers\Branch\ExamController as BranchExamController;
 use App\Http\Controllers\Branch\PasswordController as BranchPasswordController;
+use App\Http\Controllers\Branch\QuestionCategoryController as BranchQuestionCategoryController;
 use App\Http\Controllers\Branch\QuestionController as BranchQuestionController;
 use App\Http\Controllers\Branch\ResultController as BranchResultController;
 use App\Http\Controllers\Branch\SchoolClassController as BranchSchoolClassController;
@@ -50,11 +53,15 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::put('/password', [AdminPasswordController::class, 'update'])->name('password.update');
     Route::resource('branches', BranchController::class);
     Route::post('/branches/{branch}/toggle-active', [BranchController::class, 'toggleActive'])->name('branches.toggle-active');
+    Route::put('/branches/{branch}/password', [BranchController::class, 'updatePassword'])->name('branches.password.update');
     Route::resource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
     Route::resource('students', AdminStudentController::class);
     Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
+    Route::put('/students/{student}/password', [AdminStudentController::class, 'updatePassword'])->name('students.password.update');
+    Route::resource('question-categories', QuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('exams', AdminExamController::class);
     Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');
+    Route::put('/exams/{exam}/settings', [AdminExamController::class, 'updateSettings'])->name('exams.settings.update');
     Route::get('/exams/{exam}/questions/create', [AdminQuestionController::class, 'create'])->name('questions.create');
     Route::post('/exams/{exam}/questions', [AdminQuestionController::class, 'store'])->name('questions.store');
     Route::get('/questions/{question}/edit', [AdminQuestionController::class, 'edit'])->name('questions.edit');
@@ -62,6 +69,8 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::delete('/questions/{question}', [AdminQuestionController::class, 'destroy'])->name('questions.destroy');
     Route::get('/results', [AdminResultController::class, 'index'])->name('results.index');
     Route::get('/results/{attempt}', [AdminResultController::class, 'show'])->name('results.show');
+    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 });
 
 Route::middleware(['auth', 'active', 'role:Branch'])->prefix('branch')->name('branch.')->group(function () {
@@ -71,8 +80,10 @@ Route::middleware(['auth', 'active', 'role:Branch'])->prefix('branch')->name('br
     Route::resource('classes', BranchSchoolClassController::class)->parameters(['classes' => 'class']);
     Route::resource('students', BranchStudentController::class);
     Route::post('/students/{student}/toggle-active', [BranchStudentController::class, 'toggleActive'])->name('students.toggle-active');
+    Route::resource('question-categories', BranchQuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('exams', BranchExamController::class);
     Route::post('/exams/{exam}/publish', [BranchExamController::class, 'publish'])->name('exams.publish');
+    Route::put('/exams/{exam}/settings', [BranchExamController::class, 'updateSettings'])->name('exams.settings.update');
     Route::get('/questions', [BranchQuestionController::class, 'index'])->name('questions.index');
     Route::get('/exams/{exam}/questions/create', [BranchQuestionController::class, 'create'])->name('questions.create');
     Route::post('/exams/{exam}/questions', [BranchQuestionController::class, 'store'])->name('questions.store');

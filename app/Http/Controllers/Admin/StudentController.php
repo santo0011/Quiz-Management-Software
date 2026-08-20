@@ -9,6 +9,7 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class StudentController extends Controller
@@ -30,7 +31,7 @@ class StudentController extends Controller
             'selectedBranchId' => $branchId,
             'student' => new Student,
             'students' => $students,
-            'classes' => SchoolClass::when($branchId, fn ($query) => $query->where('branch_id', $branchId))->orderBy('name')->get(),
+            'classes' => SchoolClass::when($branchId, fn ($query) => $query->visibleToBranch($branchId))->orderBy('name')->get(),
             'filters' => $request->only(['search', 'class', 'branch_id']),
         ]);
     }
@@ -71,7 +72,7 @@ class StudentController extends Controller
         return view('admin.students.edit', [
             'student' => $student,
             'selectedBranch' => $student->branch,
-            'classes' => SchoolClass::where('branch_id', $student->branch_id)->orderBy('name')->get(),
+            'classes' => SchoolClass::visibleToBranch($student->branch_id)->orderBy('name')->get(),
         ]);
     }
 
@@ -87,6 +88,23 @@ class StudentController extends Controller
         $student->update($validated);
 
         return redirect()->route('admin.students.index')->with('success', 'Student updated successfully.');
+    }
+
+    public function updatePassword(Request $request, Student $student): RedirectResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ], [
+            'password.required' => 'Please enter a new password.',
+            'password.min' => 'Password must be at least 6 characters.',
+            'password.confirmed' => 'Password confirmation does not match.',
+        ]);
+
+        $student->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return redirect()->route('admin.students.index')->with('success', 'Student password updated successfully.');
     }
 
     public function destroy(Student $student): RedirectResponse
@@ -117,7 +135,7 @@ class StudentController extends Controller
     private function resolveSchoolClass(array $validated, int $branchId): SchoolClass
     {
         if (! empty($validated['class_id'])) {
-            return SchoolClass::whereKey($validated['class_id'])->where('branch_id', $branchId)->firstOrFail();
+            return SchoolClass::whereKey($validated['class_id'])->visibleToBranch($branchId)->firstOrFail();
         }
 
         return SchoolClass::firstOrCreate([

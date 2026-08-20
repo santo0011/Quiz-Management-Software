@@ -330,7 +330,7 @@
             const preferredDrawerId = @json(old('_drawer'));
             const drawerIds = preferredDrawerId
                 ? [preferredDrawerId]
-                : ['addStudentDrawer', 'addClassDrawer'];
+                : ['addStudentDrawer', 'addClassDrawer', 'addCategoryDrawer'];
 
             drawerIds.some((drawerId) => {
                 const drawerEl = document.getElementById(drawerId);
@@ -345,6 +345,7 @@
     </script>
     @include('partials.global-forms')
     @include('partials.math-editor-init')
+    @include('partials.no-wheel-number')
     @stack('scripts')
 </body>
 </html>

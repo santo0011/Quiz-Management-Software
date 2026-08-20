@@ -174,8 +174,17 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     @include('partials.mobile-tables')
+    @php
+        $quizcoreBranchClasses = \App\Models\Branch::orderBy('name')->get()->mapWithKeys(function ($branch) {
+            $classes = \App\Models\SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get()
+                ->map(fn ($class) => ['id' => $class->id, 'name' => $class->name, 'global' => $class->isGlobal()])
+                ->toArray();
+
+            return [$branch->id => $classes];
+        })->toArray();
+    @endphp
     <script>
-        window.quizcoreBranchClasses = @json(\App\Models\Branch::with('classes')->get()->mapWithKeys(fn ($branch) => [$branch->id => $branch->classes->map(fn ($class) => ['id' => $class->id, 'name' => $class->name])->toArray()])->toArray());
+        window.quizcoreBranchClasses = @json($quizcoreBranchClasses);
     </script>
     <script>
         document.querySelectorAll('.admin-toast').forEach((toastEl) => {
@@ -346,7 +355,8 @@
 
                 classSelect.innerHTML = '<option value="">Select class</option>';
                 branchClasses.forEach((schoolClass) => {
-                    const option = new Option(schoolClass.name, schoolClass.id);
+                    const label = schoolClass.global ? schoolClass.name + ' (All Branches)' : schoolClass.name;
+                    const option = new Option(label, schoolClass.id);
                     option.selected = String(schoolClass.id) === String(selectedClass);
                     classSelect.add(option);
                 });
@@ -366,7 +376,7 @@
             const preferredDrawerId = @json(old('_drawer'));
             const drawerIds = preferredDrawerId
                 ? [preferredDrawerId]
-                : ['addStudentDrawer', 'addBranchDrawer', 'addClassDrawer'];
+                : ['addStudentDrawer', 'addBranchDrawer', 'addClassDrawer', 'addCategoryDrawer'];
 
             drawerIds.some((drawerId) => {
                 const drawerEl = document.getElementById(drawerId);
@@ -381,6 +391,7 @@
     </script>
     @include('partials.global-forms')
     @include('partials.math-editor-init')
+    @include('partials.no-wheel-number')
     @stack('scripts')
 </body>
 </html>

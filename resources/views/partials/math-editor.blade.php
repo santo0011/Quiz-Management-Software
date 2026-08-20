@@ -7,18 +7,21 @@
     $mathRequired = $mathRequired ?? false;
     $mathClass = $mathClass ?? '';
     $mathTextareaClass = $mathTextareaClass ?? '';
+    $mathReadonly = $mathReadonly ?? false;
 @endphp
 
 <div class="math-input-wrap {{ $mathClass }}" data-math-input-wrap data-math-id="{{ $mathId }}">
     <textarea
         id="{{ $mathId }}"
-        name="{{ $mathName }}"
+        @if (! $mathReadonly) name="{{ $mathName }}" @endif
         rows="{{ $mathRows }}"
         class="form-control {{ $mathTextareaClass }}"
         placeholder="{{ $mathPlaceholder }}"
         {{ $mathRequired ? 'required' : '' }}
+        @if ($mathReadonly) readonly tabindex="-1" @endif
         data-math-textarea
     >{{ $mathValue }}</textarea>
+    @unless ($mathReadonly)
     <button type="button" class="math-toolbar-toggle" data-math-toggle aria-label="Math tools" title="Math tools">
         <i class="bi bi-123"></i>
     </button>
@@ -115,4 +118,5 @@
             <button type="button" class="math-tool-btn" data-math-insert="ℂ" title="Complex">ℂ</button>
         </div>
     </div>
+    @endunless
 </div>

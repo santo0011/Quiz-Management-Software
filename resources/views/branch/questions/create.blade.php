@@ -16,6 +16,7 @@
             'action' => route('branch.questions.store', $exam),
             'button' => 'Save Questions',
             'defaultMarks' => $exam->marks_per_question ?? 1,
+            'existingQuestions' => $exam->questions,
         ])
     </section>
 @endsection

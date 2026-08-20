@@ -11,18 +11,19 @@
 
     @if (auth()->user()->role === 'Super Admin' && ! isset($selectedBranch))
         <div class="mb-4">
-            <label for="branch_id" class="form-label">Branch <span class="required-mark">*</span></label>
-            <select id="branch_id" name="branch_id" class="form-select form-control{{ $useOldInput && $errors->has('branch_id') ? ' is-invalid' : '' }}" required>
-                <option value="">Select branch</option>
+            <label for="branch_id" class="form-label">Branch</label>
+            <select id="branch_id" name="branch_id" class="form-select form-control{{ $useOldInput && $errors->has('branch_id') ? ' is-invalid' : '' }}">
+                <option value="">All branches (global class)</option>
                 @foreach ($branches ?? [] as $branch)
                     <option value="{{ $branch->id }}" @selected($useOldInput && old('branch_id') == $branch->id)>{{ $branch->name }}</option>
                 @endforeach
             </select>
+            <div class="form-text">Leave blank to make this class available to every branch.</div>
             @if ($useOldInput)
                 @error('branch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             @endif
         </div>
-    @else
+    @elseif (isset($selectedBranch) && $selectedBranch)
         <div class="feedback-alert success mb-4">
             <i class="bi bi-building-check"></i>
             <div><strong>Active Branch:</strong> {{ $selectedBranch->name }}</div>

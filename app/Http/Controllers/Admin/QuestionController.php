@@ -8,6 +8,7 @@ use App\Http\Requests\QuestionRequest;
 use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\Question;
+use App\Models\QuestionCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,8 +36,9 @@ class QuestionController extends Controller
 
         return view('admin.questions.create', [
             'selectedBranch' => $exam->branch,
-            'exam' => $exam->load('schoolClass'),
+            'exam' => $exam->load('schoolClass', 'questions.options'),
             'question' => new Question(['question_type' => 'mcq', 'marks' => 1]),
+            'categories' => QuestionCategory::where('branch_id', $exam->branch_id)->orderBy('name')->get(),
         ]);
     }
 
@@ -52,6 +54,7 @@ class QuestionController extends Controller
                 $question->fill([
                     'question_text' => trim($questionData['question_text']),
                     'question_type' => $questionData['question_type'] ?? 'mcq',
+                    'question_category_id' => $questionData['question_category_id'] ?? null,
                     'marks' => $questionData['marks'] ?? $exam->marks_per_question,
                     'explanation' => $questionData['explanation'] ?? null,
                 ]);
@@ -91,6 +94,7 @@ class QuestionController extends Controller
             'selectedBranch' => $question->exam->branch,
             'exam' => $question->exam->load('schoolClass'),
             'question' => $question->load('options'),
+            'categories' => QuestionCategory::where('branch_id', $question->exam->branch_id)->orderBy('name')->get(),
         ]);
     }
 
@@ -116,7 +120,7 @@ class QuestionController extends Controller
     private function saveQuestion(QuestionRequest $request, Exam $exam, Question $question): void
     {
         DB::transaction(function () use ($request, $exam, $question): void {
-            $question->fill($request->safe()->only(['question_text', 'question_type', 'marks', 'explanation']));
+            $question->fill($request->safe()->only(['question_text', 'question_type', 'question_category_id', 'marks', 'explanation']));
             $question->exam_id = $exam->id;
             $question->save();
 

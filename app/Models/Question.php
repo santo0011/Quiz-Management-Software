@@ -8,6 +8,7 @@ class Question extends Model
 {
     protected $fillable = [
         'exam_id',
+        'question_category_id',
         'question_text',
         'question_type',
         'marks',
@@ -24,6 +25,11 @@ class Question extends Model
     public function exam()
     {
         return $this->belongsTo(Exam::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(QuestionCategory::class, 'question_category_id');
     }
 
     public function options()

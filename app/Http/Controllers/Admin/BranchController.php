@@ -8,6 +8,7 @@ use App\Mail\BranchCredentialsMail;
 use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -104,7 +105,8 @@ class BranchController extends Controller
         $hasRelatedData = $branch->students()->exists()
             || $branch->classes()->exists()
             || $branch->exams()->exists()
-            || $branch->exams()->whereHas('attempts')->exists();
+            || $branch->exams()->whereHas('attempts')->exists()
+            || $branch->questionCategories()->exists();
 
         if ($hasRelatedData) {
             return redirect()->route('admin.branches.index')
@@ -115,6 +117,25 @@ class BranchController extends Controller
         $branch->delete();
 
         return redirect()->route('admin.branches.index')->with('success', 'Branch deleted successfully.');
+    }
+
+    public function updatePassword(Request $request, Branch $branch): RedirectResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ], [
+            'password.required' => 'Please enter a new password.',
+            'password.min' => 'Password must be at least 6 characters.',
+            'password.confirmed' => 'Password confirmation does not match.',
+        ]);
+
+        abort_if(! $branch->user, 404, 'This branch has no linked login account.');
+
+        $branch->user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return redirect()->route('admin.branches.index')->with('success', 'Branch password updated successfully.');
     }
 
     public function toggleActive(Branch $branch): RedirectResponse

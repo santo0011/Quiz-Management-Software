@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Branch;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExamRequest;
+use App\Http\Requests\ExamSettingsRequest;
 use App\Models\Exam;
 use App\Models\SchoolClass;
 use Illuminate\Http\RedirectResponse;
@@ -29,7 +30,7 @@ class ExamController extends Controller
             'branch' => $branch,
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
-            'classes' => SchoolClass::where('branch_id', $branch->id)->orderBy('name')->get(),
+            'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
             'filters' => $request->only(['search', 'status']),
         ]);
     }
@@ -42,6 +43,9 @@ class ExamController extends Controller
         Exam::create($request->validated() + [
             'branch_id' => $branch->id,
             'status' => Exam::STATUS_DRAFT,
+            'total_marks' => 0,
+            'marks_per_question' => 1,
+            'duration_minutes' => 30,
         ]);
 
         return redirect()->route('branch.exams.index')->with('success', 'Exam created successfully.');
@@ -65,7 +69,7 @@ class ExamController extends Controller
         return view('branch.exams.edit', [
             'branch' => $request->user()->branch,
             'exam' => $exam,
-            'classes' => SchoolClass::where('branch_id', $request->user()->branch_id)->orderBy('name')->get(),
+            'classes' => SchoolClass::visibleToBranch($request->user()->branch_id)->orderBy('name')->get(),
         ]);
     }
 
@@ -77,6 +81,14 @@ class ExamController extends Controller
         $exam->update($request->validated());
 
         return redirect()->route('branch.exams.index')->with('success', 'Exam updated successfully.');
+    }
+
+    public function updateSettings(ExamSettingsRequest $request, Exam $exam): RedirectResponse
+    {
+        $exam->update($request->validated());
+        $exam->recalculateTotalMarks();
+
+        return redirect()->route('branch.exams.show', $exam)->with('success', 'Exam settings updated successfully.');
     }
 
     public function destroy(Request $request, Exam $exam): RedirectResponse

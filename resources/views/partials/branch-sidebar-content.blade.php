@@ -1,8 +1,14 @@
+@php($appSettings = \App\Models\Setting::query()->first())
+
 <div class="brand">
-    <div class="brand-mark">B</div>
+    @if ($appSettings?->logo_path)
+        <img src="{{ Storage::url($appSettings->logo_path) }}" alt="Logo" class="brand-logo">
+    @else
+        <div class="brand-mark">B</div>
+    @endif
     <div class="brand-copy">
         <strong>{{ auth()->user()->branch?->name ?? 'Branch Panel' }}</strong>
-        <span>QuizCore Workspace</span>
+        <span>{{ $appSettings?->site_name ?: 'QuizCore' }} Workspace</span>
     </div>
     <button class="sidebar-collapse-toggle d-none d-lg-grid" type="button" aria-label="Collapse sidebar" data-sidebar-toggle>
         <i class="bi bi-chevron-left"></i>

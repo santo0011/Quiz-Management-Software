@@ -1,5 +1,5 @@
 @php($prefix = $prefix ?? 'admin')
-@php($contextBranch = $selectedBranch ?? $branch)
+@php($contextBranch = $selectedBranch ?? $branch ?? null)
 
 <div class="student-profile-top-actions">
     <a href="{{ route($prefix.'.exams.index') }}" class="btn btn-outline-secondary btn-student-back">
@@ -220,6 +220,13 @@
                                 <a href="{{ route($prefix.'.questions.edit', $question) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit question">
                                     <i class="bi bi-pencil-fill"></i>
                                 </a>
+                                <form method="POST" action="{{ route($prefix.'.questions.destroy', $question) }}" data-confirm-delete>
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger-soft" data-bs-toggle="tooltip" data-bs-title="Delete question">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
                             </div>
                         @endif
                     </div>

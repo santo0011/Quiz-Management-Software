@@ -1,8 +1,90 @@
 @php($prefix = $prefix ?? 'admin')
 @php($oldQuestions = old('questions', [[]]))
+@php($existingQuestions = $existingQuestions ?? collect())
+@php($existingCount = $existingQuestions->count())
 
-<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-default-marks="{{ $defaultMarks ?? 1 }}">
+@include('exams.partials.settings-form', ['prefix' => $prefix, 'exam' => $exam])
+
+<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-default-marks="{{ $defaultMarks ?? 1 }}" data-existing-count="{{ $existingCount }}" data-categories="{{ ($categories ?? collect())->map(fn ($category) => ['id' => $category->id, 'name' => $category->name])->toJson() }}">
     @csrf
+
+    @if ($existingQuestions->isNotEmpty())
+        <div class="existing-questions-panel mb-4">
+            @foreach ($existingQuestions as $existingQuestion)
+                <section class="question-card multi-question-block existing-question-card">
+                    <div class="question-card-header">
+                        <span class="question-card-icon success"><i class="bi bi-check-circle-fill"></i></span>
+                        <div class="flex-grow-1">
+                            <h3>Question {{ $loop->iteration }} <span class="badge-saved">Saved</span></h3>
+                            <p>This question is already saved to this exam.</p>
+                        </div>
+                        <a href="{{ route($prefix.'.questions.edit', $existingQuestion) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit question">
+                            <i class="bi bi-pencil-fill"></i>
+                        </a>
+                    </div>
+                    <div class="question-card-body">
+                        <div class="question-field-group">
+                            <label class="form-label">Question Text</label>
+                            @include('partials.math-editor', [
+                                'mathId' => 'existing_q' . $existingQuestion->id . '_question_text',
+                                'mathValue' => $existingQuestion->question_text,
+                                'mathRows' => 2,
+                                'mathReadonly' => true,
+                            ])
+                        </div>
+
+                        <div class="row g-2 question-meta-row">
+                            <div class="col-6">
+                                <label class="form-label">Marks</label>
+                                <input type="number" value="{{ $existingQuestion->marks }}" class="form-control" disabled>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Type</label>
+                                <select class="form-select form-control" disabled>
+                                    <option selected>MCQ</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="option-builder">
+                            <label class="form-label">Answer Options</label>
+                            <div data-option-list>
+                                @foreach ($existingQuestion->options as $option)
+                                    <div class="option-row">
+                                        <label class="option-badge">{{ chr(65 + $loop->index) }}</label>
+                                        <div class="option-input-wrap">
+                                            @include('partials.math-editor', [
+                                                'mathId' => 'existing_q' . $existingQuestion->id . '_option_' . $loop->index,
+                                                'mathValue' => $option->option_text,
+                                                'mathRows' => 1,
+                                                'mathReadonly' => true,
+                                            ])
+                                        </div>
+                                        <label class="correct-answer-label" title="Correct answer">
+                                            <input type="radio" class="form-check-input correct-radio" @checked($option->is_correct) disabled aria-label="Correct option">
+                                            <span class="correct-answer-mark"><i class="bi bi-check-lg"></i></span>
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        @if ($existingQuestion->explanation)
+                            <div class="question-explanation-field">
+                                <label class="form-label">Explanation</label>
+                                @include('partials.math-editor', [
+                                    'mathId' => 'existing_q' . $existingQuestion->id . '_explanation',
+                                    'mathValue' => $existingQuestion->explanation,
+                                    'mathRows' => 1,
+                                    'mathReadonly' => true,
+                                ])
+                            </div>
+                        @endif
+                    </div>
+                </section>
+            @endforeach
+        </div>
+    @endif
 
     <div data-multi-question-list>
         @foreach ($oldQuestions as $qIndex => $oldQ)
@@ -13,7 +95,7 @@
                 <div class="question-card-header">
                     <span class="question-card-icon"><i class="bi bi-patch-question-fill"></i></span>
                     <div class="flex-grow-1">
-                        <h3 data-question-number>Question {{ $qIndex + 1 }}</h3>
+                        <h3 data-question-number>Question {{ $existingCount + $qIndex + 1 }}</h3>
                         <p>Enter the question text, options, and select the correct answer.</p>
                     </div>
                     <button type="button" class="btn btn-sm btn-danger-soft" data-remove-question aria-label="Remove question">
@@ -36,16 +118,26 @@
                     </div>
 
                     <div class="row g-2 question-meta-row">
-                        <div class="col-6">
+                        <div class="col-md-4">
                             <label class="form-label">Marks <span class="required-mark">*</span></label>
                             <input type="number" step="0.01" min="0.01" name="questions[{{ $qIndex }}][marks]" value="{{ $oldQ['marks'] ?? $defaultMarks }}" class="form-control @error('questions.'.$qIndex.'.marks') is-invalid @enderror" required>
                             @error('questions.'.$qIndex.'.marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-6">
+                        <div class="col-md-4">
                             <label class="form-label">Type</label>
                             <select name="questions[{{ $qIndex }}][question_type]" class="form-select form-control">
                                 <option value="mcq">MCQ</option>
                             </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Category</label>
+                            <select name="questions[{{ $qIndex }}][question_category_id]" class="form-select form-control @error('questions.'.$qIndex.'.question_category_id') is-invalid @enderror">
+                                <option value="">Uncategorized</option>
+                                @foreach ($categories ?? [] as $category)
+                                    <option value="{{ $category->id }}" @selected(($oldQ['question_category_id'] ?? '') == $category->id)>{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('questions.'.$qIndex.'.question_category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
 
@@ -117,26 +209,37 @@
 </form>
 
 @push('scripts')
+    @if ($existingQuestions->isNotEmpty())
+        <script>
+            window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+        </script>
+        <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    @endif
     <script>
         document.querySelectorAll('[data-multi-question-form]').forEach((form) => {
             const list = form.querySelector('[data-multi-question-list]');
             const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const existingCount = parseInt(form.dataset.existingCount || '0', 10);
+            const categories = JSON.parse(form.dataset.categories || '[]');
+            const categoryOptionsHtml = ['<option value="">Uncategorized</option>']
+                .concat(categories.map((category) => `<option value="${category.id}">${category.name}</option>`))
+                .join('');
 
             // Re-number blocks and update name indices + badge letters
             const renumberAll = () => {
                 list.querySelectorAll('[data-question-block]').forEach((block, qIdx) => {
-                    block.querySelector('[data-question-number]').textContent = 'Question ' + (qIdx + 1);
-                    const headers = ['question_text', 'marks', 'question_type', 'explanation'];
+                    block.querySelector('[data-question-number]').textContent = 'Question ' + (existingCount + qIdx + 1);
+                    const headers = ['question_text', 'marks', 'question_type', 'question_category_id', 'explanation'];
                     headers.forEach((field) => {
                         const el = block.querySelector('[name*="[' + field + ']"]');
                         if (el) {
-                            const name = el.name.replace(/questions\[\d+\]\[/g, 'questions[' + qIdx + '][');
+                            const name = el.name.replace(/questions\[\d+\]\[/g, 'questions[' + (existingCount + qIdx) + '][');
                             el.name = name;
                         }
                     });
                     // Update textareas for math fields
                     block.querySelectorAll('[data-math-textarea]').forEach((el) => {
-                        const name = el.name.replace(/questions\[\d+\]\[/g, 'questions[' + qIdx + '][');
+                        const name = el.name.replace(/questions\[\d+\]\[/g, 'questions[' + (existingCount + qIdx) + '][');
                         el.name = name;
                     });
                     block.querySelectorAll('[data-option-row]').forEach((row, optIdx) => {
@@ -147,7 +250,7 @@
                         if (textarea) {
                             textarea.placeholder = 'Option ' + LETTERS[optIdx % 26] + ' text or math expression';
                         }
-                        const radioName = radio.name.replace(/questions\[\d+\]\[correct_option\]/g, 'questions[' + qIdx + '][correct_option]');
+                        const radioName = radio.name.replace(/questions\[\d+\]\[correct_option\]/g, 'questions[' + (existingCount + qIdx) + '][correct_option]');
                         radio.name = radioName;
                         radio.value = optIdx;
                     });
@@ -270,7 +373,7 @@
                     <div class="question-card-header">
                         <span class="question-card-icon"><i class="bi bi-patch-question-fill"></i></span>
                         <div class="flex-grow-1">
-                            <h3 data-question-number>Question ${qIdx + 1}</h3>
+                            <h3 data-question-number>Question ${existingCount + qIdx + 1}</h3>
                             <p>Enter the question text, options, and select the correct answer.</p>
                         </div>
                         <button type="button" class="btn btn-sm btn-danger-soft" data-remove-question aria-label="Remove question">
@@ -343,14 +446,20 @@
                             </div>
                         </div>
                         <div class="row g-2 question-meta-row">
-                            <div class="col-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Marks <span class="required-mark">*</span></label>
                                 <input type="number" step="0.01" min="0.01" name="questions[${qIdx}][marks]" value="${form.dataset.defaultMarks || '1'}" class="form-control" required>
                             </div>
-                            <div class="col-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Type</label>
                                 <select name="questions[${qIdx}][question_type]" class="form-select form-control">
                                     <option value="mcq">MCQ</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Category</label>
+                                <select name="questions[${qIdx}][question_category_id]" class="form-select form-control">
+                                    ${categoryOptionsHtml}
                                 </select>
                             </div>
                         </div>

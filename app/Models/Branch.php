@@ -43,4 +43,9 @@ class Branch extends Model
     {
         return $this->hasMany(Exam::class);
     }
+
+    public function questionCategories()
+    {
+        return $this->hasMany(QuestionCategory::class);
+    }
 }

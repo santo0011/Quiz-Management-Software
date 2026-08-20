@@ -73,12 +73,16 @@
             @include('admin.students.partials.form', [
                 'student' => $studentRecord,
                 'selectedBranch' => $studentRecord->branch,
-                'classes' => $studentRecord->branch->classes()->orderBy('name')->get(),
+                'classes' => \App\Models\SchoolClass::visibleToBranch($studentRecord->branch_id)->orderBy('name')->get(),
                 'action' => route('admin.students.update', $studentRecord),
                 'method' => 'PUT',
                 'button' => 'Update Student',
                 'drawer' => true,
                 'drawerId' => 'editStudentDrawer'.$studentRecord->id,
+            ])
+            @include('admin.partials.change-password-form', [
+                'action' => route('admin.students.password.update', $studentRecord),
+                'fieldSuffix' => '_student_'.$studentRecord->id,
             ])
             </div>
         </div>

@@ -1,5 +1,5 @@
 @php($prefix = $prefix ?? 'admin')
-@php($contextBranch = $selectedBranch ?? $branch)
+@php($contextBranch = $selectedBranch ?? $branch ?? null)
 
 <div class="student-profile-top-actions">
     <a href="{{ route($prefix.'.students.index') }}" class="btn btn-outline-secondary btn-student-back">

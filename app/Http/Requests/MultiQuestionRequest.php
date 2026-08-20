@@ -29,10 +29,16 @@ class MultiQuestionRequest extends FormRequest
 
     public function rules(): array
     {
+        $exam = $this->route('exam');
+
         return [
             'questions' => ['required', 'array', 'min:1', 'max:100'],
             'questions.*.question_text' => ['required', 'string'],
             'questions.*.question_type' => ['required', 'string', 'in:mcq'],
+            'questions.*.question_category_id' => [
+                'nullable',
+                Rule::exists('question_categories', 'id')->where('branch_id', $exam?->branch_id),
+            ],
             'questions.*.marks' => ['required', 'numeric', 'min:0.01'],
             'questions.*.explanation' => ['nullable', 'string'],
             'questions.*.options' => ['required', 'array', 'min:2'],

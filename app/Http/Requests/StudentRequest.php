@@ -52,7 +52,7 @@ class StudentRequest extends FormRequest
                 : ($this->route('student')?->branch_id ?: $this->input('branch_id'));
 
             $classBelongsToBranch = SchoolClass::whereKey($this->input('class_id'))
-                ->where('branch_id', $targetBranchId)
+                ->visibleToBranch($targetBranchId)
                 ->exists();
 
             if (! $classBelongsToBranch) {
