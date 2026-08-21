@@ -15,6 +15,8 @@ class Exam extends Model
 
     public const LOCK_MESSAGE = 'This exam cannot be edited or deleted because a student has already attended this exam.';
 
+    public const UNPUBLISH_LOCK_MESSAGE = 'This exam cannot be unpublished because a student has already attended this exam.';
+
     protected $fillable = [
         'branch_id',
         'school_class_id',

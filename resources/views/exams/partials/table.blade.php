@@ -31,10 +31,13 @@
                         <td>{{ $exam->total_marks }}</td>
                         <td>
                             @if ($exam->isPublished())
-                                <span class="status-badge status-published">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                    Published
-                                </span>
+                                <form method="POST" action="{{ route($prefix.'.exams.unpublish', $exam) }}" data-unpublish-exam>
+                                    @csrf
+                                    <button type="submit" class="status-badge status-published" title="Click to unpublish this exam">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        Published
+                                    </button>
+                                </form>
                             @elseif ($exam->status === 'closed')
                                 <span class="status-badge status-closed">
                                     <i class="bi bi-x-circle-fill"></i>

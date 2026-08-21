@@ -46,6 +46,14 @@
                                 Publish Exam
                             </button>
                         </form>
+                    @else
+                        <form method="POST" action="{{ route($prefix.'.exams.unpublish', $exam) }}" data-unpublish-exam>
+                            @csrf
+                            <button type="submit" class="btn btn-warning btn-exam-action">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                                Unpublish Exam
+                            </button>
+                        </form>
                     @endif
                 @else
                     <span class="exam-published-lock" data-bs-toggle="tooltip" data-bs-title="{{ \App\Models\Exam::LOCK_MESSAGE }}">

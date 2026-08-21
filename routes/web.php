@@ -62,6 +62,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::resource('question-categories', QuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('exams', AdminExamController::class);
     Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');
+    Route::post('/exams/{exam}/unpublish', [AdminExamController::class, 'unpublish'])->name('exams.unpublish');
     Route::put('/exams/{exam}/settings', [AdminExamController::class, 'updateSettings'])->name('exams.settings.update');
     Route::put('/exams/{exam}/category', [AdminExamController::class, 'updateCategory'])->name('exams.category.update');
     Route::get('/exams/{exam}/questions/create', [AdminQuestionController::class, 'create'])->name('questions.create');
@@ -93,6 +94,7 @@ Route::middleware(['auth', 'active', 'role:Branch'])->prefix('branch')->name('br
     Route::resource('question-categories', BranchQuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('exams', BranchExamController::class);
     Route::post('/exams/{exam}/publish', [BranchExamController::class, 'publish'])->name('exams.publish');
+    Route::post('/exams/{exam}/unpublish', [BranchExamController::class, 'unpublish'])->name('exams.unpublish');
     Route::put('/exams/{exam}/settings', [BranchExamController::class, 'updateSettings'])->name('exams.settings.update');
     Route::put('/exams/{exam}/category', [BranchExamController::class, 'updateCategory'])->name('exams.category.update');
     Route::get('/questions', [BranchQuestionController::class, 'index'])->name('questions.index');

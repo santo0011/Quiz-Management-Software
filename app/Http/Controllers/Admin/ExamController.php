@@ -197,4 +197,33 @@ class ExamController extends Controller
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam published successfully.');
     }
+
+    public function unpublish(Request $request, Exam $exam): RedirectResponse|\Illuminate\Http\JsonResponse
+    {
+        if (! $exam->isPublished()) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'This exam is not published.'], 422);
+            }
+
+            abort(422, 'This exam is not published.');
+        }
+
+        // Backend check: if any student has attended/started the exam, unpublishing is not allowed.
+        if ($exam->hasBeenAttempted()) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => Exam::UNPUBLISH_LOCK_MESSAGE], 422);
+            }
+
+            return redirect()->route('admin.exams.show', $exam)
+                ->with('error', Exam::UNPUBLISH_LOCK_MESSAGE);
+        }
+
+        $exam->update(['status' => Exam::STATUS_DRAFT]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Exam unpublished successfully.']);
+        }
+
+        return redirect()->route('admin.exams.show', $exam)->with('success', 'Exam unpublished successfully.');
+    }
 }

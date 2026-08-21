@@ -4,7 +4,7 @@
 @php($existingQuestions = $existingQuestions ?? collect())
 @php($existingCount = $existingQuestions->count())
 
-<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-default-marks="{{ $defaultMarks ?? 1 }}" data-existing-count="{{ $existingCount }}">
+<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-form-id="{{ $formKey }}" data-default-marks="{{ $defaultMarks ?? 1 }}" data-existing-count="{{ $existingCount }}">
     @csrf
     <input type="hidden" name="_form_key" value="{{ $formKey }}">
 
@@ -206,7 +206,15 @@
         <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     @endif
     <script>
-        document.querySelectorAll('[data-multi-question-form]').forEach((form) => {
+        // Only initialize the specific form instance this partial was rendered for.
+        // The partial is included multiple times on the same page (main form + one
+        // per summary), and each inclusion pushes this script. Without scoping to
+        // the form's unique data-form-id, every script would attach listeners to
+        // every form, causing "Add Another Question" to create 2-3 cards at once.
+        (function () {
+        const formId = @json($formKey);
+        const form = document.querySelector('[data-multi-question-form][data-form-id="' + formId + '"]');
+        if (form) {
             const list = form.querySelector('[data-multi-question-list]');
             const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             const existingCount = parseInt(form.dataset.existingCount || '0', 10);
@@ -612,6 +620,7 @@
                 button.closest('[data-question-block]').remove();
                 renumberAll();
             });
-        });
+        }
+        })();
     </script>
 @endpush

@@ -145,6 +145,33 @@
         </div>
     </div>
 
+    <div class="modal fade" id="unpublishExamModal" tabindex="-1" aria-labelledby="unpublishExamModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content confirm-modal">
+                <div class="modal-header">
+                    <div>
+                        <span class="page-kicker">Exam Management</span>
+                        <h2 class="modal-title fs-5" id="unpublishExamModalLabel">Unpublish Exam</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="publish-confirm-icon">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </div>
+                    <p class="mb-0">This exam will no longer be available to students. Are you sure you want to unpublish this exam?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" id="confirmUnpublishButton">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        Unpublish Exam
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content confirm-modal logout-modal">
@@ -328,6 +355,65 @@
                 button.disabled = false;
                 button.innerHTML = originalHtml;
                 alert(error.message || 'Failed to publish exam. Please try again.');
+            });
+        });
+
+        const unpublishModalEl = document.getElementById('unpublishExamModal');
+        const confirmUnpublishButton = document.getElementById('confirmUnpublishButton');
+        let pendingUnpublishForm = null;
+
+        document.querySelectorAll('[data-unpublish-exam]').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                pendingUnpublishForm = form;
+                bootstrap.Modal.getOrCreateInstance(unpublishModalEl).show();
+            });
+        });
+
+        confirmUnpublishButton?.addEventListener('click', () => {
+            if (! pendingUnpublishForm) {
+                return;
+            }
+
+            const form = pendingUnpublishForm;
+            const button = confirmUnpublishButton;
+            const originalHtml = button.innerHTML;
+
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Unpublishing...';
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+                body: new FormData(form),
+            })
+            .then((response) => {
+                return response.json().then((data) => {
+                    if (! response.ok) {
+                        throw new Error(data.message || 'Unpublish failed');
+                    }
+                    return data;
+                });
+            })
+            .then((data) => {
+                bootstrap.Modal.getOrCreateInstance(unpublishModalEl).hide();
+                const toastEl = document.createElement('div');
+                toastEl.className = 'toast admin-toast text-bg-success border-0';
+                toastEl.setAttribute('role', 'status');
+                toastEl.setAttribute('aria-live', 'polite');
+                toastEl.setAttribute('aria-atomic', 'true');
+                toastEl.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="bi bi-check-circle-fill"></i> ' + (data.message || 'Exam unpublished successfully.') + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+                document.querySelector('.toast-container').appendChild(toastEl);
+                bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3500 }).show();
+                setTimeout(() => window.location.reload(), 800);
+            })
+            .catch((error) => {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+                alert(error.message || 'Failed to unpublish exam. Please try again.');
             });
         });
 

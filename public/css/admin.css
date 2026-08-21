@@ -1362,6 +1362,19 @@ body {
 
 .multi-question-block {
     scroll-margin-top: 120px;
+    margin-bottom: 16px;
+}
+
+.multi-question-block:last-child {
+    margin-bottom: 0;
+}
+
+[data-multi-question-list] .multi-question-block {
+    margin-bottom: 16px;
+}
+
+[data-multi-question-list] .multi-question-block:last-child {
+    margin-bottom: 0;
 }
 
 .add-item-panel {
@@ -3714,6 +3727,18 @@ body {
     background: #ecfdf5;
     color: #067647;
     border: 1px solid #a7f3d0;
+}
+
+form .status-badge.status-published {
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+form .status-badge.status-published:hover {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    transform: translateY(-1px);
 }
 
 .status-badge.status-closed {
