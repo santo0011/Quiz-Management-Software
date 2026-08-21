@@ -17,7 +17,7 @@
         <div class="question-card-body">
             <div class="mb-1">
                 <label for="content" class="form-label">Passage / Summary Content <span class="required-mark">*</span></label>
-                @include('partials.math-editor', [
+                @include('partials.summary-editor', [
                     'mathId' => 'content',
                     'mathName' => 'content',
                     'mathValue' => old('content', $passageGroup->content),

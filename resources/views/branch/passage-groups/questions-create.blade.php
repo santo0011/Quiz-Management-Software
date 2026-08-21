@@ -29,15 +29,15 @@
             </div>
         </section>
 
-        @if (! $exam->question_category_id)
+        @if ($categories->isEmpty())
             <div class="feedback-alert mb-0">
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 <div>
                     <strong>A question category is required before adding questions.</strong>
-                    <p class="mb-2">Select a category for this exam on the Question Management page, then come back here to add questions.</p>
-                    <a href="{{ route('branch.questions.create', $exam) }}" class="btn btn-sm btn-primary">
+                    <p class="mb-2">Create at least one category on the Question Category page, then come back here to add questions.</p>
+                    <a href="{{ route('branch.question-categories.index') }}" class="btn btn-sm btn-primary">
                         <i class="bi bi-tags-fill"></i>
-                        Go to Question Management
+                        Go to Question Categories
                     </a>
                 </div>
             </div>
@@ -48,6 +48,7 @@
                 'button' => 'Save Questions',
                 'defaultMarks' => $exam->marks_per_question ?? 1,
                 'existingQuestions' => $passageGroup->questions,
+                'categories' => $categories,
             ])
         @endif
     </section>

@@ -16,6 +16,7 @@
             'action' => route('admin.questions.update', $question),
             'method' => 'PUT',
             'button' => 'Update Question',
+            'categories' => $categories,
         ])
     </section>
 @endsection

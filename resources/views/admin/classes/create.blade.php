@@ -8,7 +8,7 @@
         <div class="panel-header">
             <div>
                 <h2>New Class</h2>
-                <p>Add a class under a branch.</p>
+                <p>Add a class. It will be available to every branch automatically.</p>
             </div>
         </div>
 

@@ -4,7 +4,7 @@
 @php($existingQuestions = $existingQuestions ?? collect())
 @php($existingCount = $existingQuestions->count())
 
-<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-form-id="{{ $formKey }}" data-default-marks="{{ $defaultMarks ?? 1 }}" data-existing-count="{{ $existingCount }}">
+<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-form-id="{{ $formKey }}" data-default-marks="{{ (int) ($defaultMarks ?? 1) }}" data-existing-count="{{ $existingCount }}">
     @csrf
     <input type="hidden" name="_form_key" value="{{ $formKey }}">
 
@@ -36,13 +36,11 @@
                         <div class="row g-2 question-meta-row">
                             <div class="col-6">
                                 <label class="form-label">Marks</label>
-                                <input type="number" value="{{ $existingQuestion->marks }}" class="form-control" disabled>
+                                <input type="number" value="{{ (int) $existingQuestion->marks }}" class="form-control" disabled>
                             </div>
                             <div class="col-6">
-                                <label class="form-label">Type</label>
-                                <select class="form-select form-control" disabled>
-                                    <option selected>MCQ</option>
-                                </select>
+                                <label class="form-label">Category</label>
+                                <input type="text" value="{{ $existingQuestion->category?->name ?? '—' }}" class="form-control" disabled>
                             </div>
                         </div>
 
@@ -120,14 +118,18 @@
                     <div class="row g-2 question-meta-row">
                         <div class="col-md-6">
                             <label class="form-label">Marks <span class="required-mark">*</span></label>
-                            <input type="number" step="0.01" min="0.01" name="questions[{{ $qIndex }}][marks]" value="{{ $oldQ['marks'] ?? $defaultMarks }}" class="form-control @error('questions.'.$qIndex.'.marks') is-invalid @enderror" required>
+                            <input type="number" step="1" min="1" name="questions[{{ $qIndex }}][marks]" value="{{ (int) ($oldQ['marks'] ?? $defaultMarks) }}" class="form-control @error('questions.'.$qIndex.'.marks') is-invalid @enderror" required>
                             @error('questions.'.$qIndex.'.marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Type</label>
-                            <select name="questions[{{ $qIndex }}][question_type]" class="form-select form-control">
-                                <option value="mcq">MCQ</option>
+                            <label class="form-label">Category <span class="required-mark">*</span></label>
+                            <select name="questions[{{ $qIndex }}][question_category_id]" class="form-select form-control @error('questions.'.$qIndex.'.question_category_id') is-invalid @enderror" required>
+                                <option value="">Select category</option>
+                                @foreach ($categories ?? [] as $categoryOption)
+                                    <option value="{{ $categoryOption->id }}" @selected(($oldQ['question_category_id'] ?? '') == $categoryOption->id)>{{ $categoryOption->name }}</option>
+                                @endforeach
                             </select>
+                            @error('questions.'.$qIndex.'.question_category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
 
@@ -213,6 +215,9 @@
         // every form, causing "Add Another Question" to create 2-3 cards at once.
         (function () {
         const formId = @json($formKey);
+        const CATEGORIES = @json(($categories ?? collect())->map(fn ($categoryOption) => ['id' => $categoryOption->id, 'name' => $categoryOption->name])->values());
+        const escapeHtml = (str) => String(str).replace(/[&<>"']/g, (ch) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[ch]));
+        const categoryOptionsHtml = () => '<option value="">Select category</option>' + CATEGORIES.map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
         const form = document.querySelector('[data-multi-question-form][data-form-id="' + formId + '"]');
         if (form) {
             const list = form.querySelector('[data-multi-question-list]');
@@ -223,7 +228,7 @@
             const renumberAll = () => {
                 list.querySelectorAll('[data-question-block]').forEach((block, qIdx) => {
                     block.querySelector('[data-question-number]').textContent = 'Question ' + (existingCount + qIdx + 1);
-                    const headers = ['question_text', 'marks', 'question_type', 'explanation'];
+                    const headers = ['question_text', 'marks', 'question_category_id', 'explanation'];
                     headers.forEach((field) => {
                         const el = block.querySelector('[name*="[' + field + ']"]');
                         if (el) {
@@ -442,13 +447,11 @@
                         <div class="row g-2 question-meta-row">
                             <div class="col-md-6">
                                 <label class="form-label">Marks <span class="required-mark">*</span></label>
-                                <input type="number" step="0.01" min="0.01" name="questions[${qIdx}][marks]" value="${form.dataset.defaultMarks || '1'}" class="form-control" required>
+                                <input type="number" step="1" min="1" name="questions[${qIdx}][marks]" value="${parseInt(form.dataset.defaultMarks || '1', 10)}" class="form-control" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Type</label>
-                                <select name="questions[${qIdx}][question_type]" class="form-select form-control">
-                                    <option value="mcq">MCQ</option>
-                                </select>
+                                <label class="form-label">Category <span class="required-mark">*</span></label>
+                                <select name="questions[${qIdx}][question_category_id]" class="form-select form-control" required>${categoryOptionsHtml()}</select>
                             </div>
                         </div>
                         <div class="option-builder" data-option-builder>

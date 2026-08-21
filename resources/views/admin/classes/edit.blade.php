@@ -8,7 +8,13 @@
         <div class="panel-header">
             <div>
                 <h2>Edit Class</h2>
-                <p>Update this class for {{ $class->branch->name }}.</p>
+                <p>
+                    @if ($class->branch)
+                        Update this class for {{ $class->branch->name }}.
+                    @else
+                        Update this class. It is available to all branches.
+                    @endif
+                </p>
             </div>
         </div>
 

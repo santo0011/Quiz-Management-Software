@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Exam;
 use App\Models\Question;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class QuestionRequest extends FormRequest
 {
@@ -29,10 +30,17 @@ class QuestionRequest extends FormRequest
 
     public function rules(): array
     {
+        $exam = $this->route('exam') ?: $this->route('question')?->exam;
+
         return [
             'question_text' => ['required', 'string'],
-            'question_type' => ['required', 'string', 'in:mcq'],
-            'marks' => ['required', 'numeric', 'min:0.01'],
+            'marks' => ['required', 'integer', 'min:1'],
+            'question_category_id' => [
+                'required',
+                Rule::exists('question_categories', 'id')->where(
+                    fn ($query) => $query->where(fn ($q) => $q->where('branch_id', $exam?->branch_id)->orWhereNull('branch_id'))
+                ),
+            ],
             'explanation' => ['nullable', 'string'],
             'options' => ['required', 'array', 'min:2'],
             'options.*' => ['required', 'string'],

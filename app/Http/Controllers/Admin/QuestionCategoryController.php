@@ -18,7 +18,7 @@ class QuestionCategoryController extends Controller
 
         $categories = QuestionCategory::withCount('questions')
             ->with('branch')
-            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->when($branchId, fn ($query) => $query->visibleToBranch($branchId))
             ->when($request->filled('search'), fn ($query) => $query->where('name', 'like', '%'.$request->string('search')->toString().'%'))
             ->orderBy('name')
             ->paginate(20)

@@ -20,7 +20,7 @@ class Question extends Model
     protected function casts(): array
     {
         return [
-            'marks' => 'decimal:2',
+            'marks' => 'integer',
         ];
     }
 

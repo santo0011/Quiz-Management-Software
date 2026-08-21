@@ -86,7 +86,7 @@
                     <select id="school_class_id" name="school_class_id" class="form-select form-control @error('school_class_id') is-invalid @enderror" required data-class-select data-selected-class="{{ old('school_class_id', $exam->school_class_id) }}">
                         <option value="">Select class</option>
                         @foreach ($classes as $schoolClass)
-                            <option value="{{ $schoolClass->id }}" @selected(old('school_class_id', $exam->school_class_id) == $schoolClass->id)>{{ $schoolClass->name }}{{ $schoolClass->isGlobal() ? ' (All Branches)' : '' }}</option>
+                            <option value="{{ $schoolClass->id }}" @selected(old('school_class_id', $exam->school_class_id) == $schoolClass->id)>{{ $schoolClass->name }}</option>
                         @endforeach
                     </select>
                     @error('school_class_id')<div class="invalid-feedback">{{ $message }}</div>@enderror

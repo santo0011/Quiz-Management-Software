@@ -446,8 +446,7 @@
 
                 classSelect.innerHTML = '<option value="">Select class</option>';
                 branchClasses.forEach((schoolClass) => {
-                    const label = schoolClass.global ? schoolClass.name + ' (All Branches)' : schoolClass.name;
-                    const option = new Option(label, schoolClass.id);
+                    const option = new Option(schoolClass.name, schoolClass.id);
                     option.selected = String(schoolClass.id) === String(selectedClass);
                     classSelect.add(option);
                 });
