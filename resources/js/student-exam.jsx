@@ -70,7 +70,13 @@ function PassageStep({ step, questionNumbers, onSelect }) {
         <div className="passage-step-grid">
             <aside className={collapsed ? 'passage-panel collapsed' : 'passage-panel'}>
                 <div className="passage-panel-header">
-                    <h2 className="passage-panel-title">{step.passage.title}</h2>
+                    <div>
+                        <span className="passage-panel-eyebrow">
+                            <i className="bi bi-file-earmark-text-fill"></i>
+                            Reading Passage
+                        </span>
+                        <h2 className="passage-panel-title">{step.passage.title}</h2>
+                    </div>
                     <button
                         type="button"
                         className="btn btn-sm btn-soft passage-collapse-toggle"
