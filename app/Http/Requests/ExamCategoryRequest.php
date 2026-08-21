@@ -35,7 +35,9 @@ class ExamCategoryRequest extends FormRequest
         return [
             'question_category_id' => [
                 'required',
-                Rule::exists('question_categories', 'id')->where('branch_id', $exam?->branch_id),
+                Rule::exists('question_categories', 'id')->where(
+                    fn ($query) => $query->where(fn ($q) => $q->where('branch_id', $exam?->branch_id)->orWhereNull('branch_id'))
+                ),
             ],
         ];
     }

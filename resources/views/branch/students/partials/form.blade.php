@@ -39,7 +39,7 @@
             <select id="class_id" name="class_id" class="form-select form-control{{ $useOldInput && $errors->has('class_id') ? ' is-invalid' : '' }}" required>
                 <option value="">Select class</option>
                 @foreach (($classes ?? \App\Models\SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get()) as $class)
-                    <option value="{{ $class->id }}" @selected(($useOldInput ? old('class_id', $student->class_id) : $student->class_id) == $class->id)>{{ $class->name }}{{ $class->isGlobal() ? ' (All Branches)' : '' }}</option>
+                    <option value="{{ $class->id }}" @selected(($useOldInput ? old('class_id', $student->class_id) : $student->class_id) == $class->id)>{{ $class->name }}</option>
                 @endforeach
             </select>
             @if ($useOldInput)

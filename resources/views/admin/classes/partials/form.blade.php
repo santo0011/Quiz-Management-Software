@@ -9,24 +9,15 @@
 
     @php($useOldInput = isset($drawerId) ? old('_drawer') === $drawerId : true)
 
-    @if (auth()->user()->role === 'Super Admin' && ! isset($selectedBranch))
-        <div class="mb-4">
-            <label for="branch_id" class="form-label">Branch</label>
-            <select id="branch_id" name="branch_id" class="form-select form-control{{ $useOldInput && $errors->has('branch_id') ? ' is-invalid' : '' }}">
-                <option value="">All branches (global class)</option>
-                @foreach ($branches ?? [] as $branch)
-                    <option value="{{ $branch->id }}" @selected($useOldInput && old('branch_id') == $branch->id)>{{ $branch->name }}</option>
-                @endforeach
-            </select>
-            <div class="form-text">Leave blank to make this class available to every branch.</div>
-            @if ($useOldInput)
-                @error('branch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            @endif
-        </div>
-    @elseif (isset($selectedBranch) && $selectedBranch)
+    @if (isset($selectedBranch) && $selectedBranch)
         <div class="feedback-alert success mb-4">
             <i class="bi bi-building-check"></i>
             <div><strong>Active Branch:</strong> {{ $selectedBranch->name }}</div>
+        </div>
+    @else
+        <div class="feedback-alert success mb-4">
+            <i class="bi bi-globe2"></i>
+            <div>This class will be available to <strong>all branches</strong> automatically.</div>
         </div>
     @endif
 

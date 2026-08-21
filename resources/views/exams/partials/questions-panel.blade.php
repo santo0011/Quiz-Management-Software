@@ -88,6 +88,7 @@
                                     'defaultMarks' => $exam->marks_per_question ?? 1,
                                     'existingQuestions' => collect(),
                                     'showExistingQuestions' => false,
+                                    'categories' => $categories ?? collect(),
                                 ])
                                 </div>
                             </div>

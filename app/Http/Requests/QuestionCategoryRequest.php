@@ -22,6 +22,13 @@ class QuestionCategoryRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('branch_id')) {
+            $this->merge(['branch_id' => null]);
+        }
+    }
+
     public function rules(): array
     {
         $category = $this->route('question_category');
@@ -31,7 +38,7 @@ class QuestionCategoryRequest extends FormRequest
             : ($this->input('branch_id') ?: $category?->branch_id);
 
         return [
-            'branch_id' => $isBranch ? ['nullable'] : ['required', 'exists:branches,id'],
+            'branch_id' => $isBranch ? ['nullable'] : ['nullable', 'exists:branches,id'],
             'name' => [
                 'required',
                 'string',
@@ -46,7 +53,6 @@ class QuestionCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'branch_id.required' => 'Please select a branch first.',
             'name.required' => 'Please enter the category name.',
             'name.unique' => 'This category already exists for the selected branch.',
         ];

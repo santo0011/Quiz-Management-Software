@@ -35,14 +35,18 @@
 
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="question_type" class="form-label">Question Type</label>
-                    <select id="question_type" name="question_type" class="form-select form-control">
-                        <option value="mcq" @selected(old('question_type', $question->question_type ?? 'mcq') === 'mcq')>MCQ</option>
+                    <label for="question_category_id" class="form-label">Category <span class="required-mark">*</span></label>
+                    <select id="question_category_id" name="question_category_id" class="form-select form-control @error('question_category_id') is-invalid @enderror" required>
+                        <option value="">Select category</option>
+                        @foreach ($categories ?? [] as $categoryOption)
+                            <option value="{{ $categoryOption->id }}" @selected(old('question_category_id', $question->question_category_id) == $categoryOption->id)>{{ $categoryOption->name }}</option>
+                        @endforeach
                     </select>
+                    @error('question_category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6">
                     <label for="marks" class="form-label">Marks <span class="required-mark">*</span></label>
-                    <input id="marks" type="number" step="0.01" min="0.01" name="marks" value="{{ old('marks', $question->marks ?? 1) }}" class="form-control @error('marks') is-invalid @enderror" required>
+                    <input id="marks" type="number" step="1" min="1" name="marks" value="{{ old('marks', (int) ($question->marks ?? 1)) }}" class="form-control @error('marks') is-invalid @enderror" required>
                     @error('marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             </div>

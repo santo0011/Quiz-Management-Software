@@ -11,6 +11,12 @@
                     <i class="bi bi-trophy"></i>
                     {{ $question->marks }} marks
                 </span>
+                @if ($question->category)
+                    <span class="question-marks-badge">
+                        <i class="bi bi-tag"></i>
+                        {{ $question->category->name }}
+                    </span>
+                @endif
             </div>
             <h3 class="math-content question-item-text">{{ $question->question_text }}</h3>
         </div>

@@ -36,7 +36,7 @@ class QuestionController extends Controller
             'branch' => $request->user()->branch,
             'exam' => $exam->load('schoolClass', 'questions.options', 'category'),
             'question' => new Question(['question_type' => 'mcq', 'marks' => 1]),
-            'categories' => QuestionCategory::where('branch_id', $exam->branch_id)->orderBy('name')->get(),
+            'categories' => QuestionCategory::visibleToBranch($exam->branch_id)->orderBy('name')->get(),
         ]);
     }
 
@@ -44,11 +44,6 @@ class QuestionController extends Controller
     {
         $this->authorizeExam($request, $exam);
         abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
-
-        if (! $exam->question_category_id) {
-            return redirect()->route('branch.questions.create', $exam)
-                ->with('error', 'Please select a question category for this exam first.');
-        }
 
         $count = $this->createQuestionsFromRequest($request, $exam);
         $message = $count > 1
@@ -67,8 +62,9 @@ class QuestionController extends Controller
         return view('branch.passage-groups.questions-create', [
             'branch' => $request->user()->branch,
             'exam' => $exam->load('schoolClass', 'category'),
-            'passageGroup' => $passageGroup->load('questions.options'),
+            'passageGroup' => $passageGroup->load('questions.options', 'questions.category'),
             'question' => new Question(['question_type' => 'mcq', 'marks' => 1]),
+            'categories' => QuestionCategory::visibleToBranch($exam->branch_id)->orderBy('name')->get(),
         ]);
     }
 
@@ -77,11 +73,6 @@ class QuestionController extends Controller
         $this->authorizeExam($request, $exam);
         abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         abort_if($passageGroup->exam_id !== $exam->id, 404);
-
-        if (! $exam->question_category_id) {
-            return redirect()->route('branch.questions.create', $exam)
-                ->with('error', 'Please select a question category for this exam first.');
-        }
 
         $count = $this->createQuestionsFromRequest($request, $exam, $passageGroup);
         $message = $count > 1
@@ -105,13 +96,13 @@ class QuestionController extends Controller
                 $question = new Question;
                 $question->fill([
                     'question_text' => trim($questionData['question_text']),
-                    'question_type' => $questionData['question_type'] ?? 'mcq',
+                    'question_type' => 'mcq',
                     'marks' => $questionData['marks'] ?? $exam->marks_per_question,
                     'explanation' => $questionData['explanation'] ?? null,
                     'position' => $position++,
                 ]);
                 $question->exam_id = $exam->id;
-                $question->question_category_id = $exam->question_category_id;
+                $question->question_category_id = $questionData['question_category_id'] ?? null;
                 $question->passage_group_id = $passageGroup?->id;
                 $question->save();
 
@@ -140,6 +131,7 @@ class QuestionController extends Controller
             'branch' => $request->user()->branch,
             'exam' => $question->exam->load('schoolClass', 'category'),
             'question' => $question->load('options'),
+            'categories' => QuestionCategory::visibleToBranch($question->exam->branch_id)->orderBy('name')->get(),
         ]);
     }
 
@@ -169,9 +161,10 @@ class QuestionController extends Controller
     private function saveQuestion(QuestionRequest $request, Exam $exam, Question $question): void
     {
         DB::transaction(function () use ($request, $exam, $question): void {
-            $question->fill($request->safe()->only(['question_text', 'question_type', 'marks', 'explanation']));
+            $question->fill($request->safe()->only(['question_text', 'marks', 'explanation']));
+            $question->question_type = 'mcq';
             $question->exam_id = $exam->id;
-            $question->question_category_id = $exam->question_category_id;
+            $question->question_category_id = $request->input('question_category_id');
             $question->save();
 
             $question->options()->delete();

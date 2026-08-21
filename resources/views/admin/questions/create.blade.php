@@ -11,11 +11,11 @@
         <div class="exam-summary-row">
             <div class="exam-summary-title">
                 <h2>{{ $exam->title }}</h2>
-                <p>Manage questions for {{ $exam->schoolClass?->name }}.</p>
+                <p>Manage questions for {{ $exam->schoolClass?->name }}. Each question has its own category.</p>
             </div>
 
-            <div class="exam-summary-category">
-                @if ($categories->isEmpty())
+            @if ($categories->isEmpty())
+                <div class="exam-summary-category">
                     <span class="category-status-pill warning">
                         <i class="bi bi-exclamation-triangle-fill"></i>
                         No categories yet
@@ -24,73 +24,12 @@
                         <i class="bi bi-tags-fill"></i>
                         Create Category
                     </a>
-                @elseif ($exam->question_category_id)
-                    <span class="question-marks-badge">
-                        <i class="bi bi-tag"></i>
-                        {{ $exam->category->name }}
-                    </span>
-                    <button type="button" class="btn btn-sm btn-soft" data-bs-toggle="collapse" data-bs-target="#changeCategoryForm">
-                        <i class="bi bi-pencil-fill"></i>
-                        Change
-                    </button>
-                @else
-                    <span class="category-status-pill danger">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        Category required
-                    </span>
-                @endif
-            </div>
+                </div>
+            @endif
         </div>
-
-        @if ($categories->isEmpty())
-            {{-- Nothing more to show: the pill + link above already covers this state. --}}
-        @elseif ($exam->question_category_id)
-            <div class="collapse mt-3" id="changeCategoryForm">
-                <form method="POST" action="{{ route('admin.exams.category.update', $exam) }}" class="row g-2 align-items-end">
-                    @csrf
-                    @method('PUT')
-                    <div class="col-sm-8 col-md-6">
-                        <label for="question_category_id" class="form-label">Category <span class="required-mark">*</span></label>
-                        <select id="question_category_id" name="question_category_id" class="form-select form-control @error('question_category_id') is-invalid @enderror" required>
-                            @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" @selected($exam->question_category_id == $category->id)>{{ $category->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('question_category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle-fill"></i>
-                            Save Category
-                        </button>
-                    </div>
-                </form>
-            </div>
-        @else
-            <form method="POST" action="{{ route('admin.exams.category.update', $exam) }}" class="row g-2 align-items-end mt-3">
-                @csrf
-                @method('PUT')
-                <div class="col-sm-8 col-md-6">
-                    <label for="question_category_id" class="form-label">Select a category <span class="required-mark">*</span></label>
-                    <select id="question_category_id" name="question_category_id" class="form-select form-control @error('question_category_id') is-invalid @enderror" required>
-                        <option value="">Select category</option>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('question_category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle-fill"></i>
-                        Save Category
-                    </button>
-                </div>
-            </form>
-        @endif
     </section>
 
-    @if ($exam->question_category_id)
+    @if ($categories->isNotEmpty())
         <section class="content-panel add-item-panel" id="add-question-section">
             <div class="panel-header">
                 <div>
@@ -126,6 +65,7 @@
                         'defaultMarks' => $exam->marks_per_question ?? 1,
                         'existingQuestions' => collect(),
                         'showExistingQuestions' => false,
+                        'categories' => $categories,
                     ])
                 </div>
             </div>
@@ -136,7 +76,7 @@
                         @csrf
                         <div class="mb-3">
                             <label for="content" class="form-label">Summary Content <span class="required-mark">*</span></label>
-                            @include('partials.math-editor', [
+                            @include('partials.summary-editor', [
                                 'mathId' => 'summary_content',
                                 'mathName' => 'content',
                                 'mathValue' => old('content'),
@@ -159,9 +99,9 @@
 
     @include('exams.partials.questions-panel-header', ['exam' => $exam, 'prefix' => 'admin'])
 
-    @include('exams.partials.questions-panel', ['exam' => $exam, 'prefix' => 'admin'])
+    @include('exams.partials.questions-panel', ['exam' => $exam, 'prefix' => 'admin', 'categories' => $categories])
 
-    @if ($exam->question_category_id)
+    @if ($categories->isNotEmpty())
         @php($hasQuestions = $exam->questions->count() > 0)
         <section class="content-panel submit-panel">
             <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#examSettingsModal" @disabled(!$hasQuestions)>

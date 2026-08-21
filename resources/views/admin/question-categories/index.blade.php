@@ -8,7 +8,7 @@
         <div class="panel-header">
             <div>
                 <h2>Question Categories</h2>
-                <p>Categories belong to a single branch. Filter by branch, or view all of them at once.</p>
+                <p>Categories you create here are available to every branch automatically. Filter by branch, or view all of them at once.</p>
             </div>
             <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addCategoryDrawer" aria-controls="addCategoryDrawer">
                 <i class="bi bi-plus-circle-fill"></i>
@@ -51,7 +51,16 @@
                         @foreach ($categories as $categoryRow)
                             <tr>
                                 <td><strong>{{ $categoryRow->name }}</strong></td>
-                                <td>{{ $categoryRow->branch?->name }}</td>
+                                <td>
+                                    @if ($categoryRow->isGlobal())
+                                        <span class="status-badge status-published">
+                                            <i class="bi bi-globe2"></i>
+                                            All Branches
+                                        </span>
+                                    @else
+                                        {{ $categoryRow->branch?->name }}
+                                    @endif
+                                </td>
 
                                 <td>{{ $categoryRow->created_at->format('d M Y, h:i A') }}</td>
                                 <td class="text-end">
