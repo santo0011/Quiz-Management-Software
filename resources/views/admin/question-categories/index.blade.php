@@ -42,7 +42,6 @@
                     <thead>
                         <tr>
                             <th>Category Name</th>
-                            <th>Branch</th>
                             <th>Created</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -51,17 +50,7 @@
                         @foreach ($categories as $categoryRow)
                             <tr>
                                 <td><strong>{{ $categoryRow->name }}</strong></td>
-                                <td>
-                                    @if ($categoryRow->isGlobal())
-                                        <span class="status-badge status-published">
-                                            <i class="bi bi-globe2"></i>
-                                            All Branches
-                                        </span>
-                                    @else
-                                        {{ $categoryRow->branch?->name }}
-                                    @endif
-                                </td>
-
+ 
                                 <td>{{ $categoryRow->created_at->format('d M Y, h:i A') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">

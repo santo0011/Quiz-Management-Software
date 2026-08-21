@@ -25,7 +25,7 @@
                 </div>
             </div>
             <div class="question-card-body">
-                <div class="math-content">{{ $passageGroup->content }}</div>
+                <div class="math-content">{!! $passageGroup->content !!}</div>
             </div>
         </section>
 
