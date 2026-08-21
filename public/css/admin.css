@@ -583,6 +583,70 @@ body {
     color: var(--muted);
 }
 
+/* Exam title + Question Category merged into one compact row */
+.exam-summary-bar {
+    padding: 16px 24px;
+    margin-bottom: 28px;
+}
+
+.exam-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.exam-summary-title h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.exam-summary-title p {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.exam-summary-category {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.category-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.category-status-pill.warning {
+    background: #fffbeb;
+    color: #b45309;
+}
+
+.category-status-pill.danger {
+    background: #fff0f3;
+    color: #9f1239;
+}
+
+@media (max-width: 575.98px) {
+    .exam-summary-row {
+        align-items: flex-start;
+    }
+
+    .exam-summary-category {
+        width: 100%;
+    }
+}
+
 .admin-table {
     min-width: 720px;
 }
@@ -1182,6 +1246,115 @@ body {
 
 .multi-question-block {
     scroll-margin-top: 120px;
+}
+
+.add-item-panel {
+    scroll-margin-top: 100px;
+    margin-bottom: 28px;
+}
+
+.add-item-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.add-item-tile {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+    padding: 20px;
+    border: 2px dashed var(--line);
+    border-radius: 14px;
+    background: var(--soft);
+    transition: all .18s ease;
+    width: 100%;
+}
+
+.add-item-tile:hover {
+    border-color: var(--primary);
+    background: #f8faff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(35, 86, 216, .12);
+}
+
+.add-item-tile-accent:hover {
+    border-color: var(--accent);
+    background: #f2fbfa;
+    box-shadow: 0 10px 24px rgba(15, 159, 143, .14);
+}
+
+.add-item-tile-icon {
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: #eef4ff;
+    color: var(--primary);
+}
+
+.add-item-tile-accent .add-item-tile-icon {
+    background: #e6f7f5;
+    color: var(--accent);
+}
+
+.add-item-tile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.add-item-tile-body strong {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.add-item-tile-body small {
+    color: var(--muted);
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.add-item-inline-form {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+}
+
+.passage-add-question-form {
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 24px;
+}
+
+.submit-panel {
+    text-align: center;
+    background: linear-gradient(135deg, #f8faff 0%, #eef4ff 100%);
+    border: 1px solid var(--line);
+}
+
+.submit-panel .btn {
+    min-width: 220px;
+    min-height: 52px;
+    font-size: 1rem;
+    box-shadow: 0 10px 24px rgba(16, 185, 129, .22);
+}
+
+.submit-panel p {
+    color: var(--muted);
+    margin: 10px 0 0;
+}
+
+@media (max-width: 767.98px) {
+    .add-item-tiles {
+        grid-template-columns: 1fr;
+    }
 }
 
 .question-form-actions {
@@ -2504,6 +2677,7 @@ body {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 280px;
     gap: 18px;
+    align-items: start;
 }
 
 .exam-question-panel,
@@ -2625,6 +2799,92 @@ body {
 
 .math-content {
     overflow-wrap: anywhere;
+}
+
+/* Passage/Summary question group — student exam runner */
+.passage-step-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+}
+
+.passage-panel {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    min-width: 0;
+    background: #f8fafc;
+    border: 1px solid rgba(23, 32, 51, 0.1);
+    border-radius: 12px;
+    padding: 18px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+}
+
+.passage-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.passage-panel-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 850;
+    color: #172033;
+}
+
+.passage-panel-image {
+    max-width: 100%;
+    border-radius: 10px;
+    margin-bottom: 12px;
+}
+
+.passage-panel-content {
+    color: #344054;
+    line-height: 1.65;
+    white-space: pre-wrap;
+}
+
+.passage-questions-column {
+    display: grid;
+    gap: 26px;
+}
+
+.passage-question-block {
+    padding-bottom: 22px;
+    border-bottom: 1px dashed rgba(23, 32, 51, 0.14);
+}
+
+.passage-question-block:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.passage-collapse-toggle {
+    display: none;
+}
+
+@media (max-width: 767.98px) {
+    .passage-step-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .passage-panel {
+        position: static;
+        max-height: none;
+    }
+
+    .passage-collapse-toggle {
+        display: inline-flex;
+    }
+
+    .passage-panel.collapsed .passage-panel-body {
+        display: none;
+    }
 }
 
 @media (max-width: 767.98px) {
@@ -3019,6 +3279,28 @@ body {
     margin-bottom: 20px;
 }
 
+.question-mgmt-panel {
+    margin-bottom: 28px;
+}
+
+.questions-panel-header {
+    padding: 16px 24px;
+    margin-bottom: 28px;
+}
+
+.questions-panel-header .panel-header {
+    margin-bottom: 0;
+}
+
+.questions-panel-header .panel-header h2 {
+    font-size: 1.1rem;
+}
+
+.questions-panel-header .panel-header p {
+    margin-top: 2px;
+    font-size: 0.85rem;
+}
+
 .question-count-badge {
     display: inline-flex;
     align-items: center;
@@ -3068,6 +3350,10 @@ body {
     gap: 16px;
 }
 
+.question-mgmt-panel .question-list {
+    gap: 20px;
+}
+
 .question-admin-item {
     background: #fff;
     border: 1px solid var(--line);
@@ -3080,6 +3366,57 @@ body {
 .question-admin-item:hover {
     border-color: #c9d4e8;
     box-shadow: 0 16px 40px rgba(20, 32, 54, 0.09);
+}
+
+/* Passage/Summary group card — distinct teal-tinted background so it's
+   immediately clear which questions belong to a Summary vs. stand alone. */
+.passage-group-item {
+    background: #d9f0ec;
+    border-color: #9cd6c9;
+}
+
+.passage-group-item > .question-item-header {
+    background: linear-gradient(180deg, #cdeae3, #bfe3da);
+    border-bottom-color: #a9d9cc;
+}
+
+.passage-group-item > .question-item-header .question-number-badge {
+    background: linear-gradient(135deg, var(--accent), var(--primary));
+    font-size: 1.05rem;
+}
+
+.passage-preview {
+    padding: 0 20px 16px;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.6;
+}
+
+.passage-group-questions {
+    display: grid;
+    gap: 12px;
+    padding: 0 16px 16px;
+    background: #eef6f5;
+}
+
+.question-mgmt-panel .passage-group-questions {
+    gap: 16px;
+}
+
+.passage-child-item {
+    background: #f8fcfb;
+    border-color: #dcece9;
+    box-shadow: none;
+}
+
+.passage-child-item .question-item-header {
+    background: linear-gradient(180deg, #f2f9f8, #edf6f4);
+    border-bottom-color: #e2f0ed;
+}
+
+.passage-child-item .question-number-badge {
+    background: linear-gradient(135deg, #94a3b8, #64748b);
+    box-shadow: none;
 }
 
 .question-item-header {

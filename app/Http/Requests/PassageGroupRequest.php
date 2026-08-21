@@ -6,11 +6,11 @@ use App\Models\Exam;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ExamSettingsRequest extends FormRequest
+class PassageGroupRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $exam = $this->route('exam');
+        $exam = $this->route('exam') ?: $this->route('passageGroup')?->exam;
 
         if (! $exam instanceof Exam) {
             return false;
@@ -30,8 +30,14 @@ class ExamSettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
-            'passing_marks' => ['nullable', 'integer', 'min:0'],
+            'content' => ['required', 'string'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'content.required' => 'Please enter the passage/summary content.',
         ];
     }
 }

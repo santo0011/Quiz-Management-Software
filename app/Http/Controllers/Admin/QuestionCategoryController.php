@@ -51,9 +51,9 @@ class QuestionCategoryController extends Controller
 
     public function destroy(QuestionCategory $questionCategory): RedirectResponse
     {
-        if ($questionCategory->questions()->exists()) {
+        if ($questionCategory->questions()->exists() || $questionCategory->exams()->exists()) {
             return redirect()->route('admin.question-categories.index', ['branch_id' => $questionCategory->branch_id])
-                ->with('error', 'This category cannot be deleted because it has related questions.');
+                ->with('error', 'This category cannot be deleted because it is used by one or more exams or questions.');
         }
 
         $branchId = $questionCategory->branch_id;

@@ -29,26 +29,28 @@
                 @endif
             </div>
             <div class="exam-hero-actions">
-                @if (!$exam->isPublished())
+                @if (!$exam->hasBeenAttempted())
                     <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-light btn-exam-action">
-                        <i class="bi bi-patch-plus-fill"></i>
-                        Add Question
+                        <i class="bi bi-list-check"></i>
+                        Manage Questions
                     </a>
                     <a href="{{ route($prefix.'.exams.edit', $exam) }}" class="btn btn-outline-light btn-exam-action">
                         <i class="bi bi-pencil-fill"></i>
                         Edit Exam
                     </a>
-                    <form method="POST" action="{{ route($prefix.'.exams.publish', $exam) }}" data-publish-exam>
-                        @csrf
-                        <button type="submit" class="btn btn-success btn-exam-action">
-                            <i class="bi bi-rocket-takeoff-fill"></i>
-                            Publish Exam
-                        </button>
-                    </form>
+                    @if (!$exam->isPublished())
+                        <form method="POST" action="{{ route($prefix.'.exams.publish', $exam) }}" data-publish-exam>
+                            @csrf
+                            <button type="submit" class="btn btn-success btn-exam-action">
+                                <i class="bi bi-rocket-takeoff-fill"></i>
+                                Publish Exam
+                            </button>
+                        </form>
+                    @endif
                 @else
-                    <span class="exam-published-lock">
+                    <span class="exam-published-lock" data-bs-toggle="tooltip" data-bs-title="{{ \App\Models\Exam::LOCK_MESSAGE }}">
                         <i class="bi bi-lock-fill"></i>
-                        Published - Locked
+                        Locked - Student Attempted
                     </span>
                 @endif
             </div>
@@ -68,15 +70,6 @@
         <div class="exam-stat-body">
             <span>Total Marks</span>
             <strong>{{ $exam->total_marks }}</strong>
-        </div>
-    </div>
-    <div class="exam-stat-card">
-        <div class="exam-stat-icon accent">
-            <i class="bi bi-patch-check-fill"></i>
-        </div>
-        <div class="exam-stat-body">
-            <span>Marks / Question</span>
-            <strong>{{ $exam->marks_per_question }}</strong>
         </div>
     </div>
     <div class="exam-stat-card">
@@ -178,94 +171,11 @@
     <div class="panel-header">
         <div>
             <h2><i class="bi bi-list-check me-2 text-primary"></i>Questions</h2>
-            <p>Math expressions render with MathJax in management and student screens.</p>
+            <p>{{ $exam->questions->count() }} {{ Str::plural('question', $exam->questions->count()) }} in this exam.</p>
         </div>
-        <span class="question-count-badge">
-            <i class="bi bi-file-earmark-text"></i>
-            {{ $exam->questions->count() }} {{ Str::plural('Question', $exam->questions->count()) }}
-        </span>
+        <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-primary">
+            <i class="bi bi-list-check"></i>
+            Manage Questions
+        </a>
     </div>
-
-    @if ($exam->questions->isEmpty())
-        <div class="empty-state">
-            <div class="empty-state-icon">
-                <i class="bi bi-patch-question"></i>
-            </div>
-            <h3>No questions added</h3>
-            <!-- <p>Add at least one MCQ before publishing this exam to students.</p> -->
-            <!-- <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-primary mt-3">
-                <i class="bi bi-patch-plus-fill"></i>
-                Add First Question
-            </a> -->
-        </div>
-    @else
-        <div class="question-list">
-            @foreach ($exam->questions as $question)
-                <article class="question-admin-item">
-                    <div class="question-item-header">
-                        <div class="question-number-badge">
-                            {{ $loop->iteration }}
-                        </div>
-                        <div class="question-item-content">
-                            <div class="question-item-meta">
-                                <span class="question-marks-badge">
-                                    <i class="bi bi-trophy"></i>
-                                    {{ $question->marks }} marks
-                                </span>
-                            </div>
-                            <h3 class="math-content question-item-text">{{ $question->question_text }}</h3>
-                        </div>
-                        @if (!$exam->isPublished())
-                            <div class="action-group question-item-actions">
-                                <a href="{{ route($prefix.'.questions.edit', $question) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit question">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </a>
-                                <form method="POST" action="{{ route($prefix.'.questions.destroy', $question) }}" data-confirm-delete>
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger-soft" data-bs-toggle="tooltip" data-bs-title="Delete question">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        @endif
-                    </div>
-
-                    <div class="option-preview">
-                        @foreach ($question->options as $option)
-                            <div class="option-preview-item {{ $option->is_correct ? 'correct' : '' }}">
-                                <span class="option-letter">{{ chr(65 + $loop->index) }}</span>
-                                <span class="math-content option-text">{{ $option->option_text }}</span>
-                                @if ($option->is_correct)
-                                    <span class="correct-badge">
-                                        <i class="bi bi-check-circle-fill"></i>
-                                        Correct
-                                    </span>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-
-                    @if ($question->explanation)
-                        <div class="question-explanation">
-                            <div class="explanation-icon">
-                                <i class="bi bi-lightbulb-fill"></i>
-                            </div>
-                            <div>
-                                <strong>Explanation</strong>
-                                <p class="math-content mb-0">{{ $question->explanation }}</p>
-                            </div>
-                        </div>
-                    @endif
-                </article>
-            @endforeach
-        </div>
-    @endif
 </section>
-
-@push('scripts')
-    <script>
-        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
-    </script>
-    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-@endpush

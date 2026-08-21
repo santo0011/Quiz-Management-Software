@@ -1,14 +1,14 @@
 @php($prefix = $prefix ?? 'admin')
-@php($oldQuestions = old('questions', [[]]))
+@php($formKey = $formKey ?? 'main')
+@php($oldQuestions = old('_form_key') === $formKey ? old('questions', [[]]) : [[]])
 @php($existingQuestions = $existingQuestions ?? collect())
 @php($existingCount = $existingQuestions->count())
 
-@include('exams.partials.settings-form', ['prefix' => $prefix, 'exam' => $exam])
-
-<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-default-marks="{{ $defaultMarks ?? 1 }}" data-existing-count="{{ $existingCount }}" data-categories="{{ ($categories ?? collect())->map(fn ($category) => ['id' => $category->id, 'name' => $category->name])->toJson() }}">
+<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-default-marks="{{ $defaultMarks ?? 1 }}" data-existing-count="{{ $existingCount }}">
     @csrf
+    <input type="hidden" name="_form_key" value="{{ $formKey }}">
 
-    @if ($existingQuestions->isNotEmpty())
+    @if ($existingQuestions->isNotEmpty() && ($showExistingQuestions ?? true))
         <div class="existing-questions-panel mb-4">
             @foreach ($existingQuestions as $existingQuestion)
                 <section class="question-card multi-question-block existing-question-card">
@@ -106,7 +106,7 @@
                     <div class="question-field-group">
                         <label class="form-label">Question Text <span class="required-mark">*</span></label>
                         @include('partials.math-editor', [
-                            'mathId' => 'q' . $qIndex . '_question_text',
+                            'mathId' => $formKey . '_q' . $qIndex . '_question_text',
                             'mathName' => 'questions[' . $qIndex . '][question_text]',
                             'mathValue' => $oldQ['question_text'] ?? '',
                             'mathPlaceholder' => 'Enter question text or math expression...',
@@ -118,26 +118,16 @@
                     </div>
 
                     <div class="row g-2 question-meta-row">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">Marks <span class="required-mark">*</span></label>
                             <input type="number" step="0.01" min="0.01" name="questions[{{ $qIndex }}][marks]" value="{{ $oldQ['marks'] ?? $defaultMarks }}" class="form-control @error('questions.'.$qIndex.'.marks') is-invalid @enderror" required>
                             @error('questions.'.$qIndex.'.marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">Type</label>
                             <select name="questions[{{ $qIndex }}][question_type]" class="form-select form-control">
                                 <option value="mcq">MCQ</option>
                             </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Category</label>
-                            <select name="questions[{{ $qIndex }}][question_category_id]" class="form-select form-control @error('questions.'.$qIndex.'.question_category_id') is-invalid @enderror">
-                                <option value="">Uncategorized</option>
-                                @foreach ($categories ?? [] as $category)
-                                    <option value="{{ $category->id }}" @selected(($oldQ['question_category_id'] ?? '') == $category->id)>{{ $category->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('questions.'.$qIndex.'.question_category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
 
@@ -152,7 +142,7 @@
                                     <label class="option-badge">{{ chr(65 + (int) $optIndex) }}</label>
                                     <div class="option-input-wrap">
                                         @include('partials.math-editor', [
-                                            'mathId' => 'q' . $qIndex . '_option_' . $optIndex,
+                                            'mathId' => $formKey . '_q' . $qIndex . '_option_' . $optIndex,
                                             'mathName' => 'questions[' . $qIndex . '][options][]',
                                             'mathValue' => $optValue,
                                             'mathPlaceholder' => 'Option ' . chr(65 + (int) $optIndex) . ' text or math expression',
@@ -179,7 +169,7 @@
                     <div class="question-explanation-field">
                         <label class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
                         @include('partials.math-editor', [
-                            'mathId' => 'q' . $qIndex . '_explanation',
+                            'mathId' => $formKey . '_q' . $qIndex . '_explanation',
                             'mathName' => 'questions[' . $qIndex . '][explanation]',
                             'mathValue' => $oldQ['explanation'] ?? '',
                             'mathPlaceholder' => 'Enter explanation text or math expression...',
@@ -204,7 +194,7 @@
             <i class="bi bi-check-circle-fill"></i>
             {{ $button }}
         </button>
-        <a href="{{ route($prefix.'.exams.show', $exam) }}" class="btn btn-soft">Cancel</a>
+        <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-soft">Cancel</a>
     </div>
 </form>
 
@@ -220,16 +210,12 @@
             const list = form.querySelector('[data-multi-question-list]');
             const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             const existingCount = parseInt(form.dataset.existingCount || '0', 10);
-            const categories = JSON.parse(form.dataset.categories || '[]');
-            const categoryOptionsHtml = ['<option value="">Uncategorized</option>']
-                .concat(categories.map((category) => `<option value="${category.id}">${category.name}</option>`))
-                .join('');
 
             // Re-number blocks and update name indices + badge letters
             const renumberAll = () => {
                 list.querySelectorAll('[data-question-block]').forEach((block, qIdx) => {
                     block.querySelector('[data-question-number]').textContent = 'Question ' + (existingCount + qIdx + 1);
-                    const headers = ['question_text', 'marks', 'question_type', 'question_category_id', 'explanation'];
+                    const headers = ['question_text', 'marks', 'question_type', 'explanation'];
                     headers.forEach((field) => {
                         const el = block.querySelector('[name*="[' + field + ']"]');
                         if (el) {
@@ -446,20 +432,14 @@
                             </div>
                         </div>
                         <div class="row g-2 question-meta-row">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label">Marks <span class="required-mark">*</span></label>
                                 <input type="number" step="0.01" min="0.01" name="questions[${qIdx}][marks]" value="${form.dataset.defaultMarks || '1'}" class="form-control" required>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label">Type</label>
                                 <select name="questions[${qIdx}][question_type]" class="form-select form-control">
                                     <option value="mcq">MCQ</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Category</label>
-                                <select name="questions[${qIdx}][question_category_id]" class="form-select form-control">
-                                    ${categoryOptionsHtml}
                                 </select>
                             </div>
                         </div>

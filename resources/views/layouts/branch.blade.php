@@ -73,7 +73,7 @@
                     <h2 class="modal-title fs-5" id="deleteConfirmModalLabel">Confirm Delete</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" id="deleteConfirmMessage">
                     This action cannot be undone. Are you sure you want to delete this record?
                 </div>
                 <div class="modal-footer">
@@ -128,7 +128,7 @@
                     <div class="publish-confirm-icon">
                         <i class="bi bi-rocket-takeoff-fill"></i>
                     </div>
-                    <p class="mb-0">Once this exam is published, it cannot be edited or deleted. Are you sure you want to publish this exam?</p>
+                    <p class="mb-0">Students will be able to attend this exam once it's published. You can still edit or delete it until a student attends. Are you sure you want to publish this exam?</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -216,6 +216,8 @@
         });
 
         const deleteModalEl = document.getElementById('deleteConfirmModal');
+        const deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
+        const defaultDeleteMessage = deleteConfirmMessage?.textContent.trim();
         const confirmDeleteButton = document.getElementById('confirmDeleteButton');
         let pendingDeleteForm = null;
 
@@ -223,6 +225,9 @@
             form.addEventListener('submit', (event) => {
                 event.preventDefault();
                 pendingDeleteForm = form;
+                if (deleteConfirmMessage) {
+                    deleteConfirmMessage.textContent = form.dataset.confirmMessage || defaultDeleteMessage;
+                }
                 bootstrap.Modal.getOrCreateInstance(deleteModalEl).show();
             });
         });

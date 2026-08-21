@@ -1,15 +1,15 @@
 @php($prefix = $prefix ?? 'admin')
 @php($contextBranch = $selectedBranch ?? $branch ?? null)
-@php($isPublished = $exam->exists && $exam->isPublished())
+@php($isLocked = $exam->exists && $exam->hasBeenAttempted())
 @php($isSuperAdmin = auth()->user()->role === 'Super Admin')
 @php($isNewExam = ! $exam->exists)
 
-@if ($isPublished)
+@if ($isLocked)
     <div class="feedback-alert info mb-4">
         <i class="bi bi-lock-fill"></i>
         <div>
-            <strong>This exam is published and locked.</strong>
-            <p class="mb-0">Published exams cannot be edited or deleted. The publish restriction is permanent.</p>
+            <strong>This exam is locked.</strong>
+            <p class="mb-0">{{ \App\Models\Exam::LOCK_MESSAGE }}</p>
         </div>
     </div>
 @endif
@@ -19,7 +19,7 @@
     @if (($method ?? 'POST') !== 'POST')
         @method($method)
     @endif
-    <fieldset {{ $isPublished ? 'disabled' : '' }}>
+    <fieldset {{ $isLocked ? 'disabled' : '' }}>
 
     <div class="exam-form-sections">
         @if ($isSuperAdmin && $isNewExam)
@@ -146,7 +146,7 @@
     </fieldset>
 
     <div class="d-flex gap-2 mt-4">
-        @if (!$isPublished)
+        @if (!$isLocked)
             <button class="btn btn-primary" type="submit">
                 <i class="bi bi-check-circle-fill"></i>
                 {{ $button }}

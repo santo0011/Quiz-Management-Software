@@ -5,8 +5,9 @@ namespace App\Http\Requests;
 use App\Models\Exam;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class ExamSettingsRequest extends FormRequest
+class ExamCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -29,9 +30,21 @@ class ExamSettingsRequest extends FormRequest
 
     public function rules(): array
     {
+        $exam = $this->route('exam');
+
         return [
-            'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
-            'passing_marks' => ['nullable', 'integer', 'min:0'],
+            'question_category_id' => [
+                'required',
+                Rule::exists('question_categories', 'id')->where('branch_id', $exam?->branch_id),
+            ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'question_category_id.required' => 'Please select a question category for this exam.',
+            'question_category_id.exists' => 'Please select a valid question category for this branch.',
         ];
     }
 }

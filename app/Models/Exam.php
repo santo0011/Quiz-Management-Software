@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class Exam extends Model
 {
@@ -12,9 +13,12 @@ class Exam extends Model
     public const STATUS_PUBLISHED = 'published';
     public const STATUS_CLOSED = 'closed';
 
+    public const LOCK_MESSAGE = 'This exam cannot be edited or deleted because a student has already attended this exam.';
+
     protected $fillable = [
         'branch_id',
         'school_class_id',
+        'question_category_id',
         'title',
         'description',
         'total_marks',
@@ -54,9 +58,19 @@ class Exam extends Model
         return $this->belongsTo(SchoolClass::class);
     }
 
+    public function category()
+    {
+        return $this->belongsTo(QuestionCategory::class, 'question_category_id');
+    }
+
     public function questions()
     {
         return $this->hasMany(Question::class);
+    }
+
+    public function passageGroups()
+    {
+        return $this->hasMany(PassageGroup::class);
     }
 
     public function attempts()
@@ -85,6 +99,16 @@ class Exam extends Model
     public function isPublished(): bool
     {
         return $this->status === self::STATUS_PUBLISHED;
+    }
+
+    /**
+     * Whether any student has started (attempted) this exam. Once true, the
+     * exam, its questions, and its settings are locked from further edits
+     * or deletion — regardless of publish status.
+     */
+    public function hasBeenAttempted(): bool
+    {
+        return $this->attempts()->exists();
     }
 
     public function isOpen(): bool
@@ -149,9 +173,53 @@ class Exam extends Model
 
     public function recalculateTotalMarks(): void
     {
-        $count = $this->questions()->count();
         $this->update([
-            'total_marks' => (int) round($count * (float) $this->marks_per_question),
+            'total_marks' => (int) round((float) $this->questions()->sum('marks')),
         ]);
+    }
+
+    /**
+     * The exam's top-level items (standalone questions and passage groups)
+     * in admin-configured order. Each passage group carries its own
+     * questions, already ordered within the group.
+     *
+     * @return Collection<int, array{type: string, position: int, question?: Question, group?: PassageGroup}>
+     */
+    public function orderedItems(): Collection
+    {
+        $standaloneQuestions = $this->questions()
+            ->whereNull('passage_group_id')
+            ->with('options', 'category')
+            ->get()
+            ->map(fn (Question $question) => [
+                'type' => 'question',
+                'position' => $question->position,
+                'question' => $question,
+            ]);
+
+        $groups = $this->passageGroups()
+            ->with(['questions' => fn ($query) => $query->with('options', 'category')])
+            ->get()
+            ->map(fn (PassageGroup $group) => [
+                'type' => 'passage_group',
+                'position' => $group->position,
+                'group' => $group,
+            ]);
+
+        return $standaloneQuestions->concat($groups)
+            ->sortBy('position')
+            ->values();
+    }
+
+    /**
+     * Next top-level position for a new standalone question or passage
+     * group, so both share one ordering sequence.
+     */
+    public function nextTopLevelPosition(): int
+    {
+        $maxQuestionPosition = (int) $this->questions()->whereNull('passage_group_id')->max('position');
+        $maxGroupPosition = (int) $this->passageGroups()->max('position');
+
+        return max($maxQuestionPosition, $maxGroupPosition) + 1;
     }
 }

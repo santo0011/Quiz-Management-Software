@@ -43,7 +43,6 @@
                         <tr>
                             <th>Category Name</th>
                             <th>Branch</th>
-                            <th>Questions</th>
                             <th>Created</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -53,12 +52,7 @@
                             <tr>
                                 <td><strong>{{ $categoryRow->name }}</strong></td>
                                 <td>{{ $categoryRow->branch?->name }}</td>
-                                <td>
-                                    <span class="question-count-badge">
-                                        <i class="bi bi-file-earmark-text"></i>
-                                        {{ $categoryRow->questions_count }}
-                                    </span>
-                                </td>
+
                                 <td>{{ $categoryRow->created_at->format('d M Y, h:i A') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">

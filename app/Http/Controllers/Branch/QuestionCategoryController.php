@@ -54,9 +54,9 @@ class QuestionCategoryController extends Controller
     {
         abort_if(! $request->user()->branch_id || $questionCategory->branch_id !== $request->user()->branch_id, 403, 'This category does not belong to your branch.');
 
-        if ($questionCategory->questions()->exists()) {
+        if ($questionCategory->questions()->exists() || $questionCategory->exams()->exists()) {
             return redirect()->route('branch.question-categories.index')
-                ->with('error', 'This category cannot be deleted because it has related questions.');
+                ->with('error', 'This category cannot be deleted because it is used by one or more exams or questions.');
         }
 
         $questionCategory->delete();

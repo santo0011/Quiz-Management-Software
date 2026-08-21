@@ -8,6 +8,102 @@ function formatTime(seconds) {
     return `${minutes}:${remainingSeconds}`;
 }
 
+// Every top-level "step" is either a standalone question or a passage/summary
+// group (which is shown as a single step containing all of its questions).
+function flattenQuestions(steps) {
+    return steps.flatMap((step) => (step.type === 'question' ? [step.question] : step.questions));
+}
+
+function buildQuestionStepIndex(steps) {
+    const map = {};
+    steps.forEach((step, index) => {
+        if (step.type === 'question') {
+            map[step.question.id] = index;
+        } else {
+            step.questions.forEach((question) => {
+                map[question.id] = index;
+            });
+        }
+    });
+    return map;
+}
+
+function updateStepsWithAnswer(steps, questionId, optionId) {
+    return steps.map((step) => {
+        if (step.type === 'question') {
+            return step.question.id === questionId
+                ? { ...step, question: { ...step.question, selected_option_id: optionId } }
+                : step;
+        }
+
+        return {
+            ...step,
+            questions: step.questions.map((question) => (
+                question.id === questionId ? { ...question, selected_option_id: optionId } : question
+            )),
+        };
+    });
+}
+
+function QuestionOptions({ question, onSelect }) {
+    return (
+        <div className="exam-options">
+            {question.options.map((option) => (
+                <button
+                    type="button"
+                    key={option.id}
+                    className={question.selected_option_id === option.id ? 'exam-option selected' : 'exam-option'}
+                    onClick={() => onSelect(question.id, option.id)}
+                >
+                    <span></span>
+                    <div className="math-content">{option.text}</div>
+                </button>
+            ))}
+        </div>
+    );
+}
+
+function PassageStep({ step, questionNumbers, onSelect }) {
+    const [collapsed, setCollapsed] = useState(false);
+
+    return (
+        <div className="passage-step-grid">
+            <aside className={collapsed ? 'passage-panel collapsed' : 'passage-panel'}>
+                <div className="passage-panel-header">
+                    <h2 className="passage-panel-title">{step.passage.title}</h2>
+                    <button
+                        type="button"
+                        className="btn btn-sm btn-soft passage-collapse-toggle"
+                        onClick={() => setCollapsed((value) => !value)}
+                    >
+                        <i className={`bi ${collapsed ? 'bi-chevron-down' : 'bi-chevron-up'}`}></i>
+                        {collapsed ? 'Show passage' : 'Hide passage'}
+                    </button>
+                </div>
+                <div className="passage-panel-body">
+                    {step.passage.image_url && (
+                        <img src={step.passage.image_url} alt={step.passage.title} className="passage-panel-image" />
+                    )}
+                    <div className="passage-panel-content math-content">{step.passage.content}</div>
+                </div>
+            </aside>
+
+            <div className="passage-questions-column">
+                {step.questions.map((question) => (
+                    <div className="passage-question-block" key={question.id}>
+                        <div className="question-meta">
+                            <span>Question {questionNumbers[question.id]}</span>
+                            <strong>{question.marks} marks</strong>
+                        </div>
+                        <div className="exam-question-text math-content">{question.text}</div>
+                        <QuestionOptions question={question} onSelect={onSelect} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 function StudentExamApp({ root }) {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -21,11 +117,21 @@ function StudentExamApp({ root }) {
     const answerUrl = root.dataset.answerUrl;
     const submitUrl = root.dataset.submitUrl;
 
-    const activeQuestion = payload?.questions?.[activeIndex];
-    const answeredCount = useMemo(() => payload?.questions?.filter((question) => question.selected_option_id).length || 0, [payload]);
+    const steps = payload?.items || [];
+    const activeStep = steps[activeIndex];
 
-    // Submit button is only enabled when on the LAST question
-    const isOnLastQuestion = payload?.questions && activeIndex === payload.questions.length - 1;
+    const allQuestions = useMemo(() => flattenQuestions(steps), [steps]);
+    const questionStepIndex = useMemo(() => buildQuestionStepIndex(steps), [steps]);
+    const questionNumbers = useMemo(() => {
+        const map = {};
+        allQuestions.forEach((question, index) => { map[question.id] = index + 1; });
+        return map;
+    }, [allQuestions]);
+
+    const answeredCount = useMemo(() => allQuestions.filter((question) => question.selected_option_id).length, [allQuestions]);
+
+    // Submit button is only enabled when on the LAST step
+    const isOnLastStep = steps.length > 0 && activeIndex === steps.length - 1;
 
     const loadState = async () => {
         const response = await fetch(stateUrl, { headers: { Accept: 'application/json' } });
@@ -79,9 +185,7 @@ function StudentExamApp({ root }) {
     const saveAnswer = async (questionId, optionId) => {
         setPayload((current) => ({
             ...current,
-            questions: current.questions.map((question) => (
-                question.id === questionId ? { ...question, selected_option_id: optionId } : question
-            )),
+            items: updateStepsWithAnswer(current.items, questionId, optionId),
         }));
 
         await fetch(answerUrl, {
@@ -99,7 +203,7 @@ function StudentExamApp({ root }) {
         return <div className="exam-runner-shell"><div className="exam-loading">Loading exam...</div></div>;
     }
 
-    if (!activeQuestion) {
+    if (!activeStep) {
         return <div className="exam-runner-shell"><div className="exam-loading">No questions available.</div></div>;
     }
 
@@ -117,45 +221,38 @@ function StudentExamApp({ root }) {
             </header>
 
             <div className="exam-progress">
-                <div style={{ width: `${(answeredCount / payload.questions.length) * 100}%` }}></div>
+                <div style={{ width: `${(answeredCount / allQuestions.length) * 100}%` }}></div>
             </div>
 
             <div className="exam-runner-grid">
                 <main className="exam-question-panel">
-                    <div className="question-meta">
-                        <span>Question {activeIndex + 1} of {payload.questions.length}</span>
-                        <strong>{activeQuestion.marks} marks</strong>
-                    </div>
-                    <div className="exam-question-text math-content">{activeQuestion.text}</div>
-
-                    <div className="exam-options">
-                        {activeQuestion.options.map((option) => (
-                            <button
-                                type="button"
-                                key={option.id}
-                                className={activeQuestion.selected_option_id === option.id ? 'exam-option selected' : 'exam-option'}
-                                onClick={() => saveAnswer(activeQuestion.id, option.id)}
-                            >
-                                <span></span>
-                                <div className="math-content">{option.text}</div>
-                            </button>
-                        ))}
-                    </div>
+                    {activeStep.type === 'question' ? (
+                        <>
+                            <div className="question-meta">
+                                <span>Question {questionNumbers[activeStep.question.id]} of {allQuestions.length}</span>
+                                <strong>{activeStep.question.marks} marks</strong>
+                            </div>
+                            <div className="exam-question-text math-content">{activeStep.question.text}</div>
+                            <QuestionOptions question={activeStep.question} onSelect={saveAnswer} />
+                        </>
+                    ) : (
+                        <PassageStep step={activeStep} questionNumbers={questionNumbers} onSelect={saveAnswer} />
+                    )}
 
                     <div className="exam-controls">
                         <button type="button" className="btn btn-soft" onClick={() => setActiveIndex(Math.max(0, activeIndex - 1))} disabled={activeIndex === 0}>
                             <i className="bi bi-arrow-left"></i>
                             Previous
                         </button>
-                        <button type="button" className="btn btn-soft" onClick={() => setActiveIndex(Math.min(payload.questions.length - 1, activeIndex + 1))} disabled={activeIndex === payload.questions.length - 1}>
+                        <button type="button" className="btn btn-soft" onClick={() => setActiveIndex(Math.min(steps.length - 1, activeIndex + 1))} disabled={activeIndex === steps.length - 1}>
                             Next
                             <i className="bi bi-arrow-right"></i>
                         </button>
                         <button
                             type="button"
                             className="btn btn-primary"
-                            disabled={!isOnLastQuestion || submitting}
-                            title={!isOnLastQuestion ? 'Submit is available on the last question' : 'Submit your exam'}
+                            disabled={!isOnLastStep || submitting}
+                            title={!isOnLastStep ? 'Submit is available on the last question' : 'Submit your exam'}
                             onClick={() => setShowSubmitModal(true)}
                         >
                             <i className="bi bi-send-fill"></i>
@@ -167,15 +264,15 @@ function StudentExamApp({ root }) {
                 <aside className="question-palette">
                     <div>
                         <strong>Question Palette</strong>
-                        <span>{answeredCount}/{payload.questions.length} answered</span>
+                        <span>{answeredCount}/{allQuestions.length} answered</span>
                     </div>
                     <div className="palette-grid">
-                        {payload.questions.map((question, index) => (
+                        {allQuestions.map((question, index) => (
                             <button
                                 type="button"
                                 key={question.id}
-                                className={`${index === activeIndex ? 'active' : ''} ${question.selected_option_id ? 'answered' : ''}`}
-                                onClick={() => setActiveIndex(index)}
+                                className={`${questionStepIndex[question.id] === activeIndex ? 'active' : ''} ${question.selected_option_id ? 'answered' : ''}`}
+                                onClick={() => setActiveIndex(questionStepIndex[question.id])}
                             >
                                 {index + 1}
                             </button>

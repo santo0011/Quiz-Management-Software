@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ExamCategoryRequest;
 use App\Http\Requests\ExamRequest;
 use App\Http\Requests\ExamSettingsRequest;
 use App\Models\Branch;
@@ -60,7 +61,7 @@ class ExamController extends Controller
 
     public function edit(Exam $exam): View
     {
-        abort_if($exam->isPublished(), 403, 'Published exams cannot be edited.');
+        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         return view('admin.exams.edit', [
             'selectedBranch' => $exam->branch,
@@ -71,7 +72,7 @@ class ExamController extends Controller
 
     public function update(ExamRequest $request, Exam $exam): RedirectResponse
     {
-        abort_if($exam->isPublished(), 403, 'Published exams cannot be edited.');
+        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         $exam->update($request->validated());
 
@@ -86,16 +87,91 @@ class ExamController extends Controller
         return redirect()->route('admin.exams.show', $exam)->with('success', 'Exam settings updated successfully.');
     }
 
-    public function destroy(Exam $exam): RedirectResponse
+    public function updateCategory(ExamCategoryRequest $request, Exam $exam): RedirectResponse
     {
-        if ($exam->isPublished()) {
-            return redirect()->route('admin.exams.index')
-                ->with('error', 'Published exams cannot be deleted. The exam is locked.');
+        $exam->update($request->validated());
+
+        return redirect()->route('admin.questions.create', $exam)->with('success', 'Question category saved successfully.');
+    }
+
+    public function reorderItems(Request $request, Exam $exam): RedirectResponse
+    {
+        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
+
+        $validated = $request->validate([
+            'type' => ['required', 'in:question,passage_group'],
+            'id' => ['required', 'integer'],
+            'direction' => ['required', 'in:up,down'],
+        ]);
+
+        $this->swapItemPosition($exam, $validated['type'], (int) $validated['id'], $validated['direction']);
+
+        return redirect()->route('admin.exams.show', $exam)->with('success', 'Order updated successfully.');
+    }
+
+    private function swapItemPosition(Exam $exam, string $type, int $id, string $direction): void
+    {
+        if ($type === 'question') {
+            $question = $exam->questions()->find($id);
+
+            if ($question && $question->passage_group_id) {
+                $this->swapWithinSiblings($question->passageGroup->questions()->orderBy('position')->get(), $id, $direction);
+
+                return;
+            }
         }
 
-        if ($exam->attempts()->exists()) {
+        $items = $exam->orderedItems();
+
+        $currentIndex = $items->search(fn (array $item) => $item['type'] === $type
+            && ($item['type'] === 'question' ? $item['question']->id : $item['group']->id) === $id);
+
+        if ($currentIndex === false) {
+            return;
+        }
+
+        $targetIndex = $direction === 'up' ? $currentIndex - 1 : $currentIndex + 1;
+
+        if (! $items->has($targetIndex)) {
+            return;
+        }
+
+        $currentModel = $items[$currentIndex]['type'] === 'question' ? $items[$currentIndex]['question'] : $items[$currentIndex]['group'];
+        $targetModel = $items[$targetIndex]['type'] === 'question' ? $items[$targetIndex]['question'] : $items[$targetIndex]['group'];
+
+        [$currentModel->position, $targetModel->position] = [$targetModel->position, $currentModel->position];
+        $currentModel->save();
+        $targetModel->save();
+    }
+
+    private function swapWithinSiblings(\Illuminate\Support\Collection $siblings, int $id, string $direction): void
+    {
+        $siblings = $siblings->values();
+        $currentIndex = $siblings->search(fn ($item) => $item->id === $id);
+
+        if ($currentIndex === false) {
+            return;
+        }
+
+        $targetIndex = $direction === 'up' ? $currentIndex - 1 : $currentIndex + 1;
+
+        if (! $siblings->has($targetIndex)) {
+            return;
+        }
+
+        $current = $siblings[$currentIndex];
+        $target = $siblings[$targetIndex];
+
+        [$current->position, $target->position] = [$target->position, $current->position];
+        $current->save();
+        $target->save();
+    }
+
+    public function destroy(Exam $exam): RedirectResponse
+    {
+        if ($exam->hasBeenAttempted()) {
             return redirect()->route('admin.exams.index')
-                ->with('error', 'This exam has student attempts and cannot be permanently deleted. Please close the exam instead.');
+                ->with('error', Exam::LOCK_MESSAGE);
         }
 
         $exam->delete();
@@ -103,10 +179,10 @@ class ExamController extends Controller
         return redirect()->route('admin.exams.index')->with('success', 'Exam deleted successfully.');
     }
 
-    public function publish(Exam $exam): RedirectResponse|\Illuminate\Http\JsonResponse
+    public function publish(Request $request, Exam $exam): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         if ($exam->isPublished()) {
-            if ($this->wantsJson()) {
+            if ($request->wantsJson()) {
                 return response()->json(['message' => 'This exam is already published.'], 422);
             }
 
@@ -115,7 +191,7 @@ class ExamController extends Controller
 
         $exam->update(['status' => Exam::STATUS_PUBLISHED]);
 
-        if ($this->wantsJson()) {
+        if ($request->wantsJson()) {
             return response()->json(['message' => 'Exam published successfully.']);
         }
 

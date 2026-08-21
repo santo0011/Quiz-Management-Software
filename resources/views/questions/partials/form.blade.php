@@ -2,8 +2,6 @@
 @php($optionValues = old('options', $question->exists ? $question->options->pluck('option_text')->all() : ['', '', '', '']))
 @php($correctIndex = old('correct_option', $question->exists ? max(0, $question->options->values()->search(fn ($option) => $option->is_correct)) : 0))
 
-@include('exams.partials.settings-form', ['prefix' => $prefix, 'exam' => $exam])
-
 <form method="POST" action="{{ $action }}" class="admin-form question-form" data-question-form>
     @csrf
     @if (($method ?? 'POST') !== 'POST')
@@ -36,23 +34,13 @@
             </div>
 
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label for="question_type" class="form-label">Question Type</label>
                     <select id="question_type" name="question_type" class="form-select form-control">
                         <option value="mcq" @selected(old('question_type', $question->question_type ?? 'mcq') === 'mcq')>MCQ</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label for="question_category_id" class="form-label">Category</label>
-                    <select id="question_category_id" name="question_category_id" class="form-select form-control @error('question_category_id') is-invalid @enderror">
-                        <option value="">Uncategorized</option>
-                        @foreach ($categories ?? [] as $category)
-                            <option value="{{ $category->id }}" @selected(old('question_category_id', $question->question_category_id) == $category->id)>{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('question_category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label for="marks" class="form-label">Marks <span class="required-mark">*</span></label>
                     <input id="marks" type="number" step="0.01" min="0.01" name="marks" value="{{ old('marks', $question->marks ?? 1) }}" class="form-control @error('marks') is-invalid @enderror" required>
                     @error('marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -133,7 +121,7 @@
             <i class="bi bi-check-circle-fill"></i>
             {{ $button }}
         </button>
-        <a href="{{ route($prefix.'.exams.show', $exam) }}" class="btn btn-soft">Cancel</a>
+        <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-soft">Cancel</a>
     </div>
 </form>
 

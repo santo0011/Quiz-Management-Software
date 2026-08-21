@@ -126,6 +126,9 @@
     </div>
 </section>
 
+@php($answersByQuestion = $attempt->answers->keyBy('question_id'))
+@php($orderedItems = $attempt->exam->orderedItems())
+
 <section class="content-panel questions-panel">
     <div class="panel-header">
         <div>
@@ -139,39 +142,36 @@
     </div>
 
     <div class="question-list">
-        @foreach ($attempt->answers as $answer)
-            <article class="question-admin-item">
-                <div class="question-item-header">
-                    <div class="question-number-badge">
-                        {{ $loop->iteration }}
-                    </div>
-                    <div class="question-item-content">
-                        <div class="question-item-meta">
-                            <span class="question-marks-badge {{ $answer->is_correct ? 'correct' : ($answer->question_option_id ? 'wrong' : 'unanswered') }}">
-                                <i class="bi {{ $answer->is_correct ? 'bi-check-circle-fill' : ($answer->question_option_id ? 'bi-x-circle-fill' : 'bi-dash-circle-fill') }}"></i>
-                                {{ $answer->is_correct ? 'Correct' : ($answer->question_option_id ? 'Wrong' : 'Unanswered') }} · {{ $answer->marks_awarded }} marks
-                            </span>
-                        </div>
-                        <h3 class="math-content question-item-text">{{ $answer->question?->question_text }}</h3>
-                    </div>
+        @foreach ($orderedItems as $item)
+            @if ($item['type'] === 'question')
+                @php($question = $item['question'])
+                <div class="question-item-meta mb-2">
+                    <span class="status-badge status-published"><i class="bi bi-patch-question-fill"></i> Normal Question</span>
                 </div>
-                <div class="option-preview">
-                    <div class="option-preview-item {{ $answer->is_correct ? 'correct' : '' }}">
-                        <span class="option-letter">
-                            <i class="bi bi-person-check-fill"></i>
-                        </span>
-                        <span class="math-content option-text"><strong>Selected:</strong> {{ $answer->selectedOption?->option_text ?? 'Not answered' }}</span>
-                    </div>
-                    @if (!$answer->is_correct)
-                        <div class="option-preview-item correct">
-                            <span class="option-letter">
-                                <i class="bi bi-check2-circle"></i>
-                            </span>
-                            <span class="math-content option-text"><strong>Correct:</strong> {{ $answer->question?->options?->firstWhere('is_correct', true)?->option_text }}</span>
+                @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index])
+            @else
+                @php($group = $item['group'])
+                @php($groupAnswers = $group->questions->map(fn ($q) => $answersByQuestion->get($q->id)))
+                @php($groupObtained = $groupAnswers->sum(fn ($a) => (float) ($a?->marks_awarded ?? 0)))
+                @php($groupTotal = $group->questions->sum('marks'))
+                <article class="question-admin-item passage-group-item">
+                    <div class="question-item-header">
+                        <div class="question-number-badge"><i class="bi bi-file-earmark-text-fill"></i></div>
+                        <div class="question-item-content">
+                            <div class="question-item-meta">
+                                <span class="status-badge status-published"><i class="bi bi-collection"></i> Passage/Summary Question</span>
+                            </div>
+                            <h3 class="question-item-text">{{ $group->title }}: Total = {{ rtrim(rtrim(number_format($groupObtained, 2), '0'), '.') }}/{{ rtrim(rtrim(number_format($groupTotal, 2), '0'), '.') }}</h3>
                         </div>
-                    @endif
-                </div>
-            </article>
+                    </div>
+                    <div class="passage-preview math-content">{{ Str::limit(strip_tags($group->content), 220) }}</div>
+                    <div class="passage-group-questions">
+                        @foreach ($group->questions as $question)
+                            @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index])
+                        @endforeach
+                    </div>
+                </article>
+            @endif
         @endforeach
     </div>
 </section>
