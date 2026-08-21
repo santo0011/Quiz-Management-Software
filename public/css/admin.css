@@ -2933,22 +2933,29 @@ body {
 /* Passage/Summary question group — student exam runner */
 .passage-step-grid {
     display: grid;
-    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
-    gap: 22px;
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+    gap: 24px;
     align-items: start;
 }
 
 .passage-panel {
+    /* .admin-topbar (min-height: 88px) is sticky within the same scroll
+       container (.admin-main) that this panel scrolls inside, so "top" and
+       "max-height" both need to clear it — otherwise this panel slides up
+       underneath/behind the topbar instead of docking cleanly below it. */
     position: sticky;
-    top: 16px;
+    top: calc(88px + 16px);
+    z-index: 5;
     align-self: start;
     min-width: 0;
-    background: #f8fafc;
-    border: 1px solid rgba(23, 32, 51, 0.1);
-    border-radius: 12px;
-    padding: 18px;
-    max-height: calc(100vh - 32px);
+    background: #ffffff;
+    border: 1px solid rgba(23, 32, 51, 0.08);
+    border-top: 3px solid var(--accent, #0f9f8f);
+    border-radius: 14px;
+    padding: 20px 22px;
+    max-height: calc(100vh - 88px - 32px);
     overflow-y: auto;
+    box-shadow: 0 16px 36px rgba(23, 32, 51, 0.08);
 }
 
 .passage-panel-header {
@@ -2956,7 +2963,21 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+}
+
+.passage-panel-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 4px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent, #0f9f8f);
 }
 
 .passage-panel-title {
@@ -2969,13 +2990,64 @@ body {
 .passage-panel-image {
     max-width: 100%;
     border-radius: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .passage-panel-content {
     color: #344054;
-    line-height: 1.65;
-    white-space: pre-wrap;
+    line-height: 1.7;
+    font-size: 0.96rem;
+}
+
+.passage-panel-content > *:first-child {
+    margin-top: 0;
+}
+
+.passage-panel-content > *:last-child {
+    margin-bottom: 0;
+}
+
+.passage-panel-content p {
+    margin: 0 0 14px;
+}
+
+.passage-panel-content ul,
+.passage-panel-content ol {
+    margin: 0 0 14px;
+    padding-left: 22px;
+}
+
+.passage-panel-content li {
+    margin-bottom: 6px;
+}
+
+.passage-panel-content blockquote {
+    margin: 0 0 14px;
+    padding: 10px 16px;
+    border-left: 3px solid var(--accent, #0f9f8f);
+    background: rgba(15, 159, 143, 0.06);
+    border-radius: 0 8px 8px 0;
+    color: #475467;
+}
+
+.passage-panel-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    margin: 6px 0 14px;
+}
+
+.passage-panel-content table {
+    width: 100%;
+    margin-bottom: 14px;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.passage-panel-content td,
+.passage-panel-content th {
+    padding: 8px 10px;
+    border: 1px solid rgba(23, 32, 51, 0.12);
 }
 
 .passage-questions-column {
