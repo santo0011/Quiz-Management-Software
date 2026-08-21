@@ -7,6 +7,7 @@ use App\Models\ExamAttempt;
 use App\Services\ExamAttemptService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ExamApiController extends Controller
 {
@@ -20,13 +21,34 @@ class ExamApiController extends Controller
             $attempt->refresh();
         }
 
-        $exam = $attempt->exam()->with('questions.options')->firstOrFail();
+        $exam = $attempt->exam;
         $answers = $attempt->answers()->get()->keyBy('question_id');
-        $questions = $exam->questions;
+
+        $items = $exam->orderedItems();
 
         if ($exam->randomize_questions) {
-            $questions = $questions->sortBy(fn ($question) => md5($attempt->id.'-'.$question->id))->values();
+            // Shuffle top-level items as units — a passage group's own
+            // questions always stay together and in their configured order.
+            $items = $items->sortBy(fn (array $item) => md5($attempt->id.'-'.($item['type'] === 'question' ? $item['question']->id : 'group-'.$item['group']->id)))->values();
         }
+
+        $mapQuestion = function ($question) use ($exam, $attempt, $answers) {
+            $options = $question->options;
+            if ($exam->randomize_answers) {
+                $options = $options->sortBy(fn ($option) => md5($attempt->id.'-'.$question->id.'-'.$option->id))->values();
+            }
+
+            return [
+                'id' => $question->id,
+                'text' => $question->question_text,
+                'marks' => $question->marks,
+                'selected_option_id' => $answers->get($question->id)?->question_option_id,
+                'options' => $options->map(fn ($option) => [
+                    'id' => $option->id,
+                    'text' => $option->option_text,
+                ])->values(),
+            ];
+        };
 
         return response()->json([
             'attempt' => [
@@ -44,21 +66,23 @@ class ExamApiController extends Controller
                 'total_marks' => $exam->total_marks,
                 'passing_marks' => $exam->passing_marks,
             ],
-            'questions' => $questions->map(function ($question) use ($exam, $attempt, $answers) {
-                $options = $question->options;
-                if ($exam->randomize_answers) {
-                    $options = $options->sortBy(fn ($option) => md5($attempt->id.'-'.$question->id.'-'.$option->id))->values();
+            'items' => $items->map(function (array $item) use ($mapQuestion) {
+                if ($item['type'] === 'question') {
+                    return [
+                        'type' => 'question',
+                        'question' => $mapQuestion($item['question']),
+                    ];
                 }
 
                 return [
-                    'id' => $question->id,
-                    'text' => $question->question_text,
-                    'marks' => $question->marks,
-                    'selected_option_id' => $answers->get($question->id)?->question_option_id,
-                    'options' => $options->map(fn ($option) => [
-                        'id' => $option->id,
-                        'text' => $option->option_text,
-                    ])->values(),
+                    'type' => 'passage_group',
+                    'passage' => [
+                        'id' => $item['group']->id,
+                        'title' => $item['group']->title,
+                        'content' => $item['group']->content,
+                        'image_url' => $item['group']->image_path ? Storage::url($item['group']->image_path) : null,
+                    ],
+                    'questions' => $item['group']->questions->map($mapQuestion)->values(),
                 ];
             })->values(),
         ]);

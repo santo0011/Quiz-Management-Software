@@ -146,6 +146,7 @@
         });
     </script>
     @include('partials.global-forms')
+    @include('partials.no-wheel-number')
     @stack('scripts')
 </body>
 </html>

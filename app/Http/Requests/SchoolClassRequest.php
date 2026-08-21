@@ -23,6 +23,13 @@ class SchoolClassRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('branch_id')) {
+            $this->merge(['branch_id' => null]);
+        }
+    }
+
     public function rules(): array
     {
         $schoolClass = $this->route('class');
@@ -32,7 +39,7 @@ class SchoolClassRequest extends FormRequest
             : ($schoolClass?->branch_id ?: $this->input('branch_id'));
 
         return [
-            'branch_id' => $isBranch ? ['nullable'] : ['sometimes', 'required', 'exists:branches,id'],
+            'branch_id' => $isBranch ? ['nullable'] : ['nullable', 'exists:branches,id'],
             'name' => [
                 'required',
                 'string',

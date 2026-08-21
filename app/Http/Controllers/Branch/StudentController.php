@@ -28,7 +28,7 @@ class StudentController extends Controller
         return view('branch.students.index', [
             'branch' => $branch,
             'students' => $students,
-            'classes' => SchoolClass::where('branch_id', $branch->id)->orderBy('name')->get(),
+            'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
             'filters' => $request->only(['search', 'class']),
         ]);
     }
@@ -40,7 +40,7 @@ class StudentController extends Controller
 
         return view('branch.students.create', [
             'branch' => $branch,
-            'classes' => SchoolClass::where('branch_id', $branch->id)->orderBy('name')->get(),
+            'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
             'student' => new Student,
         ]);
     }
@@ -78,7 +78,7 @@ class StudentController extends Controller
         return view('branch.students.edit', [
             'branch' => $request->user()->branch,
             'student' => $student,
-            'classes' => SchoolClass::where('branch_id', $request->user()->branch_id)->orderBy('name')->get(),
+            'classes' => SchoolClass::visibleToBranch($request->user()->branch_id)->orderBy('name')->get(),
         ]);
     }
 
@@ -134,7 +134,7 @@ class StudentController extends Controller
     private function resolveSchoolClass(array $validated, int $branchId): SchoolClass
     {
         if (! empty($validated['class_id'])) {
-            return SchoolClass::whereKey($validated['class_id'])->where('branch_id', $branchId)->firstOrFail();
+            return SchoolClass::whereKey($validated['class_id'])->visibleToBranch($branchId)->firstOrFail();
         }
 
         return SchoolClass::firstOrCreate([

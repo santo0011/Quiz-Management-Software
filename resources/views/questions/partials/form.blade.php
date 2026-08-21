@@ -121,7 +121,7 @@
             <i class="bi bi-check-circle-fill"></i>
             {{ $button }}
         </button>
-        <a href="{{ route($prefix.'.exams.show', $exam) }}" class="btn btn-soft">Cancel</a>
+        <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-soft">Cancel</a>
     </div>
 </form>
 

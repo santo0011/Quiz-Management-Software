@@ -25,10 +25,10 @@ class AdminPasswordChangeTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_view_change_password_page(): void
+    public function test_admin_can_view_change_password_section_on_settings_page(): void
     {
         $this->actingAs($this->admin)
-            ->get(route('admin.password.edit'))
+            ->get(route('admin.settings.edit'))
             ->assertOk()
             ->assertSee('Current Password')
             ->assertSee('New Password')

@@ -53,8 +53,8 @@
             <label for="class_id" class="form-label">Class <span class="required-mark">*</span></label>
             <select id="class_id" name="class_id" class="form-select form-control{{ $useOldInput && $errors->has('class_id') ? ' is-invalid' : '' }}" required data-class-select data-selected-class="{{ $useOldInput ? old('class_id', $student->class_id) : $student->class_id }}">
                 <option value="">Select class</option>
-                @foreach (($classes ?? ($selectedBranch?->classes()->orderBy('name')->get() ?? collect())) as $class)
-                    <option value="{{ $class->id }}" @selected(($useOldInput ? old('class_id', $student->class_id) : $student->class_id) == $class->id)>{{ $class->name }}</option>
+                @foreach (($classes ?? ($selectedBranch ? \App\Models\SchoolClass::visibleToBranch($selectedBranch->id)->orderBy('name')->get() : collect())) as $class)
+                    <option value="{{ $class->id }}" @selected(($useOldInput ? old('class_id', $student->class_id) : $student->class_id) == $class->id)>{{ $class->name }}{{ $class->isGlobal() ? ' (All Branches)' : '' }}</option>
                 @endforeach
             </select>
             @if ($useOldInput)

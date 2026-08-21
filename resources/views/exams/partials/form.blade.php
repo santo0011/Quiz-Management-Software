@@ -1,15 +1,15 @@
 @php($prefix = $prefix ?? 'admin')
-@php($contextBranch = $selectedBranch ?? $branch)
-@php($isPublished = $exam->exists && $exam->isPublished())
+@php($contextBranch = $selectedBranch ?? $branch ?? null)
+@php($isLocked = $exam->exists && $exam->hasBeenAttempted())
 @php($isSuperAdmin = auth()->user()->role === 'Super Admin')
 @php($isNewExam = ! $exam->exists)
 
-@if ($isPublished)
+@if ($isLocked)
     <div class="feedback-alert info mb-4">
         <i class="bi bi-lock-fill"></i>
         <div>
-            <strong>This exam is published and locked.</strong>
-            <p class="mb-0">Published exams cannot be edited or deleted. The publish restriction is permanent.</p>
+            <strong>This exam is locked.</strong>
+            <p class="mb-0">{{ \App\Models\Exam::LOCK_MESSAGE }}</p>
         </div>
     </div>
 @endif
@@ -19,7 +19,7 @@
     @if (($method ?? 'POST') !== 'POST')
         @method($method)
     @endif
-    <fieldset {{ $isPublished ? 'disabled' : '' }}>
+    <fieldset {{ $isLocked ? 'disabled' : '' }}>
 
     <div class="exam-form-sections">
         @if ($isSuperAdmin && $isNewExam)
@@ -86,7 +86,7 @@
                     <select id="school_class_id" name="school_class_id" class="form-select form-control @error('school_class_id') is-invalid @enderror" required data-class-select data-selected-class="{{ old('school_class_id', $exam->school_class_id) }}">
                         <option value="">Select class</option>
                         @foreach ($classes as $schoolClass)
-                            <option value="{{ $schoolClass->id }}" @selected(old('school_class_id', $exam->school_class_id) == $schoolClass->id)>{{ $schoolClass->name }}</option>
+                            <option value="{{ $schoolClass->id }}" @selected(old('school_class_id', $exam->school_class_id) == $schoolClass->id)>{{ $schoolClass->name }}{{ $schoolClass->isGlobal() ? ' (All Branches)' : '' }}</option>
                         @endforeach
                     </select>
                     @error('school_class_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -98,35 +98,6 @@
         <section class="exam-form-section">
             <div class="exam-form-section-title">
                 <span>03</span>
-                <h3>Marks & Duration</h3>
-            </div>
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label for="marks_per_question" class="form-label">Marks Per Question <span class="required-mark">*</span></label>
-                    <input id="marks_per_question" type="number" step="0.01" min="0.01" name="marks_per_question" value="{{ old('marks_per_question', $exam->marks_per_question ?? 1) }}" class="form-control marks-per-question-input @error('marks_per_question') is-invalid @enderror" required>
-                    @error('marks_per_question')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-3">
-                    <label for="total_marks" class="form-label">Total Marks <span class="required-mark">*</span></label>
-                    <input id="total_marks" type="number" min="1" name="total_marks" value="{{ old('total_marks', $exam->total_marks) }}" class="form-control total-marks-input @error('total_marks') is-invalid @enderror" required>
-                    @error('total_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-3">
-                    <label for="duration_minutes" class="form-label">Duration Minutes <span class="required-mark">*</span></label>
-                    <input id="duration_minutes" type="number" min="1" name="duration_minutes" value="{{ old('duration_minutes', $exam->duration_minutes) }}" class="form-control @error('duration_minutes') is-invalid @enderror" required>
-                    @error('duration_minutes')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-3">
-                    <label for="passing_marks" class="form-label">Passing Marks</label>
-                    <input id="passing_marks" type="number" min="0" name="passing_marks" value="{{ old('passing_marks', $exam->passing_marks) }}" class="form-control @error('passing_marks') is-invalid @enderror">
-                    @error('passing_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-            </div>
-        </section>
-
-        <section class="exam-form-section">
-            <div class="exam-form-section-title">
-                <span>04</span>
                 <h3>Schedule</h3>
             </div>
             <div class="row g-3">
@@ -145,7 +116,7 @@
 
         <section class="exam-form-section">
             <div class="exam-form-section-title">
-                <span>05</span>
+                <span>04</span>
                 <h3>Attempt & Security Settings</h3>
             </div>
             <div class="row g-3">
@@ -175,7 +146,7 @@
     </fieldset>
 
     <div class="d-flex gap-2 mt-4">
-        @if (!$isPublished)
+        @if (!$isLocked)
             <button class="btn btn-primary" type="submit">
                 <i class="bi bi-check-circle-fill"></i>
                 {{ $button }}
@@ -184,14 +155,3 @@
         <a href="{{ route($prefix.'.exams.index') }}" class="btn btn-soft">Cancel</a>
     </div>
 </form>
-
-@push('scripts')
-    <script>
-        // Disable mouse-wheel number changes on all number input fields.
-        document.querySelectorAll('input[type="number"]').forEach(function (input) {
-            input.addEventListener('wheel', function (event) {
-                event.preventDefault();
-            }, { passive: false });
-        });
-    </script>
-@endpush

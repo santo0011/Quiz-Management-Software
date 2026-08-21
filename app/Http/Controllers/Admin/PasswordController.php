@@ -6,15 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\View\View;
 
 class PasswordController extends Controller
 {
-    public function edit(): View
-    {
-        return view('admin.password.edit');
-    }
-
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([

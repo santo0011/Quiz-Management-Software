@@ -77,7 +77,7 @@
                     <h2 class="modal-title fs-5" id="deleteConfirmModalLabel">Confirm Delete</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" id="deleteConfirmMessage">
                     This action cannot be undone. Are you sure you want to delete this record?
                 </div>
                 <div class="modal-footer">
@@ -132,13 +132,40 @@
                     <div class="publish-confirm-icon">
                         <i class="bi bi-rocket-takeoff-fill"></i>
                     </div>
-                    <p class="mb-0">Once this exam is published, it cannot be edited or deleted. Are you sure you want to publish this exam?</p>
+                    <p class="mb-0">Students will be able to attend this exam once it's published. You can still edit or delete it until a student attends. Are you sure you want to publish this exam?</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="confirmPublishButton">
                         <i class="bi bi-rocket-takeoff-fill"></i>
                         Publish Exam
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="unpublishExamModal" tabindex="-1" aria-labelledby="unpublishExamModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content confirm-modal">
+                <div class="modal-header">
+                    <div>
+                        <span class="page-kicker">Exam Management</span>
+                        <h2 class="modal-title fs-5" id="unpublishExamModalLabel">Unpublish Exam</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="publish-confirm-icon">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </div>
+                    <p class="mb-0">This exam will no longer be available to students. Are you sure you want to unpublish this exam?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" id="confirmUnpublishButton">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        Unpublish Exam
                     </button>
                 </div>
             </div>
@@ -174,8 +201,17 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     @include('partials.mobile-tables')
+    @php
+        $quizcoreBranchClasses = \App\Models\Branch::orderBy('name')->get()->mapWithKeys(function ($branch) {
+            $classes = \App\Models\SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get()
+                ->map(fn ($class) => ['id' => $class->id, 'name' => $class->name, 'global' => $class->isGlobal()])
+                ->toArray();
+
+            return [$branch->id => $classes];
+        })->toArray();
+    @endphp
     <script>
-        window.quizcoreBranchClasses = @json(\App\Models\Branch::with('classes')->get()->mapWithKeys(fn ($branch) => [$branch->id => $branch->classes->map(fn ($class) => ['id' => $class->id, 'name' => $class->name])->toArray()])->toArray());
+        window.quizcoreBranchClasses = @json($quizcoreBranchClasses);
     </script>
     <script>
         document.querySelectorAll('.admin-toast').forEach((toastEl) => {
@@ -223,6 +259,8 @@
         });
 
         const deleteModalEl = document.getElementById('deleteConfirmModal');
+        const deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
+        const defaultDeleteMessage = deleteConfirmMessage?.textContent.trim();
         const confirmDeleteButton = document.getElementById('confirmDeleteButton');
         let pendingDeleteForm = null;
 
@@ -230,6 +268,9 @@
             form.addEventListener('submit', (event) => {
                 event.preventDefault();
                 pendingDeleteForm = form;
+                if (deleteConfirmMessage) {
+                    deleteConfirmMessage.textContent = form.dataset.confirmMessage || defaultDeleteMessage;
+                }
                 bootstrap.Modal.getOrCreateInstance(deleteModalEl).show();
             });
         });
@@ -317,6 +358,65 @@
             });
         });
 
+        const unpublishModalEl = document.getElementById('unpublishExamModal');
+        const confirmUnpublishButton = document.getElementById('confirmUnpublishButton');
+        let pendingUnpublishForm = null;
+
+        document.querySelectorAll('[data-unpublish-exam]').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                pendingUnpublishForm = form;
+                bootstrap.Modal.getOrCreateInstance(unpublishModalEl).show();
+            });
+        });
+
+        confirmUnpublishButton?.addEventListener('click', () => {
+            if (! pendingUnpublishForm) {
+                return;
+            }
+
+            const form = pendingUnpublishForm;
+            const button = confirmUnpublishButton;
+            const originalHtml = button.innerHTML;
+
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Unpublishing...';
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+                body: new FormData(form),
+            })
+            .then((response) => {
+                return response.json().then((data) => {
+                    if (! response.ok) {
+                        throw new Error(data.message || 'Unpublish failed');
+                    }
+                    return data;
+                });
+            })
+            .then((data) => {
+                bootstrap.Modal.getOrCreateInstance(unpublishModalEl).hide();
+                const toastEl = document.createElement('div');
+                toastEl.className = 'toast admin-toast text-bg-success border-0';
+                toastEl.setAttribute('role', 'status');
+                toastEl.setAttribute('aria-live', 'polite');
+                toastEl.setAttribute('aria-atomic', 'true');
+                toastEl.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="bi bi-check-circle-fill"></i> ' + (data.message || 'Exam unpublished successfully.') + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+                document.querySelector('.toast-container').appendChild(toastEl);
+                bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3500 }).show();
+                setTimeout(() => window.location.reload(), 800);
+            })
+            .catch((error) => {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+                alert(error.message || 'Failed to unpublish exam. Please try again.');
+            });
+        });
+
         const logoutModalEl = document.getElementById('logoutConfirmModal');
         const confirmLogoutButton = document.getElementById('confirmLogoutButton');
         let pendingLogoutForm = null;
@@ -346,7 +446,8 @@
 
                 classSelect.innerHTML = '<option value="">Select class</option>';
                 branchClasses.forEach((schoolClass) => {
-                    const option = new Option(schoolClass.name, schoolClass.id);
+                    const label = schoolClass.global ? schoolClass.name + ' (All Branches)' : schoolClass.name;
+                    const option = new Option(label, schoolClass.id);
                     option.selected = String(schoolClass.id) === String(selectedClass);
                     classSelect.add(option);
                 });
@@ -366,7 +467,7 @@
             const preferredDrawerId = @json(old('_drawer'));
             const drawerIds = preferredDrawerId
                 ? [preferredDrawerId]
-                : ['addStudentDrawer', 'addBranchDrawer', 'addClassDrawer'];
+                : ['addStudentDrawer', 'addBranchDrawer', 'addClassDrawer', 'addCategoryDrawer'];
 
             drawerIds.some((drawerId) => {
                 const drawerEl = document.getElementById(drawerId);
@@ -381,6 +482,7 @@
     </script>
     @include('partials.global-forms')
     @include('partials.math-editor-init')
+    @include('partials.no-wheel-number')
     @stack('scripts')
 </body>
 </html>

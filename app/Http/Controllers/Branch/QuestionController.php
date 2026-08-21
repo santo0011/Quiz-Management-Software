@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\MultiQuestionRequest;
 use App\Http\Requests\QuestionRequest;
 use App\Models\Exam;
+use App\Models\PassageGroup;
 use App\Models\Question;
+use App\Models\QuestionCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,32 +30,89 @@ class QuestionController extends Controller
     public function create(Request $request, Exam $exam): View
     {
         $this->authorizeExam($request, $exam);
-        abort_if($exam->isPublished(), 403, 'Questions cannot be added to a published exam.');
+        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         return view('branch.questions.create', [
             'branch' => $request->user()->branch,
-            'exam' => $exam->load('schoolClass'),
+            'exam' => $exam->load('schoolClass', 'questions.options', 'category'),
             'question' => new Question(['question_type' => 'mcq', 'marks' => 1]),
+            'categories' => QuestionCategory::where('branch_id', $exam->branch_id)->orderBy('name')->get(),
         ]);
     }
 
     public function store(MultiQuestionRequest $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
-        abort_if($exam->isPublished(), 403, 'Questions cannot be added to a published exam.');
+        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
-        DB::transaction(function () use ($request, $exam): void {
+        if (! $exam->question_category_id) {
+            return redirect()->route('branch.questions.create', $exam)
+                ->with('error', 'Please select a question category for this exam first.');
+        }
+
+        $count = $this->createQuestionsFromRequest($request, $exam);
+        $message = $count > 1
+            ? "{$count} questions added successfully."
+            : 'Question added successfully.';
+
+        return redirect()->route('branch.questions.create', $exam)->with('success', $message);
+    }
+
+    public function createForPassage(Request $request, Exam $exam, PassageGroup $passageGroup): View
+    {
+        $this->authorizeExam($request, $exam);
+        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
+        abort_if($passageGroup->exam_id !== $exam->id, 404);
+
+        return view('branch.passage-groups.questions-create', [
+            'branch' => $request->user()->branch,
+            'exam' => $exam->load('schoolClass', 'category'),
+            'passageGroup' => $passageGroup->load('questions.options'),
+            'question' => new Question(['question_type' => 'mcq', 'marks' => 1]),
+        ]);
+    }
+
+    public function storeForPassage(MultiQuestionRequest $request, Exam $exam, PassageGroup $passageGroup): RedirectResponse
+    {
+        $this->authorizeExam($request, $exam);
+        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
+        abort_if($passageGroup->exam_id !== $exam->id, 404);
+
+        if (! $exam->question_category_id) {
+            return redirect()->route('branch.questions.create', $exam)
+                ->with('error', 'Please select a question category for this exam first.');
+        }
+
+        $count = $this->createQuestionsFromRequest($request, $exam, $passageGroup);
+        $message = $count > 1
+            ? "{$count} questions added to the passage successfully."
+            : 'Question added to the passage successfully.';
+
+        return redirect()->route('branch.questions.create', $exam)->with('success', $message);
+    }
+
+    private function createQuestionsFromRequest(MultiQuestionRequest $request, Exam $exam, ?PassageGroup $passageGroup = null): int
+    {
+        return DB::transaction(function () use ($request, $exam, $passageGroup): int {
             $exam->refresh();
+            $position = $passageGroup
+                ? (int) $passageGroup->questions()->max('position') + 1
+                : $exam->nextTopLevelPosition();
 
-            foreach (array_values($request->input('questions', [])) as $questionData) {
+            $questionsPayload = array_values($request->input('questions', []));
+
+            foreach ($questionsPayload as $questionData) {
                 $question = new Question;
                 $question->fill([
                     'question_text' => trim($questionData['question_text']),
                     'question_type' => $questionData['question_type'] ?? 'mcq',
                     'marks' => $questionData['marks'] ?? $exam->marks_per_question,
                     'explanation' => $questionData['explanation'] ?? null,
+                    'position' => $position++,
                 ]);
                 $question->exam_id = $exam->id;
+                $question->question_category_id = $exam->question_category_id;
+                $question->passage_group_id = $passageGroup?->id;
                 $question->save();
 
                 $correctIndex = (int) ($questionData['correct_option'] ?? 0);
@@ -66,28 +125,20 @@ class QuestionController extends Controller
                 }
             }
 
-            $count = $exam->questions()->count();
-            $exam->update([
-                'total_marks' => (int) round($count * (float) $exam->marks_per_question),
-            ]);
+            $exam->recalculateTotalMarks();
+
+            return count($questionsPayload);
         });
-
-        $count = count($request->input('questions', []));
-        $message = $count > 1
-            ? "{$count} questions added successfully."
-            : 'Question added successfully.';
-
-        return redirect()->route('branch.exams.show', $exam)->with('success', $message);
     }
 
     public function edit(Request $request, Question $question): View
     {
         $this->authorizeExam($request, $question->exam);
-        abort_if($question->exam->isPublished(), 403, 'Questions cannot be edited in a published exam.');
+        abort_if($question->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         return view('branch.questions.edit', [
             'branch' => $request->user()->branch,
-            'exam' => $question->exam->load('schoolClass'),
+            'exam' => $question->exam->load('schoolClass', 'category'),
             'question' => $question->load('options'),
         ]);
     }
@@ -95,22 +146,24 @@ class QuestionController extends Controller
     public function update(QuestionRequest $request, Question $question): RedirectResponse
     {
         $this->authorizeExam($request, $question->exam);
-        abort_if($question->exam->isPublished(), 403, 'Questions cannot be edited in a published exam.');
-        $this->saveQuestion($request, $question->exam, $question);
+        abort_if($question->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
+        $exam = $question->exam;
+        $this->saveQuestion($request, $exam, $question);
+        $exam->recalculateTotalMarks();
 
-        return redirect()->route('branch.exams.show', $question->exam)->with('success', 'Question updated successfully.');
+        return redirect()->route('branch.questions.create', $exam)->with('success', 'Question updated successfully.');
     }
 
     public function destroy(Request $request, Question $question): RedirectResponse
     {
         $this->authorizeExam($request, $question->exam);
-        abort_if($question->exam->isPublished(), 403, 'Questions cannot be deleted from a published exam.');
+        abort_if($question->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         $exam = $question->exam;
         $question->delete();
         $exam->refresh();
         $exam->recalculateTotalMarks();
 
-        return redirect()->route('branch.exams.show', $exam)->with('success', 'Question deleted successfully.');
+        return redirect()->route('branch.questions.create', $exam)->with('success', 'Question deleted successfully.');
     }
 
     private function saveQuestion(QuestionRequest $request, Exam $exam, Question $question): void
@@ -118,6 +171,7 @@ class QuestionController extends Controller
         DB::transaction(function () use ($request, $exam, $question): void {
             $question->fill($request->safe()->only(['question_text', 'question_type', 'marks', 'explanation']));
             $question->exam_id = $exam->id;
+            $question->question_category_id = $exam->question_category_id;
             $question->save();
 
             $question->options()->delete();

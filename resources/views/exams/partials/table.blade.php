@@ -31,10 +31,13 @@
                         <td>{{ $exam->total_marks }}</td>
                         <td>
                             @if ($exam->isPublished())
-                                <span class="status-badge status-published">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                    Published
-                                </span>
+                                <form method="POST" action="{{ route($prefix.'.exams.unpublish', $exam) }}" data-unpublish-exam>
+                                    @csrf
+                                    <button type="submit" class="status-badge status-published" title="Click to unpublish this exam">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        Published
+                                    </button>
+                                </form>
                             @elseif ($exam->status === 'closed')
                                 <span class="status-badge status-closed">
                                     <i class="bi bi-x-circle-fill"></i>
@@ -53,7 +56,7 @@
                         <td class="text-end">
                             <div class="action-group">
                                 <a href="{{ route($prefix.'.exams.show', $exam) }}" class="btn btn-sm btn-soft" title="View"><i class="bi bi-eye-fill"></i></a>
-                                @if (!$exam->isPublished())
+                                @if (!$exam->hasBeenAttempted())
                                     <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-sm btn-soft" title="Add Question"><i class="bi bi-patch-plus-fill"></i></a>
                                     <a href="{{ route($prefix.'.exams.edit', $exam) }}" class="btn btn-sm btn-soft" title="Edit"><i class="bi bi-pencil-fill"></i></a>
                                     <form method="POST" action="{{ route($prefix.'.exams.destroy', $exam) }}" data-confirm-delete>
@@ -62,7 +65,7 @@
                                         <button class="btn btn-sm btn-danger-soft" type="submit" title="Delete"><i class="bi bi-trash-fill"></i></button>
                                     </form>
                                 @else
-                                    <span class="publish-lock-hint" data-bs-toggle="tooltip" data-bs-title="Published exams are locked">
+                                    <span class="publish-lock-hint" data-bs-toggle="tooltip" data-bs-title="{{ \App\Models\Exam::LOCK_MESSAGE }}">
                                         <i class="bi bi-lock-fill"></i>
                                     </span>
                                 @endif

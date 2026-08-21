@@ -119,6 +119,10 @@
                     'drawer' => true,
                     'drawerId' => 'editBranchDrawer'.$branch->id,
                 ])
+                @include('admin.partials.change-password-form', [
+                    'action' => route('admin.branches.password.update', $branch),
+                    'fieldSuffix' => '_branch_'.$branch->id,
+                ])
             </div>
         </div>
     @endforeach
