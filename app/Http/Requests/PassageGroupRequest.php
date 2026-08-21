@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Exam;
+use App\Support\HtmlSanitizer;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -25,6 +26,13 @@ class PassageGroupRequest extends FormRequest
         }
 
         return $this->user()?->role === 'Super Admin';
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('content')) {
+            $this->merge(['content' => HtmlSanitizer::sanitize($this->input('content'))]);
+        }
     }
 
     public function rules(): array

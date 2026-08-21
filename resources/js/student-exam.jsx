@@ -84,7 +84,11 @@ function PassageStep({ step, questionNumbers, onSelect }) {
                     {step.passage.image_url && (
                         <img src={step.passage.image_url} alt={step.passage.title} className="passage-panel-image" />
                     )}
-                    <div className="passage-panel-content math-content">{step.passage.content}</div>
+                    <div
+                        className="passage-panel-content math-content"
+                        dangerouslySetInnerHTML={{ __html: step.passage.content }}
+                    />
+
                 </div>
             </aside>
 
