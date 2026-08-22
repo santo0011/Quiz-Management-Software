@@ -701,8 +701,8 @@ body {
 
 /* Exam title + Question Category merged into one compact row */
 .exam-summary-bar {
-    padding: 16px 24px;
-    margin-bottom: 28px;
+    padding: 8px 24px;
+    margin-bottom: 14px;
 }
 
 .exam-summary-row {
@@ -715,14 +715,14 @@ body {
 
 .exam-summary-title h2 {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: 1.02rem;
     font-weight: 800;
 }
 
 .exam-summary-title p {
     margin: 3px 0 0;
     color: var(--muted);
-    font-size: 0.88rem;
+    font-size: 0.8rem;
 }
 
 .exam-summary-category {
@@ -753,13 +753,67 @@ body {
     color: #9f1239;
 }
 
+.default-category-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px 14px;
+    background: #f6f8fb;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    min-width: 320px;
+}
+
+.default-category-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.default-category-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.86rem;
+}
+
+.default-category-controls .form-select {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.86rem;
+}
+
+.default-category-controls .btn {
+    font-size: 0.82rem;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.default-category-confirmed {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #067647;
+    line-height: 1.4;
+}
+
 @media (max-width: 575.98px) {
     .exam-summary-row {
         align-items: flex-start;
     }
 
-    .exam-summary-category {
+    .exam-summary-category,
+    .default-category-picker {
         width: 100%;
+        min-width: 0;
     }
 }
 
@@ -1000,7 +1054,6 @@ body {
     border: 1px solid var(--line);
     border-radius: 12px;
     box-shadow: 0 12px 28px rgba(20, 32, 54, .06);
-    overflow: hidden;
 }
 
 .question-card-header {
@@ -1010,6 +1063,10 @@ body {
     padding: 16px 20px;
     border-bottom: 1px solid #eef1f6;
     background: linear-gradient(180deg, #fafbfe, #f6f8fb);
+    /* .question-card no longer clips overflow (removed so the math-tools
+       popover isn't cut off at the card edge), so the header rounds its own
+       top corners instead of relying on the parent's overflow:hidden. */
+    border-radius: 11px 11px 0 0;
 }
 
 .question-card-header h3 {
@@ -1379,7 +1436,21 @@ body {
 
 .add-item-panel {
     scroll-margin-top: 100px;
-    margin-bottom: 28px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+}
+
+.add-item-panel .panel-header {
+    margin-bottom: 10px;
+}
+
+.add-item-panel .panel-header h2 {
+    font-size: 1.05rem;
+}
+
+.add-item-panel .panel-header p {
+    font-size: 0.82rem;
 }
 
 .add-item-tiles {
@@ -1391,9 +1462,9 @@ body {
 .add-item-tile {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     text-align: left;
-    padding: 20px;
+    padding: 12px 14px;
     border: 2px dashed var(--line);
     border-radius: 14px;
     background: var(--soft);
@@ -1416,13 +1487,13 @@ body {
 
 .add-item-tile-icon {
     flex-shrink: 0;
-    width: 52px;
-    height: 52px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
+    font-size: 1.15rem;
     background: #eef4ff;
     color: var(--primary);
 }
@@ -1440,7 +1511,7 @@ body {
 }
 
 .add-item-tile-body strong {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 800;
     color: var(--ink);
 }
@@ -1448,6 +1519,7 @@ body {
 .add-item-tile-body small {
     color: var(--muted);
     font-weight: 500;
+    font-size: 0.78rem;
     line-height: 1.35;
 }
 
@@ -1478,6 +1550,10 @@ body {
 .submit-panel p {
     color: var(--muted);
     margin: 10px 0 0;
+}
+
+#beginExamButton {
+    font-size: 1rem;
 }
 
 @media (max-width: 767.98px) {
@@ -3587,10 +3663,66 @@ body {
 }
 
 .passage-preview {
-    padding: 0 20px 16px;
-    color: var(--muted);
-    font-size: 0.92rem;
-    line-height: 1.6;
+    padding: 4px 20px 18px;
+    color: var(--ink);
+    font-size: 0.94rem;
+    line-height: 1.7;
+}
+
+.passage-preview > *:first-child {
+    margin-top: 0;
+}
+
+.passage-preview > *:last-child {
+    margin-bottom: 0;
+}
+
+.passage-preview p {
+    margin: 0 0 12px;
+}
+
+.passage-preview ul,
+.passage-preview ol {
+    margin: 0 0 12px;
+    padding-left: 22px;
+}
+
+.passage-preview li {
+    margin-bottom: 5px;
+}
+
+.passage-preview blockquote {
+    margin: 0 0 12px;
+    padding: 10px 16px;
+    border-left: 3px solid var(--accent);
+    background: rgba(15, 159, 143, 0.08);
+    border-radius: 0 8px 8px 0;
+    color: #475467;
+}
+
+/* Images inserted via the Summary/Question rich-text editor: keep their
+   intrinsic aspect ratio, cap width to the card so they never overflow the
+   result layout on any screen size, and give them a bit of visual weight. */
+.passage-preview img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    margin: 8px 0 12px;
+    box-shadow: 0 6px 18px rgba(20, 32, 54, 0.08);
+}
+
+.passage-preview table {
+    width: 100%;
+    margin-bottom: 12px;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.passage-preview td,
+.passage-preview th {
+    padding: 8px 10px;
+    border: 1px solid rgba(23, 32, 51, 0.12);
 }
 
 .passage-group-questions {
@@ -3920,6 +4052,11 @@ form .status-badge.status-published:hover {
 .question-marks-badge.unanswered {
     background: #f1f3f7;
     color: var(--muted);
+}
+
+.question-marks-badge.group-total {
+    background: #fff;
+    color: var(--accent);
 }
 
 /* Empty state icon */

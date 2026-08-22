@@ -217,7 +217,12 @@
         const formId = @json($formKey);
         const CATEGORIES = @json(($categories ?? collect())->map(fn ($categoryOption) => ['id' => $categoryOption->id, 'name' => $categoryOption->name])->values());
         const escapeHtml = (str) => String(str).replace(/[&<>"']/g, (ch) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[ch]));
-        const categoryOptionsHtml = () => '<option value="">Select category</option>' + CATEGORIES.map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+        const categoryOptionsHtml = () => {
+            // Read live (not captured once) so a default confirmed after this
+            // form already rendered still applies to rows added afterward.
+            const defaultId = window.defaultQuestionCategoryId ? String(window.defaultQuestionCategoryId) : '';
+            return '<option value="">Select category</option>' + CATEGORIES.map((c) => `<option value="${c.id}"${String(c.id) === defaultId ? ' selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+        };
         const form = document.querySelector('[data-multi-question-form][data-form-id="' + formId + '"]');
         if (form) {
             const list = form.querySelector('[data-multi-question-list]');
