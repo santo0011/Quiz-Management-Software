@@ -121,7 +121,7 @@
                                 <h3 class="question-item-text">{{ $group->title }}: Total = {{ rtrim(rtrim(number_format($groupObtained, 2), '0'), '.') }}/{{ rtrim(rtrim(number_format($groupTotal, 2), '0'), '.') }}</h3>
                             </div>
                         </div>
-                        <div class="passage-preview math-content">{{ Str::limit(strip_tags($group->content), 220) }}</div>
+                        <div class="passage-preview math-content">{!! \App\Support\HtmlSanitizer::sanitize($group->content) !!}</div>
                         <div class="passage-group-questions">
                             @foreach ($group->questions as $question)
                                 @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => 'Your answer'])

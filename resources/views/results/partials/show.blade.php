@@ -145,9 +145,6 @@
         @foreach ($orderedItems as $item)
             @if ($item['type'] === 'question')
                 @php($question = $item['question'])
-                <div class="question-item-meta mb-2">
-                    <span class="status-badge status-published"><i class="bi bi-patch-question-fill"></i> Normal Question</span>
-                </div>
                 @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index])
             @else
                 @php($group = $item['group'])
@@ -160,11 +157,15 @@
                         <div class="question-item-content">
                             <div class="question-item-meta">
                                 <span class="status-badge status-published"><i class="bi bi-collection"></i> Passage/Summary Question</span>
+                                <span class="question-marks-badge group-total">
+                                    <i class="bi bi-trophy-fill"></i>
+                                    {{ rtrim(rtrim(number_format($groupObtained, 2), '0'), '.') }}/{{ rtrim(rtrim(number_format($groupTotal, 2), '0'), '.') }} marks
+                                </span>
                             </div>
-                            <h3 class="question-item-text">{{ $group->title }}: Total = {{ rtrim(rtrim(number_format($groupObtained, 2), '0'), '.') }}/{{ rtrim(rtrim(number_format($groupTotal, 2), '0'), '.') }}</h3>
+                            <h3 class="question-item-text">{{ $group->title }}</h3>
                         </div>
                     </div>
-                    <div class="passage-preview math-content">{{ Str::limit(strip_tags($group->content), 220) }}</div>
+                    <div class="passage-preview">{!! \App\Support\HtmlSanitizer::sanitize($group->content) !!}</div>
                     <div class="passage-group-questions">
                         @foreach ($group->questions as $question)
                             @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index])

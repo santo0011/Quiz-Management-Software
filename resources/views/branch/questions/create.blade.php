@@ -14,7 +14,30 @@
                 <p>Manage questions for {{ $exam->schoolClass?->name }}. Each question has its own category.</p>
             </div>
 
-            @if ($categories->isEmpty())
+            @if ($categories->isNotEmpty())
+                <div class="default-category-picker" id="defaultCategoryPicker">
+                    <label for="defaultCategorySelect" class="default-category-label">
+                        <i class="bi bi-tag-fill"></i>
+                        Default category for new questions
+                    </label>
+                    <div class="default-category-controls">
+                        <select id="defaultCategorySelect" class="form-select form-control">
+                            <option value="">Select category</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" id="confirmDefaultCategory" class="btn btn-sm btn-primary" disabled>
+                            <i class="bi bi-check-circle-fill"></i>
+                            Confirm
+                        </button>
+                    </div>
+                    <div class="default-category-confirmed d-none" id="defaultCategoryConfirmed">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Default set to <strong id="defaultCategoryName"></strong> — new questions will use this automatically.</span>
+                    </div>
+                </div>
+            @else
                 <div class="exam-summary-category">
                     <span class="category-status-pill warning">
                         <i class="bi bi-exclamation-triangle-fill"></i>
@@ -55,7 +78,7 @@
                 </button>
             </div>
 
-            <div class="collapse {{ $openAddQuestion ? 'show' : '' }}" id="addQuestionForm">
+            <div class="collapse {{ $openAddQuestion ? 'show' : '' }}" id="addQuestionForm" data-bs-parent="#add-question-section">
                 <div class="add-item-inline-form mt-4">
                     @include('questions.partials.multi-form', [
                         'prefix' => 'branch',
@@ -70,7 +93,7 @@
                 </div>
             </div>
 
-            <div class="collapse {{ $openAddSummary ? 'show' : '' }}" id="addSummaryForm">
+            <div class="collapse {{ $openAddSummary ? 'show' : '' }}" id="addSummaryForm" data-bs-parent="#add-question-section">
                 <div class="add-item-inline-form mt-4">
                     <form method="POST" action="{{ route('branch.passage-groups.store', $exam) }}" class="admin-form">
                         @csrf
@@ -117,4 +140,8 @@
     @endif
 
     @include('exams.partials.settings-modal', ['exam' => $exam, 'prefix' => 'branch'])
+
+    @push('scripts')
+        @include('questions.partials.default-category-script')
+    @endpush
 @endsection
