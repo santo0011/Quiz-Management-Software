@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\RoleRedirector;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserHasRole
@@ -34,18 +34,7 @@ class EnsureUserHasRole
                 return response()->json(['message' => 'You are not allowed to access this area.'], 403);
             }
 
-            // Redirect authenticated users to their own dashboard.
-            if (Auth::guard('student')->check() && $user instanceof \App\Models\Student) {
-                return redirect()->route('student.dashboard')
-                    ->with('error', 'You do not have permission to access that area.');
-            }
-
-            // Web guard users (Super Admin / Branch)
-            $dashboardRoute = $user->role === 'Super Admin'
-                ? 'admin.dashboard'
-                : 'branch.dashboard';
-
-            return redirect()->route($dashboardRoute)
+            return redirect()->route(RoleRedirector::dashboardRouteName($user))
                 ->with('error', 'You do not have permission to access that area.');
         }
 

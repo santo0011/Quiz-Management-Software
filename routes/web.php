@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BranchController;
+use App\Http\Controllers\Admin\BranchSelectionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
 use App\Http\Controllers\Admin\PassageGroupController as AdminPassageGroupController;
@@ -26,13 +27,19 @@ use App\Http\Controllers\Branch\StudentController as BranchStudentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\ExamApiController as StudentExamApiController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
+use App\Support\RoleRedirector;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('login');
+    $user = RoleRedirector::currentUser();
+
+    return redirect($user ? RoleRedirector::dashboardUrl($user) : route('login'));
 });
 
-Route::middleware('guest')->group(function () {
+// Checked against both the web guard (Super Admin/Branch) and the student
+// guard, so an already-logged-in user of either kind is bounced to their own
+// dashboard instead of seeing the login/password-reset forms again.
+Route::middleware('guest:web,student')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.store');
     Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
@@ -52,6 +59,9 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:web
 Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::put('/password', [AdminPasswordController::class, 'update'])->name('password.update');
+    Route::get('/branch-selection', [BranchSelectionController::class, 'index'])->name('branch-selection.index');
+    Route::post('/branch-selection', [BranchSelectionController::class, 'store'])->name('branch-selection.store');
+    Route::delete('/branch-selection', [BranchSelectionController::class, 'clear'])->name('branch-selection.clear');
     Route::resource('branches', BranchController::class);
     Route::post('/branches/{branch}/toggle-active', [BranchController::class, 'toggleActive'])->name('branches.toggle-active');
     Route::put('/branches/{branch}/password', [BranchController::class, 'updatePassword'])->name('branches.password.update');
@@ -65,6 +75,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::post('/exams/{exam}/unpublish', [AdminExamController::class, 'unpublish'])->name('exams.unpublish');
     Route::put('/exams/{exam}/settings', [AdminExamController::class, 'updateSettings'])->name('exams.settings.update');
     Route::put('/exams/{exam}/category', [AdminExamController::class, 'updateCategory'])->name('exams.category.update');
+    Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
     Route::get('/exams/{exam}/questions/create', [AdminQuestionController::class, 'create'])->name('questions.create');
     Route::post('/exams/{exam}/questions', [AdminQuestionController::class, 'store'])->name('questions.store');
     Route::get('/questions/{question}/edit', [AdminQuestionController::class, 'edit'])->name('questions.edit');
@@ -84,7 +95,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 });
 
-Route::middleware(['auth', 'active', 'role:Branch'])->prefix('branch')->name('branch.')->group(function () {
+Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('branch')->name('branch.')->group(function () {
     Route::get('/dashboard', BranchDashboardController::class)->name('dashboard');
     Route::get('/password', [BranchPasswordController::class, 'edit'])->name('password.edit');
     Route::put('/password', [BranchPasswordController::class, 'update'])->name('password.update');
@@ -115,7 +126,7 @@ Route::middleware(['auth', 'active', 'role:Branch'])->prefix('branch')->name('br
     Route::get('/results/{attempt}', [BranchResultController::class, 'show'])->name('results.show');
 });
 
-Route::middleware(['auth:student', 'active'])->prefix('student')->name('student.')->group(function () {
+Route::middleware(['auth:student', 'active', 'single_session'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', [StudentExamController::class, 'dashboard'])->name('dashboard');
     Route::get('/exams/available', [StudentExamController::class, 'available'])->name('exams.available');
     Route::get('/exams/upcoming', [StudentExamController::class, 'upcoming'])->name('exams.upcoming');

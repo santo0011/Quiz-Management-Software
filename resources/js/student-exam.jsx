@@ -323,6 +323,50 @@ function StudentExamApp({ root }) {
     );
 }
 
+// Anti-copy protection for the exam runner. Scoped entirely to this page
+// load (student-exam-root, and therefore .exam-runner-shell, only exists on
+// the exam attempt page), so the dashboard, results, admin, super admin and
+// branch pages are never touched. MCQ options remain buttons with onClick
+// handlers, so none of this affects click/tap selection, scrolling, the
+// timer, navigation or submission — only text selection/copy is blocked.
+function enableExamCopyProtection() {
+    const isInsideExam = (target) => !!target?.closest?.('.exam-runner-shell');
+
+    document.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+    });
+
+    document.addEventListener('copy', (event) => {
+        if (isInsideExam(event.target)) event.preventDefault();
+    });
+
+    document.addEventListener('cut', (event) => {
+        if (isInsideExam(event.target)) event.preventDefault();
+    });
+
+    document.addEventListener('selectstart', (event) => {
+        if (isInsideExam(event.target)) event.preventDefault();
+    });
+
+    document.addEventListener('dragstart', (event) => {
+        if (isInsideExam(event.target)) event.preventDefault();
+    });
+
+    // Mobile long-press "select/copy" callouts are a native gesture, not a
+    // JS event we can intercept directly — the CSS -webkit-touch-callout:
+    // none and user-select: none rules on .exam-runner-shell (admin.css)
+    // are what suppress them on iOS/Android.
+
+    document.addEventListener('keydown', (event) => {
+        if (!isInsideExam(event.target)) return;
+        const key = event.key.toLowerCase();
+        // Copy/cut, and select-all (the usual precursor to a copy).
+        if ((event.ctrlKey || event.metaKey) && ['c', 'x', 'a'].includes(key)) {
+            event.preventDefault();
+        }
+    });
+}
+
 const root = document.getElementById('student-exam-root');
 if (root) {
     window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
@@ -331,4 +375,5 @@ if (root) {
     script.async = true;
     document.head.appendChild(script);
     createRoot(root).render(<StudentExamApp root={root} />);
+    enableExamCopyProtection();
 }

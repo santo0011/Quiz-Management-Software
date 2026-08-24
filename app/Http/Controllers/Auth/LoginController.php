@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
+use App\Services\SingleSessionService;
+use App\Support\RoleRedirector;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -67,13 +69,15 @@ class LoginController extends Controller
                         ->withInput($request->only('email', 'login_type'));
                 }
 
+                SingleSessionService::establish($request->user(), 'web');
+
                 return redirect()
-                    ->route('branch.dashboard')
+                    ->intended(RoleRedirector::dashboardUrl($request->user()))
                     ->with('success', 'Login successful. Welcome back!');
             }
 
             return redirect()
-                ->route('admin.dashboard')
+                ->intended(RoleRedirector::dashboardUrl($request->user()))
                 ->with('success', 'Login successful. Welcome back!');
         }
 
@@ -118,9 +122,10 @@ class LoginController extends Controller
 
             Auth::guard('student')->login($student, true);
             $request->session()->regenerate();
+            SingleSessionService::establish($student, 'student');
 
             return redirect()
-                ->route('student.dashboard')
+                ->intended(RoleRedirector::dashboardUrl($student))
                 ->with('success', 'Login successful. Welcome back!');
         }
 

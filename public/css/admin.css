@@ -2554,7 +2554,7 @@ body {
     padding: 14px 16px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 12px;
     background: #fff;
     border: 1px solid rgba(23, 32, 51, 0.08);
@@ -2606,7 +2606,7 @@ body {
     font-size: clamp(1.05rem, 1.7vw, 1.35rem);
     font-weight: 900;
     line-height: 1.1;
-    text-align: right;
+    text-align: center;
     white-space: nowrap;
 }
 
@@ -2914,6 +2914,21 @@ body {
     line-height: 1.55;
 }
 
+/* Anti-copy protection: applies to every element inside the exam runner
+   (question text, passage/summary content, MCQ options, palette, etc.).
+   Scoped to .exam-runner-shell, which only renders while a student is
+   actively taking an exam, so no other page is affected. Buttons and
+   click handlers are unaffected since user-select only blocks text
+   selection, not pointer/click events. */
+.exam-runner-shell,
+.exam-runner-shell * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 .exam-options {
     display: grid;
     gap: 12px;
@@ -3148,11 +3163,42 @@ body {
 @media (max-width: 767.98px) {
     .passage-step-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
 
     .passage-panel {
         position: static;
         max-height: none;
+        padding: 16px 18px;
+    }
+
+    /* Once the passage panel goes full-width (stacked above its questions
+       instead of sitting in a narrow side column), an uncapped image can
+       run very tall. Capping the height and using "contain" (never "cover")
+       keeps it compact without cropping any exam content out of view. */
+    .passage-panel-image,
+    .passage-panel-content img {
+        display: block;
+        max-height: 260px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        object-fit: contain;
+        background: #f8fafc;
+    }
+
+    .passage-questions-column {
+        gap: 20px;
+    }
+
+    /* A wide data table pasted into passage content would otherwise force
+       the whole page to scroll horizontally; scope the scroll to the table
+       itself instead. */
+    .passage-panel-content table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .passage-collapse-toggle {
@@ -3184,6 +3230,14 @@ body {
     .student-hero,
     .student-section {
         border-radius: 14px;
+    }
+
+    .student-content .empty-state {
+        padding: 34px 16px;
+    }
+
+    .student-content .empty-state i {
+        font-size: 1.7rem;
     }
 
     .exam-card dl {
@@ -3228,17 +3282,34 @@ body {
 }
 
 @media (max-width: 575.98px) {
+    /* 8 stat tiles read as one long list in a single column — 2-up keeps
+       every number visible without excessive scrolling, and the icon+value
+       stack (below) gives each tile room to stay legible at half width. */
     .result-card-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
     }
 
     .result-card {
-        min-height: 76px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 92px;
         padding: 12px 14px;
     }
 
+    .result-card-left {
+        gap: 8px;
+    }
+
+    .result-card strong {
+        align-self: center;
+        font-size: 1.25rem;
+    }
+
     .performance-metrics {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -3725,6 +3796,42 @@ body {
     border: 1px solid rgba(23, 32, 51, 0.12);
 }
 
+/* Student Result Details: Summary "Read More" / "Show Less". Collapsed
+   state is toggled by JS only when the content actually overflows the
+   preview window, so a short Summary never shows the button at all. Images
+   stay fully responsive throughout — this only clips the container. */
+.summary-collapsible {
+    position: relative;
+}
+
+.summary-collapsible-body.is-collapsed {
+    position: relative;
+    max-height: 320px;
+    overflow: hidden;
+}
+
+.summary-collapsible-body.is-collapsed::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 56px;
+    background: linear-gradient(180deg, rgba(217, 240, 236, 0) 0%, #d9f0ec 88%);
+    pointer-events: none;
+}
+
+.summary-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 20px 16px;
+}
+
+.summary-toggle-icon {
+    font-size: 0.8rem;
+}
+
 .passage-group-questions {
     display: grid;
     gap: 12px;
@@ -3805,6 +3912,16 @@ body {
     font-weight: 800;
     line-height: 1.5;
     color: var(--ink);
+}
+
+/* Student Result Details only: this markup (.question-item-text etc.) is
+   shared with the Admin/Branch result-review page via the same
+   answer-item partial, so scope to .student-content — the Student Panel's
+   own <main> — rather than touching the base rule above. Excludes
+   .passage-group-item's own header, which reuses .question-item-text for
+   the Summary's title ("Summary 1: Total = …"), not a question. */
+.student-content .question-admin-item:not(.passage-group-item) .question-item-text {
+    font-size: 0.94rem;
 }
 
 .question-item-actions {
@@ -4192,12 +4309,27 @@ form .status-badge.status-published:hover {
 
 @media (max-width: 575.98px) {
     .student-info-card-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
     }
 
     .info-card {
-        min-height: 90px;
-        padding: 14px 16px;
+        min-height: 88px;
+        padding: 12px 14px;
+    }
+
+    .info-card-icon {
+        width: 32px;
+        height: 32px;
+        margin-bottom: 8px;
+    }
+
+    .info-card span {
+        font-size: 0.68rem;
+    }
+
+    .info-card strong {
+        font-size: 1.15rem;
     }
 }
 
@@ -4762,8 +4894,12 @@ form .status-badge.status-published:hover {
         font-size: 1rem;
     }
 
-    .student-details-grid {
-        grid-template-columns: 1fr;
+    /* Scoped to .student-content (the Student Panel's own <main>) so this
+       never touches the Admin/Branch "view student" page, which reuses the
+       same .student-details-grid/.student-detail-item markup. */
+    .student-content .student-details-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
     }
 }
 
@@ -5702,12 +5838,49 @@ form .status-badge.status-published:hover {
 
     .exam-card-grid,
     .student-exam-grid-2,
-    .student-info-card-grid,
     .dashboard-charts-grid,
-    .student-details-grid,
     .exam-details-grid {
         grid-template-columns: 1fr;
         gap: 12px;
+    }
+
+    /* Compact icon+label+value tiles read better as a 2-up grid than one
+       long column on phones — halves the scroll length of the Exam
+       Instructions and Profile pages without cramping any of them. */
+    .student-info-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    /* Scoped to .student-content — see the matching 767.98px rule above —
+       so the Admin/Branch "view student" page (which reuses this same
+       .student-details-grid/.student-detail-item markup) is unaffected. */
+    .student-content .student-details-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .student-content .student-detail-item {
+        gap: 9px;
+        padding: 11px 12px;
+        border-radius: 10px;
+    }
+
+    .student-content .student-detail-icon {
+        flex-basis: 30px;
+        width: 30px;
+        height: 30px;
+        font-size: 0.84rem;
+    }
+
+    .student-content .student-detail-item dt {
+        font-size: 0.66rem;
+    }
+
+    .student-content .student-detail-item dd {
+        margin-top: 2px;
+        font-size: 0.84rem;
+        overflow-wrap: anywhere;
     }
 
     .exam-card {
@@ -6105,20 +6278,32 @@ form .status-badge.status-published:hover {
     }
 
     .result-card-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
     }
 
     .result-card {
-        min-height: 72px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 88px;
         padding: 12px 14px;
         border-radius: 12px;
     }
 
+    .result-card-left {
+        gap: 8px;
+    }
+
+    .result-card strong {
+        align-self: center;
+    }
+
     .result-card-icon {
-        flex-basis: 32px;
-        width: 32px;
-        height: 32px;
+        flex-basis: 30px;
+        width: 30px;
+        height: 30px;
     }
 
     .exam-history-item,
@@ -6129,7 +6314,7 @@ form .status-badge.status-published:hover {
     }
 
     .performance-metrics {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
     }
 
@@ -6178,11 +6363,62 @@ form .status-badge.status-published:hover {
         line-height: 1.45;
     }
 
+    .exam-options {
+        gap: 10px;
+    }
+
     .exam-option {
         min-height: 48px;
         padding: 12px;
         border-radius: 10px;
         font-size: 0.9rem;
+    }
+
+    .passage-panel {
+        padding: 14px 16px;
+        border-radius: 12px;
+    }
+
+    .passage-panel-header {
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+    }
+
+    .passage-panel-eyebrow {
+        font-size: 0.68rem;
+    }
+
+    .passage-panel-title {
+        font-size: 0.98rem;
+    }
+
+    .passage-panel-image,
+    .passage-panel-content img {
+        max-height: 200px;
+    }
+
+    .passage-panel-content {
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+
+    .passage-questions-column {
+        gap: 16px;
+    }
+
+    .passage-question-block {
+        padding-bottom: 16px;
+    }
+
+    /* Result Details' "Answer Summary" review reuses .passage-preview (also
+       shared by the Admin/Branch result-review pages), so this is scoped to
+       .student-content — same reasoning as the exam runner's image cap
+       above, just for the post-exam review instead of the live attempt. */
+    .student-content .passage-preview img {
+        max-height: 200px;
+        width: auto;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .question-palette {

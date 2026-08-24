@@ -51,6 +51,7 @@
         .error-icon.timer { background: #fffbeb; color: #d97706; }
         .error-icon.server { background: #f8fafc; color: #64748b; }
         .error-icon.user { background: #eff6ff; color: #2563eb; }
+        .error-icon.compass { background: #f0f9ff; color: #0284c7; }
         .error-card h1 {
             font-size: 24px;
             font-weight: 700;
@@ -86,16 +87,11 @@
             <h1>{{ $title }}</h1>
             <p class="error-message">{{ $message }}</p>
             <div class="error-actions">
-                @if(auth()->guard('web')->check())
-                    @php
-                        $user = auth()->guard('web')->user();
-                        $dashboardUrl = $user->role === 'Super Admin' ? route('admin.dashboard') : route('branch.dashboard');
-                    @endphp
-                    <a href="{{ $dashboardUrl }}" class="btn btn-primary">
-                        <i class="bi bi-speedometer2"></i>Go to Dashboard
-                    </a>
-                @elseif(auth()->guard('student')->check())
-                    <a href="{{ route('student.dashboard') }}" class="btn btn-primary">
+                @php
+                    $currentUser = \App\Support\RoleRedirector::currentUser();
+                @endphp
+                @if($currentUser)
+                    <a href="{{ \App\Support\RoleRedirector::dashboardUrl($currentUser) }}" class="btn btn-primary">
                         <i class="bi bi-speedometer2"></i>Go to Dashboard
                     </a>
                 @else

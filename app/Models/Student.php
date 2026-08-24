@@ -27,6 +27,7 @@ class Student extends Authenticatable
         'password',
         'login_code_hash',
         'remember_token',
+        'current_session_id',
     ];
 
     protected function casts(): array
