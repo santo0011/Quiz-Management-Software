@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Middleware\EnsureSingleSession;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Support\RoleRedirector;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,7 +23,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'active' => EnsureUserIsActive::class,
+            'single_session' => EnsureSingleSession::class,
         ]);
+
+        // An already-authenticated visitor hitting a guest-only page (e.g.
+        // /login) is sent to their own dashboard instead of Laravel's
+        // default fallback, which would 404/redirect to "/" since this app
+        // has no route named "dashboard" or "home".
+        RedirectIfAuthenticated::redirectUsing(function () {
+            $user = RoleRedirector::currentUser();
+
+            return $user ? RoleRedirector::dashboardUrl($user) : route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Redirect unauthenticated users to the login page with a friendly message.

@@ -3,8 +3,12 @@
 namespace App\Providers;
 
 use App\Models\Setting;
+use App\Services\SingleSessionService;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +30,33 @@ class AppServiceProvider extends ServiceProvider
         Paginator::defaultView('vendor.pagination.custom');
 
         $this->applyStoredMailSettings();
+        $this->registerSingleSessionOnRememberLogin();
+    }
+
+    /**
+     * Explicit logins already call SingleSessionService::establish() from
+     * LoginController. A "remember me" cookie can also silently re-log a
+     * student/branch user in (Illuminate\Auth\SessionGuard fires the same
+     * Login event for that), which this listener catches so that scenario
+     * still claims the device as the account's one active session.
+     */
+    private function registerSingleSessionOnRememberLogin(): void
+    {
+        Event::listen(Login::class, function (Login $event): void {
+            if (! in_array($event->guard, ['student', 'web'], true)) {
+                return;
+            }
+
+            if ($event->guard === 'web' && $event->user->role !== 'Branch') {
+                return;
+            }
+
+            if (! Auth::guard($event->guard)->viaRemember()) {
+                return;
+            }
+
+            SingleSessionService::establish($event->user, $event->guard);
+        });
     }
 
     /**

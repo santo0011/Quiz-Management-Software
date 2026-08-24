@@ -97,17 +97,21 @@ class ExamStatusLogicTest extends TestCase
     {
         $exam = $this->createExam([
             'starts_at' => Carbon::now()->subHour(),
-            'ends_at' => null,
-            'starts_at' => null,
-        ]);
-
-        $exam->update([
-            'starts_at' => Carbon::now()->subHour(),
-            'starts_at' => Carbon::now()->subHour(),
+            'ends_at' => Carbon::now()->addHour(),
         ]);
 
         ExamAttempt::create([
+            'exam_id' => $exam->id,
             'student_id' => $this->student->id,
-            'student_id' => $this->student->id,
+            'branch_id' => $this->branch->id,
+            'school_class_id' => $this->schoolClass->id,
+            'attempt_number' => 1,
+            'started_at' => Carbon::now()->subMinutes(10),
+            'expires_at' => Carbon::now()->addMinutes(50),
+            'submitted_at' => Carbon::now(),
+            'status' => 'submitted',
         ]);
+
+        $this->assertEquals('completed', $exam->dynamicStatus($this->student));
     }
+}

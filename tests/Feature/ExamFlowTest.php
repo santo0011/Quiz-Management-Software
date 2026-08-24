@@ -103,6 +103,7 @@ class ExamFlowTest extends TestCase
             'class' => $class->name,
             'phone_number' => $fixtureOverrides['student_phone'] ?? '9876543210',
             'email' => $fixtureOverrides['student_email'] ?? 'student@example.com',
+            'is_active' => true,
         ]);
 
         $exam = Exam::create(array_merge([

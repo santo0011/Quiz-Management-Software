@@ -121,7 +121,13 @@
                                 <h3 class="question-item-text">{{ $group->title }}: Total = {{ rtrim(rtrim(number_format($groupObtained, 2), '0'), '.') }}/{{ rtrim(rtrim(number_format($groupTotal, 2), '0'), '.') }}</h3>
                             </div>
                         </div>
-                        <div class="passage-preview math-content">{!! \App\Support\HtmlSanitizer::sanitize($group->content) !!}</div>
+                        <div class="summary-collapsible">
+                            <div class="passage-preview math-content summary-collapsible-body">{!! \App\Support\HtmlSanitizer::sanitize($group->content) !!}</div>
+                            <button type="button" class="btn btn-sm btn-soft summary-toggle-btn" hidden aria-expanded="false">
+                                <i class="bi bi-chevron-down summary-toggle-icon"></i>
+                                <span class="summary-toggle-label">Read More</span>
+                            </button>
+                        </div>
                         <div class="passage-group-questions">
                             @foreach ($group->questions as $question)
                                 @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => 'Your answer'])
@@ -138,5 +144,43 @@
             window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
         </script>
         <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+        <script>
+            // Summary "Read More" / "Show Less": collapsed by default only when
+            // the content is actually taller than the preview window, so short
+            // Summaries never grow a toggle they don't need. Runs on window
+            // "load" (not DOMContentLoaded) so image heights are already known
+            // before the natural height is measured.
+            document.addEventListener('DOMContentLoaded', function () {
+                var wraps = document.querySelectorAll('.summary-collapsible');
+                if (!wraps.length) return;
+
+                var COLLAPSED_HEIGHT = 320; // must match .summary-collapsible-body.is-collapsed max-height in admin.css
+
+                window.addEventListener('load', function () {
+                    wraps.forEach(function (wrap) {
+                        var body = wrap.querySelector('.summary-collapsible-body');
+                        var btn = wrap.querySelector('.summary-toggle-btn');
+                        var label = btn ? btn.querySelector('.summary-toggle-label') : null;
+                        var icon = btn ? btn.querySelector('.summary-toggle-icon') : null;
+                        if (!body || !btn) return;
+
+                        if (body.scrollHeight <= COLLAPSED_HEIGHT + 4) {
+                            return;
+                        }
+
+                        body.classList.add('is-collapsed');
+                        btn.hidden = false;
+
+                        btn.addEventListener('click', function () {
+                            var collapsed = body.classList.toggle('is-collapsed');
+                            btn.setAttribute('aria-expanded', String(!collapsed));
+                            if (label) label.textContent = collapsed ? 'Read More' : 'Show Less';
+                            if (icon) icon.className = collapsed ? 'bi bi-chevron-down summary-toggle-icon' : 'bi bi-chevron-up summary-toggle-icon';
+                        });
+                    });
+                });
+            });
+        </script>
     @endpush
 @endsection
