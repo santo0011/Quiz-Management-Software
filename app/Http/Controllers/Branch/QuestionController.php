@@ -30,7 +30,6 @@ class QuestionController extends Controller
     public function create(Request $request, Exam $exam): View
     {
         $this->authorizeExam($request, $exam);
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         return view('branch.questions.create', [
             'branch' => $request->user()->branch,

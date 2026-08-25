@@ -33,8 +33,6 @@ class QuestionController extends Controller
 
     public function create(Exam $exam): View
     {
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
-
         return view('admin.questions.create', [
             'selectedBranch' => $exam->branch,
             'exam' => $exam->load('schoolClass', 'questions.options', 'category'),
