@@ -52,7 +52,17 @@
         </div>
     </section>
 
-    @if ($categories->isNotEmpty())
+    @if ($exam->hasBeenAttempted())
+        <div class="feedback-alert info mb-4">
+            <i class="bi bi-lock-fill"></i>
+            <div>
+                <strong>This exam is locked.</strong>
+                <p class="mb-0">{{ \App\Models\Exam::LOCK_MESSAGE }} You can still view all questions, summaries, and answers below.</p>
+            </div>
+        </div>
+    @endif
+
+    @if ($categories->isNotEmpty() && ! $exam->hasBeenAttempted())
         <section class="content-panel add-item-panel" id="add-question-section">
             <div class="panel-header">
                 <div>
@@ -124,7 +134,7 @@
 
     @include('exams.partials.questions-panel', ['exam' => $exam, 'prefix' => 'admin', 'categories' => $categories])
 
-    @if ($categories->isNotEmpty())
+    @if ($categories->isNotEmpty() && ! $exam->hasBeenAttempted())
         @php($hasQuestions = $exam->questions->count() > 0)
         <section class="content-panel submit-panel">
             <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#examSettingsModal" @disabled(!$hasQuestions)>
