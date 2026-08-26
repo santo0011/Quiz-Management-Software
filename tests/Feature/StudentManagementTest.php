@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicSession;
 use App\Models\Branch;
 use App\Models\Student;
 use App\Models\User;
@@ -16,20 +17,25 @@ class StudentManagementTest extends TestCase
     public function test_branch_user_only_sees_own_students(): void
     {
         [$branch, $otherBranch, $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
 
         $ownStudent = Student::create($this->studentPayload([
             'branch_id' => $branch->id,
             'student_name' => 'Own Student',
             'email' => 'own@example.com',
+            'session_id' => $session->id,
         ]));
 
         Student::create($this->studentPayload([
             'branch_id' => $otherBranch->id,
             'student_name' => 'Other Student',
             'email' => 'other@example.com',
+            'session_id' => $session->id,
         ]));
 
-        $response = $this->actingAs($branchUser)->get(route('branch.students.index'));
+        $response = $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->get(route('branch.students.index'));
 
         $response->assertOk();
         $response->assertSee($ownStudent->student_name);
@@ -59,8 +65,10 @@ class StudentManagementTest extends TestCase
     public function test_branch_created_student_is_forced_to_authenticated_branch(): void
     {
         [$branch, , $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
 
         $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $this->studentPayload([
                 'branch_id' => 999,
                 'email' => 'new@example.com',
@@ -116,6 +124,16 @@ class StudentManagementTest extends TestCase
             Branch::create(['name' => 'Kolkata Branch', 'email' => 'kolkata@example.com']),
             Branch::create(['name' => 'Delhi Branch', 'email' => 'delhi@example.com']),
         ];
+    }
+
+    private function makeAcademicSession(): AcademicSession
+    {
+        return AcademicSession::create([
+            'name' => '2026-2027',
+            'start_date' => '2026-06-01',
+            'end_date' => '2027-05-31',
+            'is_active' => true,
+        ]);
     }
 
     private function studentPayload(array $overrides = []): array

@@ -1,6 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
+const FONT_STEPS = [0.85, 1, 1.15, 1.3, 1.45];
+const FONT_STEP_STORAGE_KEY = 'quizcore.student.examFontStep';
+
+function loadStoredFontStep() {
+    try {
+        const stored = parseInt(window.localStorage.getItem(FONT_STEP_STORAGE_KEY), 10);
+        return Number.isInteger(stored) && stored >= 0 && stored < FONT_STEPS.length ? stored : 1;
+    } catch {
+        return 1;
+    }
+}
+
 function formatTime(seconds) {
     const value = Math.max(0, seconds);
     const minutes = Math.floor(value / 60).toString().padStart(2, '0');
@@ -121,6 +133,7 @@ function StudentExamApp({ root }) {
     const [payload, setPayload] = useState(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const [remainingSeconds, setRemainingSeconds] = useState(0);
+    const [fontStepIndex, setFontStepIndex] = useState(loadStoredFontStep);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
 
     const stateUrl = root.dataset.stateUrl;
@@ -192,6 +205,18 @@ function StudentExamApp({ root }) {
         window.MathJax?.typesetPromise?.();
     }, [activeIndex, payload]);
 
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(FONT_STEP_STORAGE_KEY, String(fontStepIndex));
+        } catch {
+            // Storage unavailable (private browsing, etc.) — the choice just
+            // won't persist across reloads; the exam itself is unaffected.
+        }
+    }, [fontStepIndex]);
+
+    const decreaseFontSize = () => setFontStepIndex((index) => Math.max(0, index - 1));
+    const increaseFontSize = () => setFontStepIndex((index) => Math.min(FONT_STEPS.length - 1, index + 1));
+
     const saveAnswer = async (questionId, optionId) => {
         setPayload((current) => ({
             ...current,
@@ -218,7 +243,7 @@ function StudentExamApp({ root }) {
     }
 
     return (
-        <div className="exam-runner-shell">
+        <div className="exam-runner-shell" style={{ '--exam-font-scale': FONT_STEPS[fontStepIndex] }}>
             <header className="exam-runner-header">
                 <div>
                     <span>Online Exam</span>
@@ -234,62 +259,75 @@ function StudentExamApp({ root }) {
                 <div style={{ width: `${(answeredCount / allQuestions.length) * 100}%` }}></div>
             </div>
 
-            <div className="exam-runner-grid">
-                <main className="exam-question-panel">
-                    {activeStep.type === 'question' ? (
-                        <>
-                            <div className="question-meta">
-                                <span>Question {questionNumbers[activeStep.question.id]} of {allQuestions.length}</span>
-                                <strong>{activeStep.question.marks} marks</strong>
-                            </div>
-                            <div className="exam-question-text math-content">{activeStep.question.text}</div>
-                            <QuestionOptions question={activeStep.question} onSelect={saveAnswer} />
-                        </>
-                    ) : (
-                        <PassageStep step={activeStep} questionNumbers={questionNumbers} onSelect={saveAnswer} />
-                    )}
-
-                    <div className="exam-controls">
-                        <button type="button" className="btn btn-soft" onClick={() => setActiveIndex(Math.max(0, activeIndex - 1))} disabled={activeIndex === 0}>
-                            <i className="bi bi-arrow-left"></i>
-                            Previous
-                        </button>
-                        <button type="button" className="btn btn-soft" onClick={() => setActiveIndex(Math.min(steps.length - 1, activeIndex + 1))} disabled={activeIndex === steps.length - 1}>
-                            Next
-                            <i className="bi bi-arrow-right"></i>
-                        </button>
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            disabled={!isOnLastStep || submitting}
-                            title={!isOnLastStep ? 'Submit is available on the last question' : 'Submit your exam'}
-                            onClick={() => setShowSubmitModal(true)}
-                        >
-                            <i className="bi bi-send-fill"></i>
-                            Submit Exam
-                        </button>
-                    </div>
-                </main>
-
-                <aside className="question-palette">
-                    <div>
-                        <strong>Question Palette</strong>
+            <div className="exam-toolbar">
+                <div className="exam-nav-wrap">
+                    <div className="exam-nav-label">
+                        <span>Question Navigation</span>
                         <span>{answeredCount}/{allQuestions.length} answered</span>
                     </div>
-                    <div className="palette-grid">
+                    <div className="exam-nav-scroll">
                         {allQuestions.map((question, index) => (
                             <button
                                 type="button"
                                 key={question.id}
-                                className={`${questionStepIndex[question.id] === activeIndex ? 'active' : ''} ${question.selected_option_id ? 'answered' : ''}`}
+                                className={`exam-nav-btn ${questionStepIndex[question.id] === activeIndex ? 'active' : ''} ${question.selected_option_id ? 'answered' : ''}`}
                                 onClick={() => setActiveIndex(questionStepIndex[question.id])}
                             >
                                 {index + 1}
                             </button>
                         ))}
                     </div>
-                </aside>
+                </div>
+
+                <div className="exam-font-control" aria-label="Question text size">
+                    <span className="exam-font-control-label">
+                        <i className="bi bi-fonts"></i>
+                        Text Size
+                    </span>
+                    <button type="button" onClick={decreaseFontSize} disabled={fontStepIndex === 0} aria-label="Decrease text size">
+                        <i className="bi bi-dash-lg"></i>
+                    </button>
+                    <button type="button" onClick={increaseFontSize} disabled={fontStepIndex === FONT_STEPS.length - 1} aria-label="Increase text size">
+                        <i className="bi bi-plus-lg"></i>
+                    </button>
+                </div>
             </div>
+
+            <main className="exam-question-panel">
+                {activeStep.type === 'question' ? (
+                    <>
+                        <div className="question-meta">
+                            <span>Question {questionNumbers[activeStep.question.id]} of {allQuestions.length}</span>
+                            <strong>{activeStep.question.marks} marks</strong>
+                        </div>
+                        <div className="exam-question-text math-content">{activeStep.question.text}</div>
+                        <QuestionOptions question={activeStep.question} onSelect={saveAnswer} />
+                    </>
+                ) : (
+                    <PassageStep step={activeStep} questionNumbers={questionNumbers} onSelect={saveAnswer} />
+                )}
+
+                <div className="exam-controls">
+                    <button type="button" className="btn btn-soft" onClick={() => setActiveIndex(Math.max(0, activeIndex - 1))} disabled={activeIndex === 0}>
+                        <i className="bi bi-arrow-left"></i>
+                        Previous
+                    </button>
+                    <button type="button" className="btn btn-soft" onClick={() => setActiveIndex(Math.min(steps.length - 1, activeIndex + 1))} disabled={activeIndex === steps.length - 1}>
+                        Next
+                        <i className="bi bi-arrow-right"></i>
+                    </button>
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={!isOnLastStep || submitting}
+                        title={!isOnLastStep ? 'Submit is available on the last question' : 'Submit your exam'}
+                        onClick={() => setShowSubmitModal(true)}
+                    >
+                        <i className="bi bi-send-fill"></i>
+                        Submit Exam
+                    </button>
+                </div>
+            </main>
 
             {showSubmitModal && (
                 <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>

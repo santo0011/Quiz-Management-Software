@@ -19,7 +19,12 @@ class ExamController extends Controller
         $baseExamQuery = Exam::where('branch_id', $student->branch_id)
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED)
-            ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')));
+            ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
+            ->where(function ($query) use ($student): void {
+                $student->session_id
+                    ? $query->whereNull('session_id')->orWhere('session_id', $student->session_id)
+                    : $query->whereNull('session_id');
+            });
 
         $publishedExams = (clone $baseExamQuery)
             ->withCount('questions')
@@ -76,6 +81,7 @@ class ExamController extends Controller
         abort_if($student->branch && ! $student->branch->isActive(), 403, 'Your branch has been deactivated.');
         abort_if($exam->branch_id !== $student->branch_id || $exam->school_class_id !== $student->class_id || ! $exam->isOpen(), 403);
         abort_if($exam->subject_id !== null && ! $student->subjects()->where('subjects.id', $exam->subject_id)->exists(), 403);
+        abort_if($exam->session_id !== null && $exam->session_id !== $student->session_id, 403);
 
         return view('student.exams.show', [
             'student' => $student->load(['branch', 'schoolClass']),
@@ -108,6 +114,11 @@ class ExamController extends Controller
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED)
             ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
+            ->where(function ($query) use ($student): void {
+                $student->session_id
+                    ? $query->whereNull('session_id')->orWhere('session_id', $student->session_id)
+                    : $query->whereNull('session_id');
+            })
             ->withCount('questions')
             ->with('schoolClass')
             ->where(function ($query): void {
@@ -146,6 +157,11 @@ class ExamController extends Controller
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED)
             ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
+            ->where(function ($query) use ($student): void {
+                $student->session_id
+                    ? $query->whereNull('session_id')->orWhere('session_id', $student->session_id)
+                    : $query->whereNull('session_id');
+            })
             ->where('starts_at', '>', now())
             // Exclude exams the student has already submitted
             ->whereDoesntHave('attempts', function ($query) use ($student): void {

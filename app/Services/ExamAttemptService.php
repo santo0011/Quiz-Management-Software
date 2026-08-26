@@ -53,6 +53,7 @@ class ExamAttemptService
                 'student_id' => $student->id,
                 'branch_id' => $student->branch_id,
                 'school_class_id' => $student->class_id,
+                'session_id' => $student->session_id,
                 'attempt_number' => $attemptNumber,
                 'started_at' => now(),
                 'expires_at' => $expiresAt,
@@ -175,6 +176,10 @@ class ExamAttemptService
 
         if ($exam->subject_id !== null && ! $student->subjects()->where('subjects.id', $exam->subject_id)->exists()) {
             throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your subject.']);
+        }
+
+        if ($exam->session_id !== null && $exam->session_id !== $student->session_id) {
+            throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your academic session.']);
         }
 
         if (! $exam->isOpen()) {

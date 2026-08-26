@@ -83,7 +83,7 @@
             @if (($subjects ?? collect())->isEmpty())
                 <div class="form-text">No subjects found. Add one from Subjects first.</div>
             @else
-                <div class="row row-cols-2 row-cols-md-3 g-2 subject-checkbox-grid">
+                <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2 subject-checkbox-grid">
                     @foreach ($subjects as $subject)
                         <div class="col">
                             <label class="form-check module-check">

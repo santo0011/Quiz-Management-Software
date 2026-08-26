@@ -23,12 +23,12 @@
                         {{ $student->class }}
                     </span>
                 @endif
-                @foreach ($student->subjects as $subject)
+                <!-- @foreach ($student->subjects as $subject)
                     <span class="student-profile-chip">
                         <i class="bi bi-book-fill"></i>
                         {{ $subject->name }}
                     </span>
-                @endforeach
+                @endforeach -->
             </div>
             <div class="student-profile-actions">
                 <button type="button" class="btn btn-light btn-student-action" data-bs-toggle="offcanvas" data-bs-target="#editStudentDrawer{{ $student->id }}">

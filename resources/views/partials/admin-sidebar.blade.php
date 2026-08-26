@@ -1,6 +1,7 @@
 @php
     $links = [
         ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2-fill', 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
+        ['label' => 'Academic Sessions', 'icon' => 'bi-calendar-range', 'route' => 'admin.academic-sessions.index', 'active' => 'admin.academic-sessions.*'],
         ['label' => 'Branches', 'icon' => 'bi-diagram-3-fill', 'route' => 'admin.branches.index', 'active' => 'admin.branches.*'],
         ['label' => 'Grades', 'icon' => 'bi-collection-fill', 'route' => 'admin.classes.index', 'active' => 'admin.classes.*'],
         ['label' => 'Subjects', 'icon' => 'bi-book-fill', 'route' => 'admin.subjects.index', 'active' => 'admin.subjects.*'],

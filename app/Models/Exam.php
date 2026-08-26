@@ -20,6 +20,7 @@ class Exam extends Model
     protected $fillable = [
         'branch_id',
         'school_class_id',
+        'session_id',
         'subject_id',
         'question_category_id',
         'title',
@@ -71,6 +72,11 @@ class Exam extends Model
         return $this->belongsTo(Subject::class);
     }
 
+    public function session()
+    {
+        return $this->belongsTo(AcademicSession::class, 'session_id');
+    }
+
     public function questions()
     {
         return $this->hasMany(Question::class);
@@ -97,6 +103,11 @@ class Exam extends Model
             ->where('school_class_id', $student->class_id)
             ->where('status', self::STATUS_PUBLISHED)
             ->where(fn (Builder $query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
+            ->where(function (Builder $query) use ($student): void {
+                $student->session_id
+                    ? $query->whereNull('session_id')->orWhere('session_id', $student->session_id)
+                    : $query->whereNull('session_id');
+            })
             ->where(function (Builder $query): void {
                 $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
             })
