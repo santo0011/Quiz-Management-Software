@@ -15,7 +15,7 @@
     </div>
 
     <div class="mb-4">
-        <label for="name" class="form-label">Class Name <span class="required-mark">*</span></label>
+        <label for="name" class="form-label">Grade Name <span class="required-mark">*</span></label>
         <input id="name" type="text" name="name" value="{{ $useOldInput ? old('name', $class->name) : $class->name }}" class="form-control{{ $useOldInput && $errors->has('name') ? ' is-invalid' : '' }}" required maxlength="100">
         @if ($useOldInput)
             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror

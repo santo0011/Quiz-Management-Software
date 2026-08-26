@@ -74,7 +74,7 @@
                 <i class="bi bi-people-fill"></i>
             </div>
             <div>
-                <dt>Class</dt>
+                <dt>Grade</dt>
                 <dd>{{ $attempt->schoolClass?->name }}</dd>
             </div>
         </div>

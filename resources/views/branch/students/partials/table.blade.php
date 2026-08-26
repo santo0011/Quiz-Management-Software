@@ -11,7 +11,7 @@
                 <tr>
                     <th>Student</th>
                     <th>Guardian</th>
-                    <th>Class</th>
+                    <th>Grade</th>
                     <th>Phone</th>
                     <th>Email</th>
                     <th>Status</th>

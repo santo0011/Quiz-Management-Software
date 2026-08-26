@@ -55,8 +55,23 @@
                     <i class="bi bi-people-fill"></i>
                 </div>
                 <div>
-                    <dt>Class</dt>
+                    <dt>Grade</dt>
                     <dd>{{ $student->schoolClass?->name ?? $student->class }}</dd>
+                </div>
+            </div>
+            <div class="student-detail-item">
+                <div class="student-detail-icon">
+                    <i class="bi bi-book-fill"></i>
+                </div>
+                <div>
+                    <dt>Subjects</dt>
+                    <dd>
+                        @forelse ($student->subjects as $subject)
+                            <span class="badge text-bg-light border me-1">{{ $subject->name }}</span>
+                        @empty
+                            —
+                        @endforelse
+                    </dd>
                 </div>
             </div>
             <div class="student-detail-item">

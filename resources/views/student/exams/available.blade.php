@@ -36,7 +36,7 @@
                         <h3>{{ $exam->title }}</h3>
                         <p>{{ $exam->description ?: 'Read the instructions and begin when ready.' }}</p>
                         <dl>
-                            <div><dt>Class</dt><dd>{{ $exam->schoolClass?->name ?? $student->class }}</dd></div>
+                            <div><dt>Grade</dt><dd>{{ $exam->schoolClass?->name ?? $student->class }}</dd></div>
                             <div><dt>Total Marks</dt><dd>{{ $exam->total_marks }}</dd></div>
                             <div><dt>Duration</dt><dd>{{ $exam->duration_minutes }} min</dd></div>
                             <div><dt>Questions</dt><dd>{{ $exam->questions_count }}</dd></div>

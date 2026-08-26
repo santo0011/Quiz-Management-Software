@@ -12,7 +12,7 @@
             <thead>
                 <tr>
                     <th>Student</th>
-                    <th>Class</th>
+                    <th>Grade</th>
                     <th>Exam</th>
                     <th>Marks</th>
                     <th>Percentage</th>

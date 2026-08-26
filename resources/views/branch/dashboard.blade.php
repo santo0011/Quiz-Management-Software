@@ -22,7 +22,11 @@
                 <i class="bi bi-people-fill"></i>
                 <div>
                     <span>Students</span>
-                    <strong>{{ $studentCount }}</strong>
+                    @if (is_null($studentCount))
+                        <strong class="metric-card-prompt">Select a session</strong>
+                    @else
+                        <strong>{{ $studentCount }}</strong>
+                    @endif
                 </div>
             </div>
         </div>
@@ -55,7 +59,13 @@
             <a href="{{ route('branch.students.index') }}" class="btn btn-outline-primary btn-sm">View all</a>
         </div>
 
-        @if ($recentStudents->isEmpty())
+        @if (is_null($selectedSessionId))
+            <div class="empty-state">
+                <i class="bi bi-calendar-range"></i>
+                <h3>Select an academic session to continue</h3>
+                <p>Choose a session from the navbar to see its students.</p>
+            </div>
+        @elseif ($recentStudents->isEmpty())
             <div class="empty-state">
                 <i class="bi bi-person-plus"></i>
                 <h3>No students yet</h3>
@@ -67,7 +77,7 @@
                     <thead>
                         <tr>
                             <th>Student</th>
-                            <th>Class</th>
+                            <th>Grade</th>
                             <th>Email</th>
                             <th class="text-end">Action</th>
                         </tr>

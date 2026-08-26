@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\AcademicSession;
 use App\Models\Setting;
+use App\Services\AcademicSessionResolver;
 use App\Services\SingleSessionService;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Pagination\Paginator;
@@ -10,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -31,6 +34,29 @@ class AppServiceProvider extends ServiceProvider
 
         $this->applyStoredMailSettings();
         $this->registerSingleSessionOnRememberLogin();
+        $this->shareAcademicSessionWithNavbar();
+    }
+
+    /**
+     * The navbar's Academic Session dropdown is rendered from
+     * layouts.admin/layouts.branch, which are included by every Admin/Branch
+     * page — sharing the data via a composer avoids threading it through
+     * every controller individually.
+     */
+    private function shareAcademicSessionWithNavbar(): void
+    {
+        View::composer(['layouts.admin', 'layouts.branch'], function ($view): void {
+            if (! Schema::hasTable('academic_sessions') || ! Auth::guard('web')->check()) {
+                $view->with(['academicSessions' => collect(), 'selectedAcademicSession' => null]);
+
+                return;
+            }
+
+            $view->with([
+                'academicSessions' => AcademicSession::orderByDesc('start_date')->get(),
+                'selectedAcademicSession' => AcademicSessionResolver::selected(request()),
+            ]);
+        });
     }
 
     /**

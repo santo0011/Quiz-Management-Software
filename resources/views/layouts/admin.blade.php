@@ -25,10 +25,7 @@
                 </div>
 
                 <div class="topbar-actions">
-                    <div class="current-branch-pill" aria-label="Branch scope">
-                        <i class="bi bi-diagram-3-fill"></i>
-                        <span>All Branches</span>
-                    </div>
+                    @include('partials.academic-session-dropdown', ['prefix' => 'admin'])
                     <div class="admin-user">
                     <div class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
                     <div class="d-none d-sm-block">

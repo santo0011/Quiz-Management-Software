@@ -1,18 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit Class')
-@section('page-title', 'Edit Class')
+@section('title', 'Edit Grade')
+@section('page-title', 'Edit Grade')
 
 @section('content')
     <section class="content-panel narrow-panel">
         <div class="panel-header">
             <div>
-                <h2>Edit Class</h2>
+                <h2>Edit Grade</h2>
                 <p>
                     @if ($class->branch)
-                        Update this class for {{ $class->branch->name }}.
+                        Update this grade for {{ $class->branch->name }}.
                     @else
-                        Update this class. It is available to all branches.
+                        Update this grade. It is available to all branches.
                     @endif
                 </p>
             </div>
@@ -23,7 +23,7 @@
             'selectedBranch' => $class->branch,
             'action' => route('admin.classes.update', $class),
             'method' => 'PUT',
-            'button' => 'Update Class',
+            'button' => 'Update Grade',
         ])
     </section>
 @endsection

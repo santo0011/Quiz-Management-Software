@@ -27,6 +27,12 @@
                         {{ $exam->schoolClass->name }}
                     </span>
                 @endif
+                @if ($exam->subject)
+                    <span class="exam-meta-chip">
+                        <i class="bi bi-book-fill"></i>
+                        {{ $exam->subject->name }}
+                    </span>
+                @endif
             </div>
             <div class="exam-hero-actions">
                 @if (!$exam->hasBeenAttempted())

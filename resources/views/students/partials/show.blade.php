@@ -23,6 +23,12 @@
                         {{ $student->class }}
                     </span>
                 @endif
+                <!-- @foreach ($student->subjects as $subject)
+                    <span class="student-profile-chip">
+                        <i class="bi bi-book-fill"></i>
+                        {{ $subject->name }}
+                    </span>
+                @endforeach -->
             </div>
             <div class="student-profile-actions">
                 <button type="button" class="btn btn-light btn-student-action" data-bs-toggle="offcanvas" data-bs-target="#editStudentDrawer{{ $student->id }}">
@@ -61,7 +67,7 @@
             <i class="bi bi-people-fill"></i>
         </div>
         <div class="student-stat-body">
-            <span>Class</span>
+            <span>Grade</span>
             <strong>{{ $student->class ?? '—' }}</strong>
         </div>
     </div>
@@ -117,8 +123,23 @@
                 <i class="bi bi-people-fill"></i>
             </div>
             <div>
-                <dt>Class</dt>
+                <dt>Grade</dt>
                 <dd>{{ $student->class ?? '—' }}</dd>
+            </div>
+        </div>
+        <div class="student-detail-item">
+            <div class="student-detail-icon">
+                <i class="bi bi-book-fill"></i>
+            </div>
+            <div>
+                <dt>Subjects</dt>
+                <dd>
+                    @forelse ($student->subjects as $subject)
+                        <span class="badge text-bg-light border me-1">{{ $subject->name }}</span>
+                    @empty
+                        —
+                    @endforelse
+                </dd>
             </div>
         </div>
         <div class="student-detail-item">

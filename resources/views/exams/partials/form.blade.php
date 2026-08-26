@@ -78,19 +78,32 @@
         <section class="exam-form-section">
             <div class="exam-form-section-title">
                 <span>02</span>
-                <h3>Class & Exam Settings</h3>
+                <h3>Grade & Exam Settings</h3>
             </div>
             <div class="row g-3">
-                <div class="col-12">
-                    <label for="school_class_id" class="form-label">Class <span class="required-mark">*</span></label>
+                <div class="col-md-6">
+                    <label for="school_class_id" class="form-label">Grade <span class="required-mark">*</span></label>
                     <select id="school_class_id" name="school_class_id" class="form-select form-control @error('school_class_id') is-invalid @enderror" required data-class-select data-selected-class="{{ old('school_class_id', $exam->school_class_id) }}">
-                        <option value="">Select class</option>
+                        <option value="">Select grade</option>
                         @foreach ($classes as $schoolClass)
                             <option value="{{ $schoolClass->id }}" @selected(old('school_class_id', $exam->school_class_id) == $schoolClass->id)>{{ $schoolClass->name }}</option>
                         @endforeach
                     </select>
                     @error('school_class_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <div class="form-text empty-class-hint d-none">No classes found for this branch.</div>
+                    <div class="form-text empty-class-hint d-none">No grades found for this branch.</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="subject_id" class="form-label">Subject <span class="required-mark">*</span></label>
+                    <select id="subject_id" name="subject_id" class="form-select form-control @error('subject_id') is-invalid @enderror" required>
+                        <option value="">Select subject</option>
+                        @foreach ($subjects as $subject)
+                            <option value="{{ $subject->id }}" @selected(old('subject_id', $exam->subject_id) == $subject->id)>{{ $subject->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('subject_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @if ($subjects->isEmpty())
+                        <div class="form-text">No subjects found. Add one from Subjects first.</div>
+                    @endif
                 </div>
             </div>
         </section>

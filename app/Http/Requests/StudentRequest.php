@@ -37,6 +37,8 @@ class StudentRequest extends FormRequest
             'class' => ['nullable', 'required_without:class_id', 'string', 'max:100'],
             'phone_number' => ['required', 'string', 'max:30'],
             'email' => ['required', 'email', 'max:255', Rule::unique('students', 'email')->ignore($studentId)],
+            'subject_ids' => ['nullable', 'array'],
+            'subject_ids.*' => ['integer', 'exists:subjects,id'],
         ];
     }
 
@@ -56,7 +58,7 @@ class StudentRequest extends FormRequest
                 ->exists();
 
             if (! $classBelongsToBranch) {
-                $validator->errors()->add('class_id', 'Please select a class from the selected branch.');
+                $validator->errors()->add('class_id', 'Please select a grade from the selected branch.');
             }
         });
     }
@@ -66,10 +68,10 @@ class StudentRequest extends FormRequest
         return [
             'student_name.required' => 'Please enter the student name.',
             'guardian_name.required' => 'Please enter the guardian name.',
-            'class_id.required' => 'Please select the class.',
-            'class_id.required_without' => 'Please select the class.',
-            'class_id.exists' => 'Please select a valid class.',
-            'class.required_without' => 'Please select or enter the class.',
+            'class_id.required' => 'Please select the grade.',
+            'class_id.required_without' => 'Please select the grade.',
+            'class_id.exists' => 'Please select a valid grade.',
+            'class.required_without' => 'Please select or enter the grade.',
             'phone_number.required' => 'Please enter the phone number.',
             'email.required' => 'Please enter the student email address.',
             'email.email' => 'Please enter a valid student email address.',

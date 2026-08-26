@@ -1,7 +1,7 @@
 @extends('layouts.branch')
 
-@section('title', 'Class Details')
-@section('page-title', 'Class Details')
+@section('title', 'Grade Details')
+@section('page-title', 'Grade Details')
 
 @section('content')
     <div class="student-profile-top-actions">
@@ -15,7 +15,7 @@
         <div class="panel-header">
             <div>
                 <h2>{{ $class->name }}</h2>
-                <p>Class record details.</p>
+                <p>Grade record details.</p>
             </div>
             <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#editClassDrawer{{ $class->id }}" aria-controls="editClassDrawer{{ $class->id }}">
                 <i class="bi bi-pencil-fill"></i>
@@ -25,7 +25,7 @@
 
         <dl class="detail-list">
             <div>
-                <dt>Class Name</dt>
+                <dt>Grade Name</dt>
                 <dd>{{ $class->name }}</dd>
             </div>
             <div>
@@ -42,8 +42,8 @@
     <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editClassDrawer{{ $class->id }}" aria-labelledby="editClassDrawerLabel{{ $class->id }}">
         <div class="offcanvas-header student-drawer-header">
             <div>
-                <span class="page-kicker">Class Management</span>
-                <h2 class="offcanvas-title" id="editClassDrawerLabel{{ $class->id }}">Edit Class</h2>
+                <span class="page-kicker">Grade Management</span>
+                <h2 class="offcanvas-title" id="editClassDrawerLabel{{ $class->id }}">Edit Grade</h2>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
@@ -53,7 +53,7 @@
                 'branch' => $branch,
                 'action' => route('branch.classes.update', $class),
                 'method' => 'PUT',
-                'button' => 'Update Class',
+                'button' => 'Update Grade',
                 'drawer' => true,
                 'drawerId' => 'editClassDrawer'.$class->id,
             ])

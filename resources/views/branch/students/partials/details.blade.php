@@ -8,7 +8,7 @@
         <dd>{{ $student->guardian_name }}</dd>
     </div>
     <div>
-        <dt>Class</dt>
+        <dt>Grade</dt>
         <dd>{{ $student->class }}</dd>
     </div>
     <div>

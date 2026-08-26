@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StudentRequest;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\Subject;
+use App\Services\AcademicSessionResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,18 +19,25 @@ class StudentController extends Controller
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
-        $students = Student::with('branch')
-            ->forBranch($branch->id)
-            ->search($request->string('search')->toString())
-            ->when($request->filled('class'), fn ($query) => $query->where('class', $request->string('class')->toString()))
-            ->latest()
-            ->paginate(20)
-            ->withQueryString();
+        $selectedSessionId = AcademicSessionResolver::selectedId($request);
+
+        $students = $selectedSessionId
+            ? Student::with('branch')
+                ->forBranch($branch->id)
+                ->where('session_id', $selectedSessionId)
+                ->search($request->string('search')->toString())
+                ->when($request->filled('class'), fn ($query) => $query->where('class', $request->string('class')->toString()))
+                ->latest()
+                ->paginate(20)
+                ->withQueryString()
+            : null;
 
         return view('branch.students.index', [
             'branch' => $branch,
+            'selectedSessionId' => $selectedSessionId,
             'students' => $students,
             'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
+            'subjects' => Subject::orderBy('name')->get(),
             'filters' => $request->only(['search', 'class']),
         ]);
     }
@@ -41,6 +50,7 @@ class StudentController extends Controller
         return view('branch.students.create', [
             'branch' => $branch,
             'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
+            'subjects' => Subject::orderBy('name')->get(),
             'student' => new Student,
         ]);
     }
@@ -50,13 +60,20 @@ class StudentController extends Controller
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
+        $selectedSessionId = AcademicSessionResolver::selectedId($request);
+        abort_if(! $selectedSessionId, 403, 'Please select an academic session first.');
+
         $validated = $request->validated();
+        $subjectIds = $validated['subject_ids'] ?? [];
+        unset($validated['subject_ids']);
         $schoolClass = $this->resolveSchoolClass($validated, $branch->id);
         $validated['branch_id'] = $branch->id;
         $validated['class_id'] = $schoolClass->id;
         $validated['class'] = $schoolClass->name;
+        $validated['session_id'] = $selectedSessionId;
 
-        Student::create($validated);
+        $student = Student::create($validated);
+        $student->subjects()->sync($subjectIds);
 
         return redirect()->route('branch.students.index')->with('success', 'Student added successfully.');
     }
@@ -64,35 +81,42 @@ class StudentController extends Controller
     public function show(Request $request, Student $student): View
     {
         $this->authorizeBranchStudent($request, $student);
+        $this->authorizeSessionScope($request, $student);
 
         return view('branch.students.show', [
             'branch' => $request->user()->branch,
-            'student' => $student,
+            'student' => $student->load('subjects'),
         ]);
     }
 
     public function edit(Request $request, Student $student): View
     {
         $this->authorizeBranchStudent($request, $student);
+        $this->authorizeSessionScope($request, $student);
 
         return view('branch.students.edit', [
             'branch' => $request->user()->branch,
-            'student' => $student,
+            'student' => $student->load('subjects'),
             'classes' => SchoolClass::visibleToBranch($request->user()->branch_id)->orderBy('name')->get(),
+            'subjects' => Subject::orderBy('name')->get(),
         ]);
     }
 
     public function update(StudentRequest $request, Student $student): RedirectResponse
     {
         $this->authorizeBranchStudent($request, $student);
+        $this->authorizeSessionScope($request, $student);
 
         $validated = $request->validated();
+        $subjectIds = $validated['subject_ids'] ?? [];
+        unset($validated['subject_ids']);
         $schoolClass = $this->resolveSchoolClass($validated, $request->user()->branch_id);
         $validated['branch_id'] = $request->user()->branch_id;
         $validated['class_id'] = $schoolClass->id;
         $validated['class'] = $schoolClass->name;
 
         $student->update($validated);
+        $student->subjects()->sync($subjectIds);
 
         return redirect()->route('branch.students.index')->with('success', 'Student updated successfully.');
     }
@@ -100,6 +124,7 @@ class StudentController extends Controller
     public function destroy(Request $request, Student $student): RedirectResponse
     {
         $this->authorizeBranchStudent($request, $student);
+        $this->authorizeSessionScope($request, $student);
 
         $hasAttempts = $student->attempts()->exists();
 
@@ -116,6 +141,7 @@ class StudentController extends Controller
     public function toggleActive(Request $request, Student $student): RedirectResponse
     {
         $this->authorizeBranchStudent($request, $student);
+        $this->authorizeSessionScope($request, $student);
 
         $student->update(['is_active' => ! $student->is_active]);
 
@@ -129,6 +155,22 @@ class StudentController extends Controller
     private function authorizeBranchStudent(Request $request, Student $student): void
     {
         abort_if(! $request->user()->branch_id || $student->branch_id !== $request->user()->branch_id, 403, 'This student does not belong to your branch.');
+    }
+
+    /**
+     * Block reaching a Student that belongs to a different Academic
+     * Session than the one currently selected. Legacy rows (either side
+     * null) fall through as allowed.
+     */
+    private function authorizeSessionScope(Request $request, Student $student): void
+    {
+        $selectedSessionId = AcademicSessionResolver::selectedId($request);
+
+        abort_if(
+            $student->session_id !== null && $selectedSessionId !== null && $student->session_id !== $selectedSessionId,
+            403,
+            'This student does not belong to the currently selected academic session.'
+        );
     }
 
     private function resolveSchoolClass(array $validated, int $branchId): SchoolClass
