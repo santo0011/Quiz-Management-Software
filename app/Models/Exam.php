@@ -20,6 +20,7 @@ class Exam extends Model
     protected $fillable = [
         'branch_id',
         'school_class_id',
+        'subject_id',
         'question_category_id',
         'title',
         'description',
@@ -65,6 +66,11 @@ class Exam extends Model
         return $this->belongsTo(QuestionCategory::class, 'question_category_id');
     }
 
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
     public function questions()
     {
         return $this->hasMany(Question::class);
@@ -90,6 +96,7 @@ class Exam extends Model
         return $query->where('branch_id', $student->branch_id)
             ->where('school_class_id', $student->class_id)
             ->where('status', self::STATUS_PUBLISHED)
+            ->where(fn (Builder $query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
             ->where(function (Builder $query): void {
                 $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
             })

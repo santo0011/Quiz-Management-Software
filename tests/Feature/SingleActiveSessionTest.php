@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Mail\BranchLoginOtpMail;
+use App\Mail\StudentLoginOtpMail;
+use App\Mail\SuperAdminLoginOtpMail;
 use App\Models\Branch;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class SingleActiveSessionTest extends TestCase
@@ -17,6 +21,8 @@ class SingleActiveSessionTest extends TestCase
 
     public function test_student_login_stores_a_session_token_on_the_account(): void
     {
+        Mail::fake();
+
         $branch = Branch::create(['name' => 'Pune Branch', 'email' => 'pune@example.com']);
 
         $student = Student::create([
@@ -35,13 +41,25 @@ class SingleActiveSessionTest extends TestCase
             'login_type' => 'student',
             'email' => 'student@example.com',
             'password' => '654321',
-        ])->assertRedirect(route('student.dashboard'));
+        ])->assertRedirect(route('login.otp'));
+
+        $otp = null;
+        Mail::assertSent(StudentLoginOtpMail::class, function (StudentLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('student.dashboard'));
 
         $this->assertNotNull($student->fresh()->current_session_id);
     }
 
     public function test_branch_login_stores_a_session_token_on_the_account(): void
     {
+        Mail::fake();
+
         $branch = Branch::create(['name' => 'Nagpur Branch', 'email' => 'nagpur@example.com']);
 
         $user = User::create([
@@ -58,13 +76,25 @@ class SingleActiveSessionTest extends TestCase
             'login_type' => 'branch',
             'email' => 'nagpur@example.com',
             'password' => '123456',
-        ])->assertRedirect(route('branch.dashboard'));
+        ])->assertRedirect(route('login.otp'));
+
+        $otp = null;
+        Mail::assertSent(BranchLoginOtpMail::class, function (BranchLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('branch.dashboard'));
 
         $this->assertNotNull($user->fresh()->current_session_id);
     }
 
     public function test_super_admin_login_does_not_store_a_session_token(): void
     {
+        Mail::fake();
+
         User::create([
             'name' => 'Super Admin',
             'email' => 'admin@example.com',
@@ -76,7 +106,17 @@ class SingleActiveSessionTest extends TestCase
             'login_type' => 'super_admin',
             'email' => 'admin@example.com',
             'password' => '123456',
-        ])->assertRedirect(route('admin.dashboard'));
+        ])->assertRedirect(route('login.otp'));
+
+        $otp = null;
+        Mail::assertSent(SuperAdminLoginOtpMail::class, function (SuperAdminLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('admin.dashboard'));
 
         $this->assertNull(User::where('email', 'admin@example.com')->first()->current_session_id);
     }

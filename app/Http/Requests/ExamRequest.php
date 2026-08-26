@@ -37,6 +37,7 @@ class ExamRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'branch_id' => $isBranch ? ['nullable'] : ['sometimes', 'required', 'exists:branches,id'],
             'school_class_id' => ['required', 'exists:school_classes,id'],
+            'subject_id' => ['required', 'exists:subjects,id'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'maximum_attempts' => ['required', 'integer', 'min:1', 'max:20'],
@@ -66,7 +67,7 @@ class ExamRequest extends FormRequest
                     ->exists();
 
                 if (! $classExists) {
-                    $validator->errors()->add('school_class_id', 'Please select a class from the active branch.');
+                    $validator->errors()->add('school_class_id', 'Please select a grade from the active branch.');
                 }
             }
         });

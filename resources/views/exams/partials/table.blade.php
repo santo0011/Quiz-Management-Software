@@ -12,7 +12,8 @@
             <thead>
                 <tr>
                     <th>Exam</th>
-                    <th>Class</th>
+                    <th>Grade</th>
+                    <th>Subject</th>
                     <th>Questions</th>
                     <th>Marks</th>
                     <th>Status</th>
@@ -27,6 +28,7 @@
                             <span class="table-subtext">{{ $exam->duration_minutes }} minutes</span>
                         </td>
                         <td>{{ $exam->schoolClass?->name }}</td>
+                        <td>{{ $exam->subject?->name ?? '—' }}</td>
                         <td>{{ $exam->questions_count ?? $exam->questions->count() }}</td>
                         <td>{{ $exam->total_marks }}</td>
                         <td>

@@ -17,12 +17,12 @@
     @else
         <div class="feedback-alert success mb-4">
             <i class="bi bi-globe2"></i>
-            <div>This class will be available to <strong>all branches</strong> automatically.</div>
+            <div>This grade will be available to <strong>all branches</strong> automatically.</div>
         </div>
     @endif
 
     <div class="mb-4">
-        <label for="name" class="form-label">Class Name <span class="required-mark">*</span></label>
+        <label for="name" class="form-label">Grade Name <span class="required-mark">*</span></label>
         <input id="name" type="text" name="name" value="{{ $useOldInput ? old('name', $class->name) : $class->name }}" class="form-control{{ $useOldInput && $errors->has('name') ? ' is-invalid' : '' }}" required maxlength="100">
         @if ($useOldInput)
             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror

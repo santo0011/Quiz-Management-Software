@@ -8,6 +8,7 @@ use App\Http\Requests\ExamRequest;
 use App\Http\Requests\ExamSettingsRequest;
 use App\Models\Exam;
 use App\Models\SchoolClass;
+use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,7 +20,7 @@ class ExamController extends Controller
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
-        $exams = Exam::with(['schoolClass', 'questions'])
+        $exams = Exam::with(['schoolClass', 'subject', 'questions'])
             ->forBranch($branch->id)
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
@@ -32,6 +33,7 @@ class ExamController extends Controller
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
             'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
+            'subjects' => Subject::orderBy('name')->get(),
             'filters' => $request->only(['search', 'status']),
         ]);
     }
@@ -58,7 +60,7 @@ class ExamController extends Controller
 
         return view('branch.exams.show', [
             'branch' => $request->user()->branch,
-            'exam' => $exam->load(['schoolClass', 'questions.options']),
+            'exam' => $exam->load(['schoolClass', 'subject', 'questions.options']),
         ]);
     }
 
@@ -71,6 +73,7 @@ class ExamController extends Controller
             'branch' => $request->user()->branch,
             'exam' => $exam,
             'classes' => SchoolClass::visibleToBranch($request->user()->branch_id)->orderBy('name')->get(),
+            'subjects' => Subject::orderBy('name')->get(),
         ]);
     }
 

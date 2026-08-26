@@ -1,14 +1,14 @@
 @extends('layouts.branch')
 
-@section('title', 'Edit Class')
-@section('page-title', 'Edit Class')
+@section('title', 'Edit Grade')
+@section('page-title', 'Edit Grade')
 
 @section('content')
     <section class="content-panel narrow-panel">
         <div class="panel-header">
             <div>
-                <h2>Edit Class</h2>
-                <p>Update this class for {{ $branch->name }}.</p>
+                <h2>Edit Grade</h2>
+                <p>Update this grade for {{ $branch->name }}.</p>
             </div>
         </div>
 
@@ -17,7 +17,7 @@
             'branch' => $branch,
             'action' => route('branch.classes.update', $class),
             'method' => 'PUT',
-            'button' => 'Update Class',
+            'button' => 'Update Grade',
         ])
     </section>
 @endsection

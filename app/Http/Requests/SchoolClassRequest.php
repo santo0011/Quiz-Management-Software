@@ -54,8 +54,8 @@ class SchoolClassRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'Please enter the class name.',
-            'name.unique' => 'This class already exists for the active branch.',
+            'name.required' => 'Please enter the grade name.',
+            'name.unique' => 'This grade already exists for the active branch.',
         ];
     }
 }

@@ -12,7 +12,9 @@ use App\Http\Controllers\Admin\ResultController as AdminResultController;
 use App\Http\Controllers\Admin\SchoolClassController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
+use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LoginOtpController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\StudentPasswordController;
 use App\Http\Controllers\Branch\DashboardController as BranchDashboardController;
@@ -42,6 +44,9 @@ Route::get('/', function () {
 Route::middleware('guest:web,student')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.store');
+    Route::get('/verify-login-otp', [LoginOtpController::class, 'show'])->name('login.otp');
+    Route::post('/verify-login-otp', [LoginOtpController::class, 'verify'])->name('login.otp.verify')->middleware('throttle:10,1');
+    Route::post('/verify-login-otp/resend', [LoginOtpController::class, 'resend'])->name('login.otp.resend')->middleware('throttle:5,1');
     Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'sendOtp'])->name('password.email');
     Route::get('/verify-reset-code', [PasswordResetController::class, 'otp'])->name('password.otp');
@@ -66,6 +71,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::post('/branches/{branch}/toggle-active', [BranchController::class, 'toggleActive'])->name('branches.toggle-active');
     Route::put('/branches/{branch}/password', [BranchController::class, 'updatePassword'])->name('branches.password.update');
     Route::resource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
+    Route::resource('subjects', SubjectController::class);
     Route::resource('students', AdminStudentController::class);
     Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
     Route::put('/students/{student}/password', [AdminStudentController::class, 'updatePassword'])->name('students.password.update');

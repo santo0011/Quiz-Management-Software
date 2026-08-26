@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
-use App\Services\SingleSessionService;
-use App\Support\RoleRedirector;
+use App\Models\User;
+use App\Services\LoginOtpService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,42 +43,26 @@ class LoginController extends Controller
 
         $expectedRole = $loginType === 'super_admin' ? 'Super Admin' : 'Branch';
 
-        if (Auth::attempt($credentials, true)) {
-            $request->session()->regenerate();
+        if (Auth::guard('web')->validate($credentials)) {
+            $user = User::where('email', $credentials['email'])->first();
 
-            if ($request->user()->role !== $expectedRole) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
+            if ($user->role !== $expectedRole) {
                 return back()
                     ->with('login_error', 'These credentials do not match the selected login type.')
                     ->withInput($request->only('email', 'login_type'));
             }
 
             if ($expectedRole === 'Branch') {
-                $branch = $request->user()->branch;
+                $branch = $user->branch;
 
                 if ($branch && ! $branch->isActive()) {
-                    Auth::logout();
-                    $request->session()->invalidate();
-                    $request->session()->regenerateToken();
-
                     return back()
                         ->with('login_error', 'This branch account has been deactivated. Please contact the administrator.')
                         ->withInput($request->only('email', 'login_type'));
                 }
-
-                SingleSessionService::establish($request->user(), 'web');
-
-                return redirect()
-                    ->intended(RoleRedirector::dashboardUrl($request->user()))
-                    ->with('success', 'Login successful. Welcome back!');
             }
 
-            return redirect()
-                ->intended(RoleRedirector::dashboardUrl($request->user()))
-                ->with('success', 'Login successful. Welcome back!');
+            return $this->issueOtpAndRedirect($request, $loginType, $user->email);
         }
 
         return back()
@@ -120,17 +104,33 @@ class LoginController extends Controller
                     ->withInput($request->only('email', 'login_type'));
             }
 
-            Auth::guard('student')->login($student, true);
-            $request->session()->regenerate();
-            SingleSessionService::establish($student, 'student');
-
-            return redirect()
-                ->intended(RoleRedirector::dashboardUrl($student))
-                ->with('success', 'Login successful. Welcome back!');
+            return $this->issueOtpAndRedirect($request, 'student', $student->email);
         }
 
         return back()
             ->with('login_error', 'The password you entered is incorrect. Please try again.')
             ->withInput($request->only('email', 'login_type'));
+    }
+
+    /**
+     * Credentials (and role/active status) are valid. Instead of completing
+     * login immediately, email a 6-digit OTP and park the pending login in
+     * the session until it is verified by LoginOtpController.
+     */
+    private function issueOtpAndRedirect(Request $request, string $loginType, string $email): RedirectResponse
+    {
+        if (! LoginOtpService::send($loginType, $email)) {
+            return back()
+                ->with('login_error', 'We could not send a verification code to your email. Please try again.')
+                ->withInput($request->only('email', 'login_type'));
+        }
+
+        $request->session()->regenerate();
+        $request->session()->put('pending_login', [
+            'type' => $loginType,
+            'email' => $email,
+        ]);
+
+        return redirect()->route('login.otp');
     }
 }

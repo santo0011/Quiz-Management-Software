@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Models\Branch;
 use App\Models\Student;
 use App\Models\User;
+use App\Mail\BranchLoginOtpMail;
+use App\Mail\StudentLoginOtpMail;
 use App\Mail\StudentOtpMail;
+use App\Mail\SuperAdminLoginOtpMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -17,6 +20,8 @@ class UnifiedLoginTest extends TestCase
 
     public function test_super_admin_login_requires_super_admin_type(): void
     {
+        Mail::fake();
+
         User::create([
             'name' => 'Super Admin',
             'email' => 'admin@example.com',
@@ -28,7 +33,21 @@ class UnifiedLoginTest extends TestCase
             'login_type' => 'super_admin',
             'email' => 'admin@example.com',
             'password' => '123456',
-        ])->assertRedirect(route('admin.dashboard'));
+        ])->assertRedirect(route('login.otp'));
+
+        $this->assertGuest();
+
+        $otp = null;
+        Mail::assertSent(SuperAdminLoginOtpMail::class, function (SuperAdminLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertAuthenticated();
     }
 
     public function test_branch_cannot_login_from_super_admin_mode(): void
@@ -54,6 +73,8 @@ class UnifiedLoginTest extends TestCase
 
     public function test_branch_login_redirects_to_branch_dashboard(): void
     {
+        Mail::fake();
+
         $branch = Branch::create(['name' => 'Delhi Branch', 'email' => 'delhi@example.com']);
 
         User::create([
@@ -68,11 +89,23 @@ class UnifiedLoginTest extends TestCase
             'login_type' => 'branch',
             'email' => 'delhi@example.com',
             'password' => '123456',
-        ])->assertRedirect(route('branch.dashboard'));
+        ])->assertRedirect(route('login.otp'));
+
+        $otp = null;
+        Mail::assertSent(BranchLoginOtpMail::class, function (BranchLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('branch.dashboard'));
     }
 
     public function test_student_can_login_with_six_digit_code(): void
     {
+        Mail::fake();
+
         $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai@example.com']);
 
         Student::create([
@@ -89,7 +122,19 @@ class UnifiedLoginTest extends TestCase
             'login_type' => 'student',
             'email' => 'student@example.com',
             'password' => '654321',
-        ])->assertRedirect(route('student.dashboard'));
+        ])->assertRedirect(route('login.otp'));
+
+        $this->assertGuest('student');
+
+        $otp = null;
+        Mail::assertSent(StudentLoginOtpMail::class, function (StudentLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('student.dashboard'));
 
         $this->assertAuthenticated('student');
     }

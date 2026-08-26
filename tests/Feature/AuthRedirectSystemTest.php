@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Mail\BranchLoginOtpMail;
+use App\Mail\StudentLoginOtpMail;
 use App\Models\Branch;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class AuthRedirectSystemTest extends TestCase
@@ -110,16 +113,30 @@ class AuthRedirectSystemTest extends TestCase
 
     public function test_login_redirects_to_the_intended_branch_page_instead_of_the_dashboard(): void
     {
+        Mail::fake();
+
         $this->withSession(['url.intended' => route('branch.password.edit')])
             ->post(route('login.store'), [
                 'login_type' => 'branch',
                 'email' => 'branch@example.com',
                 'password' => '123456',
-            ])->assertRedirect(route('branch.password.edit'));
+            ])->assertRedirect(route('login.otp'));
+
+        $otp = null;
+        Mail::assertSent(BranchLoginOtpMail::class, function (BranchLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('branch.password.edit'));
     }
 
     public function test_login_redirects_to_the_intended_student_page_instead_of_the_dashboard(): void
     {
+        Mail::fake();
+
         $this->student->forceFill(['login_code_hash' => Hash::make('654321')])->save();
 
         $this->withSession(['url.intended' => route('student.profile')])
@@ -127,15 +144,37 @@ class AuthRedirectSystemTest extends TestCase
                 'login_type' => 'student',
                 'email' => 'student@example.com',
                 'password' => '654321',
-            ])->assertRedirect(route('student.profile'));
+            ])->assertRedirect(route('login.otp'));
+
+        $otp = null;
+        Mail::assertSent(StudentLoginOtpMail::class, function (StudentLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('student.profile'));
     }
 
     public function test_login_falls_back_to_the_dashboard_when_nothing_was_intended(): void
     {
+        Mail::fake();
+
         $this->post(route('login.store'), [
             'login_type' => 'branch',
             'email' => 'branch@example.com',
             'password' => '123456',
-        ])->assertRedirect(route('branch.dashboard'));
+        ])->assertRedirect(route('login.otp'));
+
+        $otp = null;
+        Mail::assertSent(BranchLoginOtpMail::class, function (BranchLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('branch.dashboard'));
     }
 }

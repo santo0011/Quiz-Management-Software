@@ -14,11 +14,12 @@ class ExamController extends Controller
 {
     public function dashboard(Request $request): View
     {
-        $student = $request->user('student')->load(['branch', 'schoolClass']);
+        $student = $request->user('student')->load(['branch', 'schoolClass', 'subjects']);
 
         $baseExamQuery = Exam::where('branch_id', $student->branch_id)
             ->where('school_class_id', $student->class_id)
-            ->where('status', Exam::STATUS_PUBLISHED);
+            ->where('status', Exam::STATUS_PUBLISHED)
+            ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')));
 
         $publishedExams = (clone $baseExamQuery)
             ->withCount('questions')
@@ -74,6 +75,7 @@ class ExamController extends Controller
         abort_if(! $student->isActive(), 403, 'Your student account has been deactivated.');
         abort_if($student->branch && ! $student->branch->isActive(), 403, 'Your branch has been deactivated.');
         abort_if($exam->branch_id !== $student->branch_id || $exam->school_class_id !== $student->class_id || ! $exam->isOpen(), 403);
+        abort_if($exam->subject_id !== null && ! $student->subjects()->where('subjects.id', $exam->subject_id)->exists(), 403);
 
         return view('student.exams.show', [
             'student' => $student->load(['branch', 'schoolClass']),
@@ -100,11 +102,12 @@ class ExamController extends Controller
 
     public function available(Request $request): View
     {
-        $student = $request->user('student')->load(['branch', 'schoolClass']);
+        $student = $request->user('student')->load(['branch', 'schoolClass', 'subjects']);
 
         $exams = Exam::where('branch_id', $student->branch_id)
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED)
+            ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
             ->withCount('questions')
             ->with('schoolClass')
             ->where(function ($query): void {
@@ -137,11 +140,12 @@ class ExamController extends Controller
 
     public function upcoming(Request $request): View
     {
-        $student = $request->user('student')->load(['branch', 'schoolClass']);
+        $student = $request->user('student')->load(['branch', 'schoolClass', 'subjects']);
 
         $exams = Exam::where('branch_id', $student->branch_id)
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED)
+            ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
             ->where('starts_at', '>', now())
             // Exclude exams the student has already submitted
             ->whereDoesntHave('attempts', function ($query) use ($student): void {
@@ -226,7 +230,7 @@ class ExamController extends Controller
 
     public function profile(Request $request): View
     {
-        $student = $request->user('student')->load(['branch', 'schoolClass']);
+        $student = $request->user('student')->load(['branch', 'schoolClass', 'subjects']);
 
         return view('student.profile', [
             'student' => $student,

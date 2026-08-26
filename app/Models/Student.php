@@ -60,6 +60,11 @@ class Student extends Authenticatable
         return $this->hasMany(ExamAttempt::class);
     }
 
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class);
+    }
+
     public function scopeForBranch(Builder $query, int $branchId): Builder
     {
         return $query->where('branch_id', $branchId);

@@ -67,7 +67,7 @@
                     <thead>
                         <tr>
                             <th>Student</th>
-                            <th>Class</th>
+                            <th>Grade</th>
                             <th>Email</th>
                             <th class="text-end">Action</th>
                         </tr>

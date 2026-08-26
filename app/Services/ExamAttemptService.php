@@ -173,6 +173,10 @@ class ExamAttemptService
             throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your class.']);
         }
 
+        if ($exam->subject_id !== null && ! $student->subjects()->where('subjects.id', $exam->subject_id)->exists()) {
+            throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your subject.']);
+        }
+
         if (! $exam->isOpen()) {
             throw ValidationException::withMessages(['exam' => 'This exam is not currently available.']);
         }

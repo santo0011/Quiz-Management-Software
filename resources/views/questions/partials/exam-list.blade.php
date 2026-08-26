@@ -10,7 +10,7 @@
             <thead>
                 <tr>
                     <th>Exam</th>
-                    <th>Class</th>
+                    <th>Grade</th>
                     <th>Questions</th>
                     <th>Status</th>
                     <th class="text-end">Actions</th>

@@ -19,7 +19,7 @@
         <form method="GET" action="{{ route('branch.students.index') }}" class="filter-bar">
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search name, guardian, email, phone">
             <select name="class" class="form-select">
-                <option value="">All classes</option>
+                <option value="">All grades</option>
                 @foreach ($classes as $class)
                     <option value="{{ $class->name }}" @selected(($filters['class'] ?? '') === $class->name)>{{ $class->name }}</option>
                 @endforeach

@@ -9,6 +9,7 @@ use App\Http\Requests\ExamSettingsRequest;
 use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\SchoolClass;
+use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,7 +20,7 @@ class ExamController extends Controller
     {
         $branchId = $request->integer('branch_id') ?: null;
 
-        $exams = Exam::with(['schoolClass', 'questions'])
+        $exams = Exam::with(['schoolClass', 'subject', 'questions'])
             ->when($branchId, fn ($query) => $query->forBranch($branchId))
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
@@ -35,6 +36,7 @@ class ExamController extends Controller
             'classes' => $branchId
                 ? SchoolClass::visibleToBranch($branchId)->orderBy('name')->get()
                 : collect(),
+            'subjects' => Subject::orderBy('name')->get(),
             'filters' => $request->only(['search', 'status', 'branch_id']),
         ]);
     }
@@ -55,7 +57,7 @@ class ExamController extends Controller
     {
         return view('admin.exams.show', [
             'selectedBranch' => $exam->branch,
-            'exam' => $exam->load(['schoolClass', 'questions.options']),
+            'exam' => $exam->load(['schoolClass', 'subject', 'questions.options']),
         ]);
     }
 
@@ -67,6 +69,7 @@ class ExamController extends Controller
             'selectedBranch' => $exam->branch,
             'exam' => $exam,
             'classes' => SchoolClass::visibleToBranch($exam->branch_id)->orderBy('name')->get(),
+            'subjects' => Subject::orderBy('name')->get(),
         ]);
     }
 

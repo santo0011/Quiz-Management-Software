@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StudentRequest;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -41,6 +42,7 @@ class StudentController extends Controller
         return view('branch.students.create', [
             'branch' => $branch,
             'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
+            'subjects' => Subject::orderBy('name')->get(),
             'student' => new Student,
         ]);
     }
@@ -51,12 +53,15 @@ class StudentController extends Controller
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
         $validated = $request->validated();
+        $subjectIds = $validated['subject_ids'] ?? [];
+        unset($validated['subject_ids']);
         $schoolClass = $this->resolveSchoolClass($validated, $branch->id);
         $validated['branch_id'] = $branch->id;
         $validated['class_id'] = $schoolClass->id;
         $validated['class'] = $schoolClass->name;
 
-        Student::create($validated);
+        $student = Student::create($validated);
+        $student->subjects()->sync($subjectIds);
 
         return redirect()->route('branch.students.index')->with('success', 'Student added successfully.');
     }
@@ -67,7 +72,7 @@ class StudentController extends Controller
 
         return view('branch.students.show', [
             'branch' => $request->user()->branch,
-            'student' => $student,
+            'student' => $student->load('subjects'),
         ]);
     }
 
@@ -77,8 +82,9 @@ class StudentController extends Controller
 
         return view('branch.students.edit', [
             'branch' => $request->user()->branch,
-            'student' => $student,
+            'student' => $student->load('subjects'),
             'classes' => SchoolClass::visibleToBranch($request->user()->branch_id)->orderBy('name')->get(),
+            'subjects' => Subject::orderBy('name')->get(),
         ]);
     }
 
@@ -87,12 +93,15 @@ class StudentController extends Controller
         $this->authorizeBranchStudent($request, $student);
 
         $validated = $request->validated();
+        $subjectIds = $validated['subject_ids'] ?? [];
+        unset($validated['subject_ids']);
         $schoolClass = $this->resolveSchoolClass($validated, $request->user()->branch_id);
         $validated['branch_id'] = $request->user()->branch_id;
         $validated['class_id'] = $schoolClass->id;
         $validated['class'] = $schoolClass->name;
 
         $student->update($validated);
+        $student->subjects()->sync($subjectIds);
 
         return redirect()->route('branch.students.index')->with('success', 'Student updated successfully.');
     }

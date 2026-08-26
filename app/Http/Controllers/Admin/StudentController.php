@@ -7,6 +7,7 @@ use App\Http\Requests\StudentRequest;
 use App\Models\Branch;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -41,6 +42,7 @@ class StudentController extends Controller
         return view('admin.students.create', [
             'branches' => Branch::orderBy('name')->get(),
             'classes' => collect(),
+            'subjects' => Subject::orderBy('name')->get(),
             'student' => new Student,
         ]);
     }
@@ -48,13 +50,16 @@ class StudentController extends Controller
     public function store(StudentRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        $subjectIds = $validated['subject_ids'] ?? [];
+        unset($validated['subject_ids']);
         $branchId = (int) $validated['branch_id'];
         $schoolClass = $this->resolveSchoolClass($validated, $branchId);
         $validated['branch_id'] = $branchId;
         $validated['class_id'] = $schoolClass->id;
         $validated['class'] = $schoolClass->name;
 
-        Student::create($validated);
+        $student = Student::create($validated);
+        $student->subjects()->sync($subjectIds);
 
         return redirect()->route('admin.students.index')->with('success', 'Student added successfully.');
     }
@@ -62,7 +67,7 @@ class StudentController extends Controller
     public function show(Student $student): View
     {
         return view('admin.students.show', [
-            'student' => $student->load('branch'),
+            'student' => $student->load(['branch', 'subjects']),
             'selectedBranch' => $student->branch,
         ]);
     }
@@ -70,15 +75,18 @@ class StudentController extends Controller
     public function edit(Student $student): View
     {
         return view('admin.students.edit', [
-            'student' => $student,
+            'student' => $student->load('subjects'),
             'selectedBranch' => $student->branch,
             'classes' => SchoolClass::visibleToBranch($student->branch_id)->orderBy('name')->get(),
+            'subjects' => Subject::orderBy('name')->get(),
         ]);
     }
 
     public function update(StudentRequest $request, Student $student): RedirectResponse
     {
         $validated = $request->validated();
+        $subjectIds = $validated['subject_ids'] ?? [];
+        unset($validated['subject_ids']);
         $branchId = $student->branch_id;
         $schoolClass = $this->resolveSchoolClass($validated, $branchId);
         $validated['branch_id'] = $branchId;
@@ -86,6 +94,7 @@ class StudentController extends Controller
         $validated['class'] = $schoolClass->name;
 
         $student->update($validated);
+        $student->subjects()->sync($subjectIds);
 
         return redirect()->route('admin.students.index')->with('success', 'Student updated successfully.');
     }

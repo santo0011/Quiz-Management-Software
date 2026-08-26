@@ -44,7 +44,7 @@ class SchoolClassController extends Controller
     {
         SchoolClass::create($request->validated());
 
-        return redirect()->route('admin.classes.index')->with('success', 'Class added successfully.');
+        return redirect()->route('admin.classes.index')->with('success', 'Grade added successfully.');
     }
 
     public function show(SchoolClass $class): View
@@ -66,7 +66,7 @@ class SchoolClassController extends Controller
     {
         $class->update($request->validated());
 
-        return redirect()->route('admin.classes.index')->with('success', 'Class updated successfully.');
+        return redirect()->route('admin.classes.index')->with('success', 'Grade updated successfully.');
     }
 
     public function destroy(SchoolClass $class): RedirectResponse
@@ -75,11 +75,11 @@ class SchoolClassController extends Controller
 
         if ($hasRelatedData) {
             return redirect()->route('admin.classes.index')
-                ->with('error', 'This class cannot be deleted because it has related students or exams. Please deactivate the students instead.');
+                ->with('error', 'This grade cannot be deleted because it has related students or exams. Please deactivate the students instead.');
         }
 
         $class->delete();
 
-        return redirect()->route('admin.classes.index')->with('success', 'Class deleted successfully.');
+        return redirect()->route('admin.classes.index')->with('success', 'Grade deleted successfully.');
     }
 }

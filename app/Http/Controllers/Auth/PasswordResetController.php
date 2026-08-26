@@ -125,6 +125,7 @@ class PasswordResetController extends Controller
         DB::table('password_reset_otps')
             ->where('email', $email)
             ->where('user_type', $userType)
+            ->where('purpose', 'password_reset')
             ->whereNull('used_at')
             ->update([
                 'used_at' => now(),
@@ -134,6 +135,7 @@ class PasswordResetController extends Controller
         DB::table('password_reset_otps')->insert([
             'email' => $email,
             'user_type' => $userType,
+            'purpose' => 'password_reset',
             'otp_hash' => Hash::make($otp),
             'expires_at' => now()->addMinutes(10),
             'created_at' => now(),
@@ -222,6 +224,7 @@ class PasswordResetController extends Controller
         $record = DB::table('password_reset_otps')
             ->where('email', $email)
             ->where('user_type', $this->otpUserType($type))
+            ->where('purpose', 'password_reset')
             ->whereNull('used_at')
             ->latest()
             ->first();

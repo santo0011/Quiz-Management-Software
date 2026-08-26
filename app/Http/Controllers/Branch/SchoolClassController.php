@@ -51,7 +51,7 @@ class SchoolClassController extends Controller
             'branch_id' => $branch->id,
         ]);
 
-        return redirect()->route('branch.classes.index')->with('success', 'Class added successfully.');
+        return redirect()->route('branch.classes.index')->with('success', 'Grade added successfully.');
     }
 
     public function show(Request $request, SchoolClass $class): View
@@ -80,7 +80,7 @@ class SchoolClassController extends Controller
 
         $class->update($request->validated());
 
-        return redirect()->route('branch.classes.index')->with('success', 'Class updated successfully.');
+        return redirect()->route('branch.classes.index')->with('success', 'Grade updated successfully.');
     }
 
     public function destroy(Request $request, SchoolClass $class): RedirectResponse
@@ -91,16 +91,16 @@ class SchoolClassController extends Controller
 
         if ($hasRelatedData) {
             return redirect()->route('branch.classes.index')
-                ->with('error', 'This class cannot be deleted because it has related students or exams. Please deactivate the students instead.');
+                ->with('error', 'This grade cannot be deleted because it has related students or exams. Please deactivate the students instead.');
         }
 
         $class->delete();
 
-        return redirect()->route('branch.classes.index')->with('success', 'Class deleted successfully.');
+        return redirect()->route('branch.classes.index')->with('success', 'Grade deleted successfully.');
     }
 
     private function authorizeBranchClass(Request $request, SchoolClass $class): void
     {
-        abort_if(! $request->user()->branch_id || $class->branch_id !== $request->user()->branch_id, 403, 'This class does not belong to your branch.');
+        abort_if(! $request->user()->branch_id || $class->branch_id !== $request->user()->branch_id, 403, 'This grade does not belong to your branch.');
     }
 }
