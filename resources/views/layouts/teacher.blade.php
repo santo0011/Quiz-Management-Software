@@ -25,6 +25,7 @@
                 </div>
 
                 <div class="topbar-actions">
+                    @include('partials.academic-session-dropdown', ['prefix' => 'teacher'])
                     <div class="admin-user">
                         <div class="avatar">{{ strtoupper(substr(auth('teacher')->user()?->name ?? 'T', 0, 1)) }}</div>
                         <div class="admin-user-copy">
@@ -64,6 +65,52 @@
                 </div>
             </div>
         @endif
+        @if (session('email_status'))
+            <div class="toast admin-toast text-bg-info border-0" role="status" aria-live="polite" aria-atomic="true" data-bs-delay="4000">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-envelope-check-fill"></i>
+                        {{ session('email_status') }}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
+        @if (session('warning'))
+            <div class="toast admin-toast text-bg-warning border-0" role="status" aria-live="polite" aria-atomic="true" data-bs-delay="5500">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-envelope-exclamation-fill"></i>
+                        {{ session('warning') }}
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
+    </div>
+
+    <div class="modal fade" id="remarkConfirmModal" tabindex="-1" aria-labelledby="remarkConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content confirm-modal">
+                <div class="modal-header">
+                    <div>
+                        <span class="page-kicker">Teacher Remark</span>
+                        <h2 class="modal-title fs-5" id="remarkConfirmModalLabel">Confirm Send Remark</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="remarkConfirmMessage">
+                    Are you sure you want to send this remark to the Student/Guardian?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmRemarkButton">
+                        <i class="bi bi-send-check-fill"></i>
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
@@ -122,6 +169,33 @@
             sidebarToggle.setAttribute('data-bs-title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
             bootstrap.Tooltip.getInstance(sidebarToggle)?.dispose();
             bootstrap.Tooltip.getOrCreateInstance(sidebarToggle, { boundary: document.body });
+        });
+
+        const remarkModalEl = document.getElementById('remarkConfirmModal');
+        const remarkConfirmMessage = document.getElementById('remarkConfirmMessage');
+        const defaultRemarkMessage = remarkConfirmMessage?.textContent.trim();
+        const confirmRemarkButton = document.getElementById('confirmRemarkButton');
+        let pendingRemarkForm = null;
+
+        document.querySelectorAll('[data-confirm-remark]').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                pendingRemarkForm = form;
+                if (remarkConfirmMessage) {
+                    remarkConfirmMessage.textContent = form.dataset.confirmMessage || defaultRemarkMessage;
+                }
+                bootstrap.Modal.getOrCreateInstance(remarkModalEl).show();
+            });
+        });
+
+        confirmRemarkButton?.addEventListener('click', () => {
+            if (! pendingRemarkForm) {
+                return;
+            }
+
+            confirmRemarkButton.disabled = true;
+            confirmRemarkButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Sending...';
+            pendingRemarkForm.submit();
         });
 
         const logoutModalEl = document.getElementById('logoutConfirmModal');

@@ -78,14 +78,14 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * The navbar's Academic Session dropdown is rendered from
-     * layouts.admin/layouts.branch, which are included by every Admin/Branch
-     * page — sharing the data via a composer avoids threading it through
-     * every controller individually.
+     * layouts.admin/layouts.branch/layouts.teacher, which are included by
+     * every Admin/Branch/Teacher page — sharing the data via a composer
+     * avoids threading it through every controller individually.
      */
     private function shareAcademicSessionWithNavbar(): void
     {
-        View::composer(['layouts.admin', 'layouts.branch'], function ($view): void {
-            if (! Schema::hasTable('academic_sessions') || ! Auth::guard('web')->check()) {
+        View::composer(['layouts.admin', 'layouts.branch', 'layouts.teacher'], function ($view): void {
+            if (! Schema::hasTable('academic_sessions') || (! Auth::guard('web')->check() && ! Auth::guard('teacher')->check())) {
                 $view->with(['academicSessions' => collect(), 'selectedAcademicSession' => null]);
 
                 return;

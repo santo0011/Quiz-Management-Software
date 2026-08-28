@@ -1849,7 +1849,7 @@ body {
 .unified-login-shell {
     display: flex;
     align-items: stretch;
-    width: min(100%, 840px);
+    width: min(100%, 880px);
     background: #fff;
     border-radius: 18px;
     overflow: hidden;
@@ -1859,8 +1859,8 @@ body {
 
 .login-hero {
     position: relative;
-    flex: 0 0 360px;
-    padding: 36px 34px;
+    flex: 0 0 420px;
+    padding: 38px 40px;
     background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 55%, var(--accent) 130%);
     color: #fff;
     overflow: hidden;

@@ -7,6 +7,7 @@ use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\AcademicSessionResolver;
 use App\Services\LoginOtpService;
 use App\Services\SingleSessionService;
 use App\Support\RoleRedirector;
@@ -110,6 +111,7 @@ class LoginOtpController extends Controller
             Auth::guard('teacher')->login($teacher, true);
             $request->session()->regenerate();
             SingleSessionService::establish($teacher, 'teacher');
+            AcademicSessionResolver::autoSelectOnLogin($request, 'Teacher');
 
             return redirect()
                 ->intended(RoleRedirector::dashboardUrl($teacher))
@@ -124,6 +126,8 @@ class LoginOtpController extends Controller
         if ($user->role === 'Branch') {
             SingleSessionService::establish($user, 'web');
         }
+
+        AcademicSessionResolver::autoSelectOnLogin($request, $user->role);
 
         return redirect()
             ->intended(RoleRedirector::dashboardUrl($user))

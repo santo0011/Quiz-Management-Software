@@ -36,6 +36,7 @@ use App\Http\Controllers\Guardian\DashboardController as GuardianDashboardContro
 use App\Http\Controllers\Guardian\PasswordController as GuardianPasswordUpdateController;
 use App\Http\Controllers\Guardian\ProfileController as GuardianProfileController;
 use App\Http\Controllers\Guardian\StudentController as GuardianStudentController;
+use App\Http\Controllers\Teacher\AcademicSessionSelectionController as TeacherAcademicSessionSelectionController;
 use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
 use App\Http\Controllers\Teacher\PasswordController as TeacherPasswordUpdateController;
 use App\Http\Controllers\Teacher\ProfileController as TeacherProfileController;
@@ -203,6 +204,8 @@ Route::middleware(['auth:guardian', 'single_session'])->prefix('guardian')->name
 
 Route::middleware(['auth:teacher', 'single_session'])->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/dashboard', TeacherDashboardController::class)->name('dashboard');
+    Route::post('/academic-session-selection', [TeacherAcademicSessionSelectionController::class, 'store'])->name('academic-session-selection.store');
+    Route::delete('/academic-session-selection', [TeacherAcademicSessionSelectionController::class, 'clear'])->name('academic-session-selection.clear');
     Route::get('/profile', [TeacherProfileController::class, 'show'])->name('profile');
     Route::get('/password', [TeacherPasswordUpdateController::class, 'edit'])->name('password.edit');
     Route::put('/password', [TeacherPasswordUpdateController::class, 'update'])->name('password.update');

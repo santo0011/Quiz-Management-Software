@@ -24,7 +24,7 @@
             </p>
         @endif
 
-        <form method="POST" action="{{ route('teacher.results.remark.store', $attempt) }}" class="admin-form">
+        <form method="POST" action="{{ route('teacher.results.remark.store', $attempt) }}" class="admin-form" data-confirm-remark data-confirm-message="Are you sure you want to send this remark to the {{ $attempt->student?->guardian_email ? 'Student and Guardian' : 'Student' }}? This will email the result and remark as a PDF.">
             @csrf
 
             <div class="mb-3">
