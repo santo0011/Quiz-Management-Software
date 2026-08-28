@@ -16,7 +16,7 @@ class ExamController extends Controller
     {
         $student = $request->user('student')->load(['branch', 'schoolClass', 'subjects']);
 
-        $baseExamQuery = Exam::where('branch_id', $student->branch_id)
+        $baseExamQuery = Exam::visibleToBranch($student->branch_id)
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED)
             ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
@@ -79,14 +79,21 @@ class ExamController extends Controller
         $student = $request->user('student');
         abort_if(! $student->isActive(), 403, 'Your student account has been deactivated.');
         abort_if($student->branch && ! $student->branch->isActive(), 403, 'Your branch has been deactivated.');
-        abort_if($exam->branch_id !== $student->branch_id || $exam->school_class_id !== $student->class_id || ! $exam->isOpen(), 403);
+        abort_if(($exam->branch_id !== null && $exam->branch_id !== $student->branch_id) || $exam->school_class_id !== $student->class_id || ! $exam->isOpen(), 403);
         abort_if($exam->subject_id !== null && ! $student->subjects()->where('subjects.id', $exam->subject_id)->exists(), 403);
         abort_if($exam->session_id !== null && $exam->session_id !== $student->session_id, 403);
+
+        $hasActiveAttempt = ExamAttempt::where('exam_id', $exam->id)
+            ->where('student_id', $student->id)
+            ->where('status', 'in_progress')
+            ->where('expires_at', '>', now())
+            ->exists();
 
         return view('student.exams.show', [
             'student' => $student->load(['branch', 'schoolClass']),
             'exam' => $exam->loadCount('questions')->load('schoolClass'),
             'remainingAttempts' => $exam->remainingAttemptsFor($student),
+            'hasActiveAttempt' => $hasActiveAttempt,
         ]);
     }
 
@@ -110,7 +117,7 @@ class ExamController extends Controller
     {
         $student = $request->user('student')->load(['branch', 'schoolClass', 'subjects']);
 
-        $exams = Exam::where('branch_id', $student->branch_id)
+        $exams = Exam::visibleToBranch($student->branch_id)
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED)
             ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
@@ -153,7 +160,7 @@ class ExamController extends Controller
     {
         $student = $request->user('student')->load(['branch', 'schoolClass', 'subjects']);
 
-        $exams = Exam::where('branch_id', $student->branch_id)
+        $exams = Exam::visibleToBranch($student->branch_id)
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED)
             ->where(fn ($query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))

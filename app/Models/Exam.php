@@ -97,9 +97,23 @@ class Exam extends Model
         return $query->where('branch_id', $branchId);
     }
 
+    /**
+     * Exams usable by a given branch: its own exams plus any
+     * Super-Admin-created global exams (branch_id is null).
+     */
+    public function scopeVisibleToBranch(Builder $query, int $branchId): Builder
+    {
+        return $query->where(fn (Builder $q) => $q->where('branch_id', $branchId)->orWhereNull('branch_id'));
+    }
+
+    public function isGlobal(): bool
+    {
+        return $this->branch_id === null;
+    }
+
     public function scopeAvailableForStudent(Builder $query, Student $student): Builder
     {
-        return $query->where('branch_id', $student->branch_id)
+        return $query->where(fn (Builder $q) => $q->where('branch_id', $student->branch_id)->orWhereNull('branch_id'))
             ->where('school_class_id', $student->class_id)
             ->where('status', self::STATUS_PUBLISHED)
             ->where(fn (Builder $query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
@@ -181,11 +195,25 @@ class Exam extends Model
         return 'available';
     }
 
+    /**
+     * An attempt only counts against the limit once it's actually finished:
+     * submitted, or in-progress but past its own expiry (the student never
+     * returned to finish it, so it's effectively forfeited). A *currently*
+     * active in-progress attempt must NOT count here — otherwise, with the
+     * common maximum_attempts = 1, the student's own still-running attempt
+     * would zero out their remaining count and lock them out of resuming it
+     * (hidden from "Available Exams", "Begin Exam" disabled).
+     */
     public function remainingAttemptsFor(Student $student): int
     {
         $usedAttempts = $this->attempts()
             ->where('student_id', $student->id)
-            ->whereIn('status', ['in_progress', 'submitted'])
+            ->where(function (Builder $query): void {
+                $query->where('status', 'submitted')
+                    ->orWhere(function (Builder $query): void {
+                        $query->where('status', 'in_progress')->where('expires_at', '<=', now());
+                    });
+            })
             ->count();
 
         return max(0, $this->maximum_attempts - $usedAttempts);

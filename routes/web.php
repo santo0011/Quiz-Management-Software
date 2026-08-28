@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AcademicSessionController;
 use App\Http\Controllers\Admin\AcademicSessionSelectionController;
+use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\BranchSelectionController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -67,6 +68,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:web
 Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::put('/password', [AdminPasswordController::class, 'update'])->name('password.update');
+    Route::put('/account/email', [AdminAccountController::class, 'updateEmail'])->name('account.email.update');
     Route::get('/branch-selection', [BranchSelectionController::class, 'index'])->name('branch-selection.index');
     Route::post('/branch-selection', [BranchSelectionController::class, 'store'])->name('branch-selection.store');
     Route::delete('/branch-selection', [BranchSelectionController::class, 'clear'])->name('branch-selection.clear');
@@ -93,7 +95,6 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::resource('exams', AdminExamController::class)->except(['store']);
     Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [AdminExamController::class, 'unpublish'])->name('exams.unpublish');
-    Route::put('/exams/{exam}/settings', [AdminExamController::class, 'updateSettings'])->name('exams.settings.update');
     Route::put('/exams/{exam}/category', [AdminExamController::class, 'updateCategory'])->name('exams.category.update');
     Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
     Route::get('/exams/{exam}/questions/create', [AdminQuestionController::class, 'create'])->name('questions.create');
@@ -135,7 +136,6 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     Route::resource('exams', BranchExamController::class)->except(['store']);
     Route::post('/exams/{exam}/publish', [BranchExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [BranchExamController::class, 'unpublish'])->name('exams.unpublish');
-    Route::put('/exams/{exam}/settings', [BranchExamController::class, 'updateSettings'])->name('exams.settings.update');
     Route::put('/exams/{exam}/category', [BranchExamController::class, 'updateCategory'])->name('exams.category.update');
     Route::get('/questions', [BranchQuestionController::class, 'index'])->name('questions.index');
     Route::get('/exams/{exam}/questions/create', [BranchQuestionController::class, 'create'])->name('questions.create');

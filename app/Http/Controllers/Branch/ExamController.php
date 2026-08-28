@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Branch;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExamCategoryRequest;
 use App\Http\Requests\ExamRequest;
-use App\Http\Requests\ExamSettingsRequest;
 use App\Models\Exam;
 use App\Models\SchoolClass;
 use App\Models\Subject;
@@ -25,7 +24,7 @@ class ExamController extends Controller
 
         $exams = $selectedSessionId
             ? Exam::with(['schoolClass', 'subject', 'questions'])
-                ->forBranch($branch->id)
+                ->visibleToBranch($branch->id)
                 ->where('session_id', $selectedSessionId)
                 ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
                 ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
@@ -56,9 +55,7 @@ class ExamController extends Controller
         Exam::create($request->validated() + [
             'branch_id' => $branch->id,
             'status' => Exam::STATUS_DRAFT,
-            'total_marks' => 0,
             'marks_per_question' => 1,
-            'duration_minutes' => 30,
             'session_id' => $selectedSessionId,
         ]);
 
@@ -67,7 +64,7 @@ class ExamController extends Controller
 
     public function show(Request $request, Exam $exam): View
     {
-        $this->authorizeExam($request, $exam);
+        $this->authorizeExamVisibility($request, $exam);
         $this->authorizeSessionScope($request, $exam);
 
         return view('branch.exams.show', [
@@ -99,14 +96,6 @@ class ExamController extends Controller
         $exam->update($request->validated());
 
         return redirect()->route('branch.exams.index')->with('success', 'Exam updated successfully.');
-    }
-
-    public function updateSettings(ExamSettingsRequest $request, Exam $exam): RedirectResponse
-    {
-        $exam->update($request->validated());
-        $exam->recalculateTotalMarks();
-
-        return redirect()->route('branch.exams.show', $exam)->with('success', 'Exam settings updated successfully.');
     }
 
     public function updateCategory(ExamCategoryRequest $request, Exam $exam): RedirectResponse
@@ -257,9 +246,28 @@ class ExamController extends Controller
         return redirect()->route('branch.exams.show', $exam)->with('success', 'Exam unpublished successfully.');
     }
 
+    /**
+     * Management actions (edit, delete, publish, reorder) are restricted to
+     * the branch's own exams — global (Super Admin) exams are managed only
+     * from the Super Admin panel.
+     */
     private function authorizeExam(Request $request, Exam $exam): void
     {
         abort_if(! $request->user()->branch_id || $exam->branch_id !== $request->user()->branch_id, 403, 'This exam does not belong to your branch.');
+    }
+
+    /**
+     * Viewing (show) is allowed for the branch's own exams plus any global
+     * exams created by the Super Admin, since those are available to every
+     * branch.
+     */
+    private function authorizeExamVisibility(Request $request, Exam $exam): void
+    {
+        abort_if(
+            ! $request->user()->branch_id || ($exam->branch_id !== null && $exam->branch_id !== $request->user()->branch_id),
+            403,
+            'This exam does not belong to your branch.'
+        );
     }
 
     /**

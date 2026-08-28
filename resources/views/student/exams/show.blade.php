@@ -113,8 +113,13 @@
             <i class="bi bi-info-circle-fill"></i>
 
             <div>
-                Once started, the timer continues until submission.
-                The exam auto-submits when time expires.
+                @if ($hasActiveAttempt)
+                    You already have this exam in progress. Continuing will resume your existing
+                    timer from where you left off — it does not restart.
+                @else
+                    Once started, the timer continues until submission, even if you leave this page.
+                    The exam auto-submits when time expires.
+                @endif
             </div>
         </div>
 
@@ -135,8 +140,8 @@
                 id="beginExamButton"
                 @disabled($remainingAttempts <= 0)
             >
-                <i class="bi bi-play-circle-fill"></i>
-                 Begin Exam
+                <i class="bi {{ $hasActiveAttempt ? 'bi-arrow-right-circle-fill' : 'bi-play-circle-fill' }}"></i>
+                {{ $hasActiveAttempt ? 'Continue Exam' : 'Begin Exam' }}
             </button>
 
         </form>
@@ -168,7 +173,7 @@
                             class="modal-title fs-5"
                             id="beginExamModalLabel"
                         >
-                            Start Exam
+                            {{ $hasActiveAttempt ? 'Continue Exam' : 'Start Exam' }}
                         </h2>
                     </div>
 
@@ -189,9 +194,14 @@
                         <i class="bi bi-rocket-takeoff-fill"></i>
                     </div>
 
-                    <p class="mb-0 text-center">
-                        Are you ready to start this exam?
-                        Once started, the exam timer will begin.
+                    <p class="mb-0 text-center" id="beginExamModalBody">
+                        @if ($hasActiveAttempt)
+                            This exam is already in progress. Continue to resume your existing
+                            timer and previously saved answers — it will not restart.
+                        @else
+                            Are you ready to start this exam?
+                            Once started, the exam timer will begin.
+                        @endif
                     </p>
 
                 </div>
@@ -216,8 +226,8 @@
                         class="btn btn-primary"
                         id="confirmBeginExamButton"
                     >
-                        <i class="bi bi-play-circle-fill"></i>
-                        Begin Exam
+                        <i class="bi {{ $hasActiveAttempt ? 'bi-arrow-right-circle-fill' : 'bi-play-circle-fill' }}"></i>
+                        {{ $hasActiveAttempt ? 'Continue Exam' : 'Begin Exam' }}
                     </button>
 
                 </div>

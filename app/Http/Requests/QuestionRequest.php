@@ -4,11 +4,25 @@ namespace App\Http\Requests;
 
 use App\Models\Exam;
 use App\Models\Question;
+use App\Support\HtmlSanitizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class QuestionRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        // Only questions that belong to a Summary/Passage use the rich-text
+        // (CKEditor) editor and need their HTML sanitized before storage —
+        // standalone questions use the plain math-editor and are rendered
+        // escaped as plain text, so their text is left untouched here.
+        $isSummaryQuestion = $this->route('question')?->passage_group_id !== null;
+
+        if ($isSummaryQuestion && $this->has('question_text')) {
+            $this->merge(['question_text' => HtmlSanitizer::sanitize($this->input('question_text'))]);
+        }
+    }
+
     public function authorize(): bool
     {
         $exam = $this->route('exam') ?: $this->route('question')?->exam;

@@ -1,8 +1,5 @@
 @php($prefix = $prefix ?? 'admin')
-@php($contextBranch = $selectedBranch ?? $branch ?? null)
 @php($isLocked = $exam->exists && $exam->hasBeenAttempted())
-@php($isSuperAdmin = auth()->user()->role === 'Super Admin')
-@php($isNewExam = ! $exam->exists)
 
 @if ($isLocked)
     <div class="feedback-alert info mb-4">
@@ -22,40 +19,6 @@
     <fieldset {{ $isLocked ? 'disabled' : '' }}>
 
     <div class="exam-form-sections">
-        @if ($isSuperAdmin && $isNewExam)
-            <section class="exam-form-section">
-                <div class="exam-form-section-title">
-                    <span>00</span>
-                    <h3>Branch</h3>
-                </div>
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label for="branch_id" class="form-label">Branch <span class="required-mark">*</span></label>
-                        <select id="branch_id" name="branch_id" class="form-select form-control @error('branch_id') is-invalid @enderror" required data-branch-select>
-                            <option value="">Select branch</option>
-                            @foreach ($branches ?? [] as $branchOption)
-                                <option value="{{ $branchOption->id }}" @selected(old('branch_id', $selectedBranchId ?? '') == $branchOption->id)>{{ $branchOption->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('branch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                </div>
-            </section>
-        @elseif ($isSuperAdmin && ! $isNewExam)
-            <section class="exam-form-section">
-                <div class="exam-form-section-title">
-                    <span>00</span>
-                    <h3>Branch</h3>
-                </div>
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label">Branch</label>
-                        <input type="text" class="form-control" value="{{ $contextBranch->name }}" disabled>
-                    </div>
-                </div>
-            </section>
-        @endif
-
         <section class="exam-form-section">
             <div class="exam-form-section-title">
                 <span>01</span>
@@ -111,6 +74,30 @@
         <section class="exam-form-section">
             <div class="exam-form-section-title">
                 <span>03</span>
+                <h3>Marks & Duration</h3>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="total_marks" class="form-label">Total Marks</label>
+                    <input id="total_marks" type="number" min="0" name="total_marks" value="{{ old('total_marks', $exam->total_marks ?? 0) }}" class="form-control @error('total_marks') is-invalid @enderror">
+                    @error('total_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4">
+                    <label for="passing_marks" class="form-label">Pass Marks</label>
+                    <input id="passing_marks" type="number" min="0" name="passing_marks" value="{{ old('passing_marks', $exam->passing_marks) }}" class="form-control @error('passing_marks') is-invalid @enderror">
+                    @error('passing_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4">
+                    <label for="duration_minutes" class="form-label">Exam Time (minutes) <span class="required-mark">*</span></label>
+                    <input id="duration_minutes" type="number" min="1" max="1440" name="duration_minutes" value="{{ old('duration_minutes', $exam->duration_minutes ?? 30) }}" class="form-control @error('duration_minutes') is-invalid @enderror" required>
+                    @error('duration_minutes')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+            </div>
+        </section>
+
+        <section class="exam-form-section">
+            <div class="exam-form-section-title">
+                <span>04</span>
                 <h3>Schedule</h3>
             </div>
             <div class="row g-3">
@@ -129,7 +116,7 @@
 
         <section class="exam-form-section">
             <div class="exam-form-section-title">
-                <span>04</span>
+                <span>05</span>
                 <h3>Attempt & Security Settings</h3>
             </div>
             <div class="row g-3">

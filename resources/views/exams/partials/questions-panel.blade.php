@@ -89,6 +89,7 @@
                                     'existingQuestions' => collect(),
                                     'showExistingQuestions' => false,
                                     'categories' => $categories ?? collect(),
+                                    'useRichEditor' => true,
                                 ])
                                 </div>
                             </div>

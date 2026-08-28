@@ -8,7 +8,7 @@
         <div class="panel-header">
             <div>
                 <h2>{{ $exam->title }}</h2>
-                <p>Update exam conditions for {{ $exam->branch->name }}.</p>
+                <p>Update exam conditions for {{ $exam->branch->name ?? 'all branches' }}.</p>
             </div>
         </div>
         @include('exams.partials.form', [

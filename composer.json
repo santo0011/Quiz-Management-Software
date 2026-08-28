@@ -32,7 +32,7 @@
         }
     },
     "scripts": {
-        "setup": [
+        "setup:local": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
@@ -40,6 +40,15 @@
             "@php artisan db:seed --force",
             "npm install",
             "npm run build"
+        ],
+        "deploy": [
+            "composer install --no-dev --optimize-autoloader",
+            "@php artisan migrate --force",
+            "npm ci",
+            "npm run build",
+            "@php artisan config:cache",
+            "@php artisan route:cache",
+            "@php artisan view:cache"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
@@ -67,6 +76,10 @@
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
         ]
+    },
+    "scripts-descriptions": {
+        "setup:local": "First-time LOCAL/dev setup only — seeds a default Super Admin. NEVER run against production (see DEPLOYMENT.md).",
+        "deploy": "Production-safe deploy: installs deps, runs safe additive migrations, builds assets, warms caches. No seeding, no destructive DB commands."
     },
     "extra": {
         "laravel": {

@@ -433,13 +433,25 @@
         const branchSelect = document.getElementById('branch_id');
         const classSelect = document.querySelector('[data-class-select]');
         const classOptionsByBranch = window.quizcoreBranchClasses || {};
+        const allClasses = Object.values(classOptionsByBranch)
+            .flat()
+            .reduce((unique, schoolClass) => {
+                if (! unique.some((existing) => existing.id === schoolClass.id)) {
+                    unique.push(schoolClass);
+                }
+
+                return unique;
+            }, [])
+            .sort((a, b) => a.name.localeCompare(b.name));
 
         if (branchSelect && classSelect) {
             const classHint = classSelect.closest('.col-md-6, .col-12')?.querySelector('.empty-class-hint');
 
             const renderClassOptions = () => {
                 const selectedClass = classSelect.dataset.selectedClass || classSelect.value;
-                const branchClasses = classOptionsByBranch[branchSelect.value] || [];
+                const branchClasses = branchSelect.value
+                    ? (classOptionsByBranch[branchSelect.value] || [])
+                    : allClasses;
 
                 classSelect.innerHTML = '<option value="">Select class</option>';
                 branchClasses.forEach((schoolClass) => {

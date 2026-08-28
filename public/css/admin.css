@@ -3086,6 +3086,20 @@ body {
     line-height: 1.55;
 }
 
+/* Question text renders as rich HTML (same CKEditor as Summaries) via
+   .passage-preview for its paragraph/image/table styling, but .passage-preview
+   also carries its own fixed padding and font-size (meant for a standalone
+   boxed preview elsewhere). Both rules have equal (single-class) specificity,
+   so without this compound override .passage-preview's fixed 0.94rem would
+   win on source order alone and the Text Size control would silently stop
+   affecting Questions (including Questions under a Summary, which use this
+   same class combination) while still working on the Summary panel. */
+.exam-question-text.passage-preview {
+    padding: 0;
+    font-size: calc(1.18rem * var(--exam-font-scale, 1));
+    line-height: 1.55;
+}
+
 /* Anti-copy protection: applies to every element inside the exam runner
    (question text, passage/summary content, MCQ options, palette, etc.).
    Scoped to .exam-runner-shell, which only renders while a student is
@@ -3149,15 +3163,20 @@ body {
     overflow-wrap: anywhere;
 }
 
-/* Passage/Summary question group — student exam runner */
+/* Passage/Summary question group — student exam runner.
+   Flex (not grid) so the Summary panel's width can be driven imperatively
+   by the resize-handle drag logic in student-exam.jsx: the panel gets an
+   explicit inline pixel width (flex: 0 0 auto so it never grows/shrinks on
+   its own), the handle is a fixed-width column, and the questions column
+   fills whatever space is left (flex: 1 1 0%). */
 .passage-step-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
-    gap: 24px;
-    align-items: start;
+    display: flex;
+    align-items: flex-start;
 }
 
 .passage-panel {
+    flex: 0 0 auto;
+    width: 38%;
     /* .admin-topbar (min-height: 88px) is sticky within the same scroll
        container (.admin-main) that this panel scrolls inside, so "top" and
        "max-height" both need to clear it — otherwise this panel slides up
@@ -3270,6 +3289,8 @@ body {
 }
 
 .passage-questions-column {
+    flex: 1 1 0%;
+    min-width: 0;
     display: grid;
     gap: 26px;
 }
@@ -3288,16 +3309,118 @@ body {
     display: none;
 }
 
+/* Draggable divider between the Summary and Question/Answer panels — same
+   idea as a textarea's resize grip, but full-height and mouse/touch/keyboard
+   operable. Width must match PASSAGE_DIVIDER_WIDTH in student-exam.jsx. */
+.passage-resize-handle {
+    flex: 0 0 20px;
+    width: 20px;
+    align-self: stretch;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: col-resize;
+    touch-action: none;
+}
+
+.passage-resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+    background: rgba(23, 32, 51, 0.12);
+    border-radius: 2px;
+    transition: background-color 0.15s ease, width 0.15s ease;
+}
+
+.passage-resize-grip {
+    position: relative;
+    z-index: 1;
+    width: 16px;
+    height: 34px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid rgba(23, 32, 51, 0.14);
+    box-shadow: 0 4px 10px rgba(23, 32, 51, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.passage-resize-grip::before,
+.passage-resize-grip::after {
+    content: '';
+    width: 2px;
+    height: 14px;
+    border-radius: 2px;
+    background: rgba(23, 32, 51, 0.28);
+}
+
+.passage-resize-handle:hover::before,
+.passage-resize-handle:focus-visible::before,
+.passage-step-grid.is-resizing .passage-resize-handle::before {
+    background: var(--accent, #0f9f8f);
+    width: 3px;
+}
+
+.passage-resize-handle:hover .passage-resize-grip,
+.passage-resize-handle:focus-visible .passage-resize-grip,
+.passage-step-grid.is-resizing .passage-resize-grip {
+    border-color: var(--accent, #0f9f8f);
+    box-shadow: 0 6px 14px rgba(15, 159, 143, 0.25);
+    transform: scaleX(1.1);
+}
+
+.passage-resize-handle:focus-visible {
+    outline: none;
+}
+
+/* While actively dragging, disable transitions/text-selection so the panel
+   tracks the pointer immediately instead of easing/selecting text underneath
+   fast mouse movement. */
+.passage-step-grid.is-resizing .passage-panel,
+.passage-step-grid.is-resizing .passage-questions-column {
+    user-select: none;
+}
+
+body.is-resizing-panels {
+    cursor: col-resize;
+    user-select: none;
+}
+
+body.is-resizing-panels * {
+    cursor: col-resize !important;
+}
+
 @media (max-width: 767.98px) {
     .passage-step-grid {
-        grid-template-columns: 1fr;
+        flex-direction: column;
         gap: 16px;
+    }
+
+    /* The drag-resize divider is JS-disabled below this breakpoint
+       (student-exam.jsx doesn't render it at all); this is a pure fallback
+       in case it's ever present in the DOM anyway. */
+    .passage-resize-handle {
+        display: none;
     }
 
     .passage-panel {
         position: static;
         max-height: none;
         padding: 16px 18px;
+        width: 100% !important;
+        flex-basis: auto;
+    }
+
+    .passage-questions-column {
+        flex-basis: auto;
     }
 
     /* Once the passage panel goes full-width (stacked above its questions
@@ -4036,6 +4159,15 @@ body {
     font-weight: 800;
     line-height: 1.5;
     color: var(--ink);
+}
+
+/* Question text now renders as rich HTML (same CKEditor as Summaries) via
+   .passage-preview for its paragraph/image/table styling, but that class's
+   own padding is meant for a standalone boxed preview — here it already
+   sits inside .question-item-header's padding, so reset it to avoid a
+   double-indent against the badges/marks row above it. */
+.question-item-text.passage-preview {
+    padding: 0;
 }
 
 /* Student Result Details only: this markup (.question-item-text etc.) is
@@ -6479,6 +6611,13 @@ form .status-badge.status-published:hover {
 
     .exam-question-text {
         margin-bottom: 16px;
+        font-size: calc(1rem * var(--exam-font-scale, 1));
+        line-height: 1.45;
+    }
+
+    /* Same specificity fix as the desktop rule above — keeps this breakpoint's
+       font-size winning over .passage-preview's fixed 0.94rem. */
+    .exam-question-text.passage-preview {
         font-size: calc(1rem * var(--exam-font-scale, 1));
         line-height: 1.45;
     }

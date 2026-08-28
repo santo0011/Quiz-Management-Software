@@ -30,16 +30,17 @@ class ExamRequest extends FormRequest
 
     public function rules(): array
     {
-        $isBranch = $this->user()?->role === 'Branch';
-
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'branch_id' => $isBranch ? ['nullable'] : ['sometimes', 'required', 'exists:branches,id'],
+            'branch_id' => ['nullable', 'exists:branches,id'],
             'school_class_id' => ['required', 'exists:school_classes,id'],
             'subject_id' => ['required', 'exists:subjects,id'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
+            'total_marks' => ['nullable', 'integer', 'min:0'],
+            'passing_marks' => ['nullable', 'integer', 'min:0'],
+            'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
             'maximum_attempts' => ['required', 'integer', 'min:1', 'max:20'],
             'randomize_questions' => ['nullable', 'boolean'],
             'randomize_answers' => ['nullable', 'boolean'],
@@ -51,24 +52,29 @@ class ExamRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
-            $branchId = $this->user()?->role === 'Branch'
+            $isBranchUser = $this->user()?->role === 'Branch';
+            $branchId = $isBranchUser
                 ? $this->user()?->branch_id
-                : ($this->route('exam')?->branch_id ?: $this->input('branch_id'));
+                : $this->route('exam')?->branch_id;
 
-            if (! $branchId) {
+            if ($isBranchUser && ! $branchId) {
                 $validator->errors()->add('school_class_id', 'Please select a branch first to manage branch-related data.');
 
                 return;
             }
 
-            if ($this->filled('school_class_id')) {
-                $classExists = SchoolClass::whereKey($this->input('school_class_id'))
-                    ->visibleToBranch($branchId)
-                    ->exists();
+            // Super Admin exams are available to all branches, so there is no
+            // branch context to scope the grade against once branch_id is null.
+            if (! $branchId || ! $this->filled('school_class_id')) {
+                return;
+            }
 
-                if (! $classExists) {
-                    $validator->errors()->add('school_class_id', 'Please select a grade from the active branch.');
-                }
+            $classExists = SchoolClass::whereKey($this->input('school_class_id'))
+                ->visibleToBranch($branchId)
+                ->exists();
+
+            if (! $classExists) {
+                $validator->errors()->add('school_class_id', 'Please select a grade from the active branch.');
             }
         });
     }
@@ -88,6 +94,15 @@ class ExamRequest extends FormRequest
         $validated['negative_marks'] = $validated['negative_marking_enabled']
             ? ($validated['negative_marks'] ?? 0)
             : 0;
+
+        // total_marks is not nullable in the database. On create the field
+        // is always editable, so always default it. On update it's only
+        // submitted when the exam has no questions yet (otherwise the
+        // input is disabled and total_marks stays auto-calculated) — only
+        // coerce it there if it was actually part of the request.
+        if ($this->isMethod('POST') || array_key_exists('total_marks', $validated)) {
+            $validated['total_marks'] = $validated['total_marks'] ?? 0;
+        }
 
         return $validated;
     }

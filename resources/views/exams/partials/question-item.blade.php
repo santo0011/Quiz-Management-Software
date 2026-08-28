@@ -18,7 +18,11 @@
                     </span>
                 @endif
             </div>
-            <h3 class="math-content question-item-text">{{ $question->question_text }}</h3>
+            @if ($question->passage_group_id)
+                <div class="math-content passage-preview question-item-text">{!! \App\Support\HtmlSanitizer::sanitize($question->question_text) !!}</div>
+            @else
+                <h3 class="math-content question-item-text">{{ $question->question_text }}</h3>
+            @endif
         </div>
         @if (!$exam->hasBeenAttempted())
             <div class="action-group question-item-actions">

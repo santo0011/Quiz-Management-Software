@@ -32,6 +32,7 @@ class StudentRequest extends FormRequest
         return [
             'student_name' => ['required', 'string', 'max:255'],
             'guardian_name' => ['required', 'string', 'max:255'],
+            'guardian_email' => ['nullable', 'email', 'max:255'],
             'branch_id' => $isBranch ? ['nullable'] : ['sometimes', 'required', 'exists:branches,id'],
             'class_id' => ['nullable', 'required_without:class', 'exists:school_classes,id'],
             'class' => ['nullable', 'required_without:class_id', 'string', 'max:100'],
@@ -68,6 +69,7 @@ class StudentRequest extends FormRequest
         return [
             'student_name.required' => 'Please enter the student name.',
             'guardian_name.required' => 'Please enter the guardian name.',
+            'guardian_email.email' => 'Please enter a valid guardian email address.',
             'class_id.required' => 'Please select the grade.',
             'class_id.required_without' => 'Please select the grade.',
             'class_id.exists' => 'Please select a valid grade.',

@@ -25,7 +25,7 @@ class QuestionController extends Controller
             'branches' => Branch::orderBy('name')->get(),
             'selectedBranchId' => $branchId,
             'exams' => Exam::withCount('questions')->with('schoolClass')
-                ->when($branchId, fn ($query) => $query->forBranch($branchId))
+                ->when($branchId, fn ($query) => $query->visibleToBranch($branchId))
                 ->latest()->paginate(20),
             'filters' => $request->only(['branch_id']),
         ]);

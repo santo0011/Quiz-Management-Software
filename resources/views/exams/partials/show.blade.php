@@ -1,5 +1,6 @@
 @php($prefix = $prefix ?? 'admin')
-@php($contextBranch = $selectedBranch ?? $branch ?? null)
+@php($contextBranch = $exam->branch_id ? ($selectedBranch ?? $branch ?? null) : null)
+@php($canManage = $prefix === 'admin' || $exam->branch_id !== null)
 
 <div class="student-profile-top-actions">
     <a href="{{ route($prefix.'.exams.index') }}" class="btn btn-outline-secondary btn-student-back">
@@ -18,8 +19,8 @@
                     {{ ucfirst($exam->status) }}
                 </span>
                 <span class="exam-meta-chip">
-                    <i class="bi bi-building"></i>
-                    {{ $contextBranch->name }}
+                    <i class="bi {{ $contextBranch ? 'bi-building' : 'bi-globe2' }}"></i>
+                    {{ $contextBranch?->name ?? 'All Branches' }}
                 </span>
                 @if ($exam->schoolClass)
                     <span class="exam-meta-chip">
@@ -35,7 +36,12 @@
                 @endif
             </div>
             <div class="exam-hero-actions">
-                @if (!$exam->hasBeenAttempted())
+                @if (! $canManage)
+                    <span class="exam-published-lock" data-bs-toggle="tooltip" data-bs-title="This exam is available to all branches and is managed by the Super Admin.">
+                        <i class="bi bi-globe2"></i>
+                        Managed by Super Admin
+                    </span>
+                @elseif (!$exam->hasBeenAttempted())
                     <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-light btn-exam-action">
                         <i class="bi bi-list-check"></i>
                         Manage Questions
@@ -187,9 +193,11 @@
             <h2><i class="bi bi-list-check me-2 text-primary"></i>Questions</h2>
             <p>{{ $exam->questions->count() }} {{ Str::plural('question', $exam->questions->count()) }} in this exam.</p>
         </div>
-        <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-primary">
-            <i class="bi bi-list-check"></i>
-            Manage Questions
-        </a>
+        @if ($canManage)
+            <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-primary">
+                <i class="bi bi-list-check"></i>
+                Manage Questions
+            </a>
+        @endif
     </div>
 </section>

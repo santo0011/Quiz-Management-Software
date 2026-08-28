@@ -13,6 +13,7 @@ class Student extends Authenticatable
         'session_id',
         'student_name',
         'guardian_name',
+        'guardian_email',
         'class',
         'phone_number',
         'email',

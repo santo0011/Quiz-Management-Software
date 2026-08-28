@@ -146,6 +146,46 @@
     <section class="content-panel settings-panel">
         <div class="panel-header">
             <div>
+                <h2><i class="bi bi-envelope-at-fill me-2 text-primary"></i>Super Admin Email</h2>
+                <p>Update the email address used to sign in and receive account notifications.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ route('admin.account.email.update') }}" class="admin-form">
+            @csrf
+            @method('PUT')
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input id="email" type="email" name="email" value="{{ old('email', auth()->user()->email) }}" class="form-control @error('email') is-invalid @enderror" required maxlength="255">
+                    @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="account_current_password" class="form-label">Current Password</label>
+                    <div class="password-field">
+                        <input id="account_current_password" type="password" name="current_password" class="form-control @error('current_password') is-invalid @enderror" autocomplete="current-password" required>
+                        <button class="password-toggle" type="button" aria-label="Show password" data-password-toggle>
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                    </div>
+                    @error('current_password')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    <div class="form-text">Enter your current password to confirm this change.</div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Save Email
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="content-panel settings-panel">
+        <div class="panel-header">
+            <div>
                 <h2><i class="bi bi-shield-lock-fill me-2 text-primary"></i>Change Password</h2>
                 <p>Replace your current Super Admin password with a new secure one.</p>
             </div>

@@ -13,7 +13,7 @@ class DashboardController extends Controller
     {
         $student = auth('student')->user()->load(['branch', 'schoolClass']);
 
-        $baseExamQuery = Exam::where('branch_id', $student->branch_id)
+        $baseExamQuery = Exam::visibleToBranch($student->branch_id)
             ->where('school_class_id', $student->class_id)
             ->where('status', Exam::STATUS_PUBLISHED);
 

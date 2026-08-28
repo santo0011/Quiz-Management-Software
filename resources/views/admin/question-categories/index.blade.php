@@ -51,7 +51,7 @@
                             <tr>
                                 <td><strong>{{ $categoryRow->name }}</strong></td>
  
-                                <td>{{ $categoryRow->created_at->format('d M Y, h:i A') }}</td>
+                                <td>{{ $categoryRow->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">
                                         <button type="button" class="btn btn-sm btn-soft" title="Edit" data-bs-toggle="offcanvas" data-bs-target="#editCategoryDrawer{{ $categoryRow->id }}" aria-controls="editCategoryDrawer{{ $categoryRow->id }}">
