@@ -2,6 +2,7 @@
     $links = [
         ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2-fill', 'route' => 'branch.dashboard', 'active' => 'branch.dashboard'],
         ['label' => 'Students', 'icon' => 'bi-people-fill', 'route' => 'branch.students.index', 'active' => 'branch.students.*'],
+        ['label' => 'Teachers', 'icon' => 'bi-person-workspace', 'route' => 'branch.teachers.index', 'active' => 'branch.teachers.*'],
         ['label' => 'Exams', 'icon' => 'bi-journal-check', 'route' => 'branch.exams.index', 'active' => 'branch.exams.*'],
         ['label' => 'Results', 'icon' => 'bi-bar-chart-fill', 'route' => 'branch.results.index', 'active' => 'branch.results.*'],
         ['label' => 'Change Password', 'icon' => 'bi-key-fill', 'route' => 'branch.password.edit', 'active' => 'branch.password.*'],

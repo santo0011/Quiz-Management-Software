@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExamCategoryRequest;
 use App\Http\Requests\ExamRequest;
-use App\Http\Requests\ExamSettingsRequest;
 use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\SchoolClass;
@@ -25,7 +24,7 @@ class ExamController extends Controller
         $exams = $selectedSessionId
             ? Exam::with(['schoolClass', 'subject', 'questions'])
                 ->where('session_id', $selectedSessionId)
-                ->when($branchId, fn ($query) => $query->forBranch($branchId))
+                ->when($branchId, fn ($query) => $query->visibleToBranch($branchId))
                 ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
                 ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
                 ->latest()
@@ -37,11 +36,12 @@ class ExamController extends Controller
             'branches' => Branch::orderBy('name')->get(),
             'selectedBranchId' => $branchId,
             'selectedSessionId' => $selectedSessionId,
+            'selectedAcademicSession' => AcademicSessionResolver::selected($request),
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
-            'classes' => $branchId
-                ? SchoolClass::visibleToBranch($branchId)->orderBy('name')->get()
-                : collect(),
+            // Super Admin exams have no branch selection, so the Add Exam
+            // drawer's Grade field always offers the full grade list.
+            'classes' => SchoolClass::orderBy('name')->get(),
             'subjects' => Subject::orderBy('name')->get(),
             'filters' => $request->only(['search', 'status', 'branch_id']),
         ]);
@@ -52,11 +52,15 @@ class ExamController extends Controller
         $selectedSessionId = AcademicSessionResolver::selectedId($request);
         abort_if(! $selectedSessionId, 403, 'Please select an academic session first.');
 
-        Exam::create($request->validated() + [
+        // Super Admin exams have no branch selection: they are global and
+        // automatically available to every branch (Exam::isGlobal()).
+        $validated = $request->validated();
+        unset($validated['branch_id']);
+
+        Exam::create($validated + [
+            'branch_id' => null,
             'status' => Exam::STATUS_DRAFT,
-            'total_marks' => 0,
             'marks_per_question' => 1,
-            'duration_minutes' => 30,
             'session_id' => $selectedSessionId,
         ]);
 
@@ -81,7 +85,9 @@ class ExamController extends Controller
         return view('admin.exams.edit', [
             'selectedBranch' => $exam->branch,
             'exam' => $exam,
-            'classes' => SchoolClass::visibleToBranch($exam->branch_id)->orderBy('name')->get(),
+            'classes' => $exam->branch_id
+                ? SchoolClass::visibleToBranch($exam->branch_id)->orderBy('name')->get()
+                : SchoolClass::orderBy('name')->get(),
             'subjects' => Subject::orderBy('name')->get(),
         ]);
     }
@@ -94,14 +100,6 @@ class ExamController extends Controller
         $exam->update($request->validated());
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam updated successfully.');
-    }
-
-    public function updateSettings(ExamSettingsRequest $request, Exam $exam): RedirectResponse
-    {
-        $exam->update($request->validated());
-        $exam->recalculateTotalMarks();
-
-        return redirect()->route('admin.exams.show', $exam)->with('success', 'Exam settings updated successfully.');
     }
 
     public function updateCategory(ExamCategoryRequest $request, Exam $exam): RedirectResponse

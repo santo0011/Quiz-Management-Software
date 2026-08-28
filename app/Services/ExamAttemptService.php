@@ -20,12 +20,21 @@ class ExamAttemptService
         $inProgress = ExamAttempt::where('exam_id', $exam->id)
             ->where('student_id', $student->id)
             ->where('status', 'in_progress')
-            ->where('expires_at', '>', now())
             ->latest()
             ->first();
 
         if ($inProgress) {
-            return $inProgress;
+            if ($inProgress->expires_at->isFuture()) {
+                return $inProgress;
+            }
+
+            // The student never came back before time ran out (closed the
+            // tab, lost connection, etc.). Finalize/score it now instead of
+            // leaving it stuck as an orphaned attempt that was never
+            // submitted and so never counts toward results — the exam
+            // runner does the same lazy check whenever its state is
+            // fetched, this just covers the "tries to start again" path.
+            $inProgress = $this->submit($inProgress, $student);
         }
 
         $this->ensureStudentHasAttemptsRemaining($exam, $student);
@@ -57,6 +66,13 @@ class ExamAttemptService
                 'attempt_number' => $attemptNumber,
                 'started_at' => now(),
                 'expires_at' => $expiresAt,
+                // Set explicitly (matches the column default) rather than
+                // relying on it: the DB applies the default either way, but
+                // leaving it out means the returned model's in-memory
+                // `status` stays null until something re-fetches it — a trap
+                // for any same-request code that immediately acts on the
+                // attempt this call returns (e.g. saving an answer).
+                'status' => 'in_progress',
             ]);
         });
     }
@@ -170,7 +186,7 @@ class ExamAttemptService
             throw ValidationException::withMessages(['exam' => 'Your branch has been deactivated. Please contact your administrator.']);
         }
 
-        if ($exam->branch_id !== $student->branch_id || $exam->school_class_id !== $student->class_id) {
+        if (($exam->branch_id !== null && $exam->branch_id !== $student->branch_id) || $exam->school_class_id !== $student->class_id) {
             throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your class.']);
         }
 

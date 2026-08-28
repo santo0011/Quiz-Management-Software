@@ -99,6 +99,7 @@
                         'existingQuestions' => collect(),
                         'showExistingQuestions' => false,
                         'categories' => $categories,
+                        'useRichEditor' => false,
                     ])
                 </div>
             </div>
@@ -137,19 +138,21 @@
     @if ($categories->isNotEmpty() && ! $exam->hasBeenAttempted())
         @php($hasQuestions = $exam->questions->count() > 0)
         <section class="content-panel submit-panel">
-            <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#examSettingsModal" @disabled(!$hasQuestions)>
-                <i class="bi bi-check2-circle"></i>
-                Submit
-            </button>
             @if ($hasQuestions)
-                <p>Finished adding questions and summaries? Submit to set Duration &amp; Pass Marks and save the exam.</p>
+                <a href="{{ route('branch.exams.show', $exam) }}" class="btn btn-success btn-lg">
+                    <i class="bi bi-check2-circle"></i>
+                    Done
+                </a>
+                <p>Finished adding questions and summaries? Head back to the exam to review or publish it.</p>
             @else
-                <p class="text-danger">Add at least one question before you can submit this exam.</p>
+                <button type="button" class="btn btn-success btn-lg" disabled>
+                    <i class="bi bi-check2-circle"></i>
+                    Done
+                </button>
+                <p class="text-danger">Add at least one question before you can finish this exam.</p>
             @endif
         </section>
     @endif
-
-    @include('exams.partials.settings-modal', ['exam' => $exam, 'prefix' => 'branch'])
 
     @push('scripts')
         @include('questions.partials.default-category-script')

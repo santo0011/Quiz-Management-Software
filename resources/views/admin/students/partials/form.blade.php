@@ -50,6 +50,13 @@
             @endif
         </div>
         <div class="col-md-6">
+            <label for="guardian_email" class="form-label">Guardian Email</label>
+            <input id="guardian_email" type="email" name="guardian_email" value="{{ $useOldInput ? old('guardian_email', $student->guardian_email) : $student->guardian_email }}" class="form-control{{ $useOldInput && $errors->has('guardian_email') ? ' is-invalid' : '' }}" maxlength="255">
+            @if ($useOldInput)
+                @error('guardian_email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            @endif
+        </div>
+        <div class="col-md-6">
             <label for="class_id" class="form-label">Grade <span class="required-mark">*</span></label>
             <select id="class_id" name="class_id" class="form-select form-control{{ $useOldInput && $errors->has('class_id') ? ' is-invalid' : '' }}" required data-class-select data-selected-class="{{ $useOldInput ? old('class_id', $student->class_id) : $student->class_id }}">
                 <option value="">Select grade</option>

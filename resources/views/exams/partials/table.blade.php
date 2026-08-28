@@ -22,9 +22,13 @@
             </thead>
             <tbody>
                 @foreach ($exams as $exam)
+                    @php($canManage = $prefix === 'admin' || $exam->branch_id !== null)
                     <tr>
                         <td>
                             <strong>{{ $exam->title }}</strong>
+                            @if (! $exam->branch_id)
+                                <span class="badge text-bg-light border ms-1"><i class="bi bi-globe2"></i> All branches</span>
+                            @endif
                             <span class="table-subtext">{{ $exam->duration_minutes }} minutes</span>
                         </td>
                         <td>{{ $exam->schoolClass?->name }}</td>
@@ -32,7 +36,24 @@
                         <td>{{ $exam->questions_count ?? $exam->questions->count() }}</td>
                         <td>{{ $exam->total_marks }}</td>
                         <td>
-                            @if ($exam->isPublished())
+                            @if (! $canManage)
+                                @if ($exam->isPublished())
+                                    <span class="status-badge status-published">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        Published
+                                    </span>
+                                @elseif ($exam->status === 'closed')
+                                    <span class="status-badge status-closed">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                        Closed
+                                    </span>
+                                @else
+                                    <span class="status-badge status-draft-btn">
+                                        <i class="bi bi-rocket-takeoff"></i>
+                                        Draft
+                                    </span>
+                                @endif
+                            @elseif ($exam->isPublished())
                                 <form method="POST" action="{{ route($prefix.'.exams.unpublish', $exam) }}" data-unpublish-exam>
                                     @csrf
                                     <button type="submit" class="status-badge status-published" title="Click to unpublish this exam">
@@ -58,7 +79,11 @@
                         <td class="text-end">
                             <div class="action-group">
                                 <a href="{{ route($prefix.'.exams.show', $exam) }}" class="btn btn-sm btn-soft" title="View"><i class="bi bi-eye-fill"></i></a>
-                                @if (!$exam->hasBeenAttempted())
+                                @if (! $canManage)
+                                    <span class="publish-lock-hint" data-bs-toggle="tooltip" data-bs-title="Managed by the Super Admin.">
+                                        <i class="bi bi-globe2"></i>
+                                    </span>
+                                @elseif (!$exam->hasBeenAttempted())
                                     <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-sm btn-soft" title="Add Question"><i class="bi bi-patch-plus-fill"></i></a>
                                     <a href="{{ route($prefix.'.exams.edit', $exam) }}" class="btn btn-sm btn-soft" title="Edit"><i class="bi bi-pencil-fill"></i></a>
                                     <form method="POST" action="{{ route($prefix.'.exams.destroy', $exam) }}" data-confirm-delete>

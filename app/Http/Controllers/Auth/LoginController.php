@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Guardian;
 use App\Models\Student;
+use App\Models\Teacher;
 use App\Models\User;
 use App\Services\LoginOtpService;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +25,7 @@ class LoginController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
-            'login_type' => ['required', Rule::in(['super_admin', 'branch', 'student'])],
+            'login_type' => ['required', Rule::in(['super_admin', 'branch', 'student', 'guardian', 'teacher'])],
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ], [
@@ -39,6 +41,14 @@ class LoginController extends Controller
 
         if ($loginType === 'student') {
             return $this->loginStudent($request, $credentials);
+        }
+
+        if ($loginType === 'guardian') {
+            return $this->loginGuardian($request, $credentials);
+        }
+
+        if ($loginType === 'teacher') {
+            return $this->loginTeacher($request, $credentials);
         }
 
         $expectedRole = $loginType === 'super_admin' ? 'Super Admin' : 'Branch';
@@ -76,6 +86,14 @@ class LoginController extends Controller
             Auth::guard('student')->logout();
         }
 
+        if (Auth::guard('guardian')->check()) {
+            Auth::guard('guardian')->logout();
+        }
+
+        if (Auth::guard('teacher')->check()) {
+            Auth::guard('teacher')->logout();
+        }
+
         Auth::logout();
 
         $request->session()->invalidate();
@@ -105,6 +123,48 @@ class LoginController extends Controller
             }
 
             return $this->issueOtpAndRedirect($request, 'student', $student->email);
+        }
+
+        return back()
+            ->with('login_error', 'The password you entered is incorrect. Please try again.')
+            ->withInput($request->only('email', 'login_type'));
+    }
+
+    /**
+     * "Subsequent login" for a Guardian who already set a password (via
+     * GuardianPasswordController's first-time OTP flow). Every login still
+     * requires a fresh OTP, same as Student/Branch/Super Admin.
+     */
+    private function loginGuardian(Request $request, array $credentials): RedirectResponse
+    {
+        $guardian = Guardian::where('email', $credentials['email'])->first();
+
+        if ($guardian && $guardian->password && Hash::check($credentials['password'], $guardian->password)) {
+            return $this->issueOtpAndRedirect($request, 'guardian', $guardian->email);
+        }
+
+        return back()
+            ->with('login_error', 'The password you entered is incorrect. Please try again.')
+            ->withInput($request->only('email', 'login_type'));
+    }
+
+    /**
+     * Teacher accounts are created by their Branch with a password already
+     * set (emailed at creation time), so there is no first-time OTP/set
+     * password step here — just password + OTP, same as Guardian/Branch.
+     */
+    private function loginTeacher(Request $request, array $credentials): RedirectResponse
+    {
+        $teacher = Teacher::where('email', $credentials['email'])->first();
+
+        if ($teacher && Hash::check($credentials['password'], $teacher->password)) {
+            if ($teacher->branch && ! $teacher->branch->isActive()) {
+                return back()
+                    ->with('login_error', 'This branch has been deactivated. Please contact your administrator.')
+                    ->withInput($request->only('email', 'login_type'));
+            }
+
+            return $this->issueOtpAndRedirect($request, 'teacher', $teacher->email);
         }
 
         return back()

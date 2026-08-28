@@ -81,6 +81,61 @@ class StudentManagementTest extends TestCase
         ]);
     }
 
+    public function test_guardian_email_is_saved_when_provided(): void
+    {
+        [$branch, , $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
+
+        $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->post(route('branch.students.store'), $this->studentPayload([
+                'email' => 'guardian-email-student@example.com',
+                'guardian_email' => 'guardian@example.com',
+            ]))
+            ->assertRedirect(route('branch.students.index'));
+
+        $this->assertDatabaseHas('students', [
+            'email' => 'guardian-email-student@example.com',
+            'guardian_email' => 'guardian@example.com',
+        ]);
+    }
+
+    public function test_guardian_email_is_optional(): void
+    {
+        [, , $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
+
+        $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->post(route('branch.students.store'), $this->studentPayload([
+                'email' => 'no-guardian-email-student@example.com',
+            ]))
+            ->assertRedirect(route('branch.students.index'));
+
+        $this->assertDatabaseHas('students', [
+            'email' => 'no-guardian-email-student@example.com',
+            'guardian_email' => null,
+        ]);
+    }
+
+    public function test_guardian_email_must_be_a_valid_address(): void
+    {
+        [, , $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
+
+        $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->post(route('branch.students.store'), $this->studentPayload([
+                'email' => 'invalid-guardian-email-student@example.com',
+                'guardian_email' => 'not-an-email',
+            ]))
+            ->assertSessionHasErrors(['guardian_email' => 'Please enter a valid guardian email address.']);
+
+        $this->assertDatabaseMissing('students', [
+            'email' => 'invalid-guardian-email-student@example.com',
+        ]);
+    }
+
     public function test_super_admin_can_only_open_students_for_selected_branch(): void
     {
         [$branch, $otherBranch] = $this->makeBranches();

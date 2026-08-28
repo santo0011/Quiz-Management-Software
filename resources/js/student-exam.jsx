@@ -1,15 +1,55 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-const FONT_STEPS = [0.85, 1, 1.15, 1.3, 1.45];
+// 0.75 is the smallest step — still legible (Summary/Question text both stay
+// well above ~10.5px at that scale) but noticeably more compact than the
+// previous 0.85 floor for students who want more of the exam on screen.
+const FONT_STEPS = [0.75, 0.85, 1, 1.15, 1.3, 1.45];
 const FONT_STEP_STORAGE_KEY = 'quizcore.student.examFontStep';
 
+// Keep in sync with the $(max-width) breakpoint that switches the passage
+// layout to a single stacked column in admin.css.
+const PASSAGE_MOBILE_QUERY = '(max-width: 767.98px)';
+// Same value as .passage-resize-handle's flex-basis in admin.css.
+const PASSAGE_DIVIDER_WIDTH = 20;
+const PASSAGE_PANEL_MIN_FRACTION = 0.22;
+const PASSAGE_PANEL_MAX_FRACTION = 0.5;
+const PASSAGE_PANEL_DEFAULT_FRACTION = 0.38;
+
+function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+}
+
+function useMediaQuery(query) {
+    const [matches, setMatches] = useState(() => (
+        typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+            ? window.matchMedia(query).matches
+            : false
+    ));
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+        const mql = window.matchMedia(query);
+        const handleChange = (event) => setMatches(event.matches);
+        setMatches(mql.matches);
+        mql.addEventListener('change', handleChange);
+        return () => mql.removeEventListener('change', handleChange);
+    }, [query]);
+
+    return matches;
+}
+
 function loadStoredFontStep() {
+    // Stored as the actual scale value (e.g. "1.15"), not its array index —
+    // an index would silently point at the wrong step whenever FONT_STEPS
+    // changes shape (as it just did, adding a smaller step at the front).
+    const defaultIndex = FONT_STEPS.indexOf(1);
     try {
-        const stored = parseInt(window.localStorage.getItem(FONT_STEP_STORAGE_KEY), 10);
-        return Number.isInteger(stored) && stored >= 0 && stored < FONT_STEPS.length ? stored : 1;
+        const stored = parseFloat(window.localStorage.getItem(FONT_STEP_STORAGE_KEY));
+        const index = FONT_STEPS.indexOf(stored);
+        return index === -1 ? defaultIndex : index;
     } catch {
-        return 1;
+        return defaultIndex;
     }
 }
 
@@ -77,10 +117,115 @@ function QuestionOptions({ question, onSelect }) {
 
 function PassageStep({ step, questionNumbers, onSelect }) {
     const [collapsed, setCollapsed] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const isMobile = useMediaQuery(PASSAGE_MOBILE_QUERY);
+
+    const gridRef = useRef(null);
+    const panelRef = useRef(null);
+    // The current split ratio, kept in a ref (not state) so every pointer-move
+    // during a drag can update the panel's width directly via the DOM instead
+    // of going through a React re-render each time — that's what keeps the
+    // drag feeling as smooth as a native textarea resize handle.
+    const fractionRef = useRef(PASSAGE_PANEL_DEFAULT_FRACTION);
+    const rafRef = useRef(null);
+    const pendingClientXRef = useRef(null);
+
+    const applyPanelWidth = (fraction) => {
+        const grid = gridRef.current;
+        const panel = panelRef.current;
+        if (!grid || !panel) return;
+        const usableWidth = grid.clientWidth - PASSAGE_DIVIDER_WIDTH;
+        if (usableWidth <= 0) return;
+        panel.style.width = `${Math.round(usableWidth * fraction)}px`;
+    };
+
+    // Keep the split ratio (not the raw pixel width) stable across browser
+    // resizes, sidebar toggles, and text-size changes, and drop the inline
+    // width entirely once the layout collapses to the mobile single column.
+    useEffect(() => {
+        const panel = panelRef.current;
+        if (isMobile) {
+            if (panel) panel.style.width = '';
+            return;
+        }
+
+        applyPanelWidth(fractionRef.current);
+
+        const grid = gridRef.current;
+        if (!grid || typeof ResizeObserver === 'undefined') return;
+        const observer = new ResizeObserver(() => applyPanelWidth(fractionRef.current));
+        observer.observe(grid);
+        return () => observer.disconnect();
+    }, [isMobile]);
+
+    const commitPendingMove = () => {
+        rafRef.current = null;
+        const grid = gridRef.current;
+        if (!grid || pendingClientXRef.current === null) return;
+        const rect = grid.getBoundingClientRect();
+        const usableWidth = rect.width - PASSAGE_DIVIDER_WIDTH;
+        if (usableWidth <= 0) return;
+        const offsetX = pendingClientXRef.current - rect.left;
+        const fraction = clamp(offsetX / usableWidth, PASSAGE_PANEL_MIN_FRACTION, PASSAGE_PANEL_MAX_FRACTION);
+        fractionRef.current = fraction;
+        applyPanelWidth(fraction);
+    };
+
+    const handlePointerMove = (event) => {
+        const clientX = event.touches ? event.touches[0]?.clientX : event.clientX;
+        if (clientX === undefined) return;
+        if (event.cancelable) event.preventDefault();
+        pendingClientXRef.current = clientX;
+        // Coalesce rapid pointer-move events to one DOM write per animation
+        // frame instead of one per event, avoiding layout-thrashing jank.
+        if (rafRef.current === null) {
+            rafRef.current = window.requestAnimationFrame(commitPendingMove);
+        }
+    };
+
+    const stopDragging = () => {
+        setIsDragging(false);
+        document.body.classList.remove('is-resizing-panels');
+        window.removeEventListener('mousemove', handlePointerMove);
+        window.removeEventListener('mouseup', stopDragging);
+        window.removeEventListener('touchmove', handlePointerMove);
+        window.removeEventListener('touchend', stopDragging);
+        if (rafRef.current !== null) {
+            window.cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+        }
+    };
+
+    const startDragging = (event) => {
+        if (isMobile) return;
+        event.preventDefault();
+        setIsDragging(true);
+        document.body.classList.add('is-resizing-panels');
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', stopDragging);
+        window.addEventListener('touchmove', handlePointerMove, { passive: false });
+        window.addEventListener('touchend', stopDragging);
+    };
+
+    // Arrow-key resizing for keyboard/screen-reader users operating the
+    // divider as a standard ARIA "separator".
+    const handleDividerKeyDown = (event) => {
+        if (isMobile) return;
+        const step = event.shiftKey ? 0.08 : 0.02;
+        let next = null;
+        if (event.key === 'ArrowLeft') next = fractionRef.current - step;
+        if (event.key === 'ArrowRight') next = fractionRef.current + step;
+        if (next === null) return;
+        event.preventDefault();
+        fractionRef.current = clamp(next, PASSAGE_PANEL_MIN_FRACTION, PASSAGE_PANEL_MAX_FRACTION);
+        applyPanelWidth(fractionRef.current);
+    };
+
+    useEffect(() => () => stopDragging(), []);
 
     return (
-        <div className="passage-step-grid">
-            <aside className={collapsed ? 'passage-panel collapsed' : 'passage-panel'}>
+        <div ref={gridRef} className={`passage-step-grid ${isDragging ? 'is-resizing' : ''}`}>
+            <aside ref={panelRef} className={collapsed ? 'passage-panel collapsed' : 'passage-panel'}>
                 <div className="passage-panel-header">
                     <div>
                         <span className="passage-panel-eyebrow">
@@ -110,6 +255,24 @@ function PassageStep({ step, questionNumbers, onSelect }) {
                 </div>
             </aside>
 
+            {!isMobile && (
+                <div
+                    className="passage-resize-handle"
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Resize summary and question panels"
+                    aria-valuenow={Math.round(fractionRef.current * 100)}
+                    aria-valuemin={Math.round(PASSAGE_PANEL_MIN_FRACTION * 100)}
+                    aria-valuemax={Math.round(PASSAGE_PANEL_MAX_FRACTION * 100)}
+                    tabIndex={0}
+                    onMouseDown={startDragging}
+                    onTouchStart={startDragging}
+                    onKeyDown={handleDividerKeyDown}
+                >
+                    <span className="passage-resize-grip"></span>
+                </div>
+            )}
+
             <div className="passage-questions-column">
                 {step.questions.map((question) => (
                     <div className="passage-question-block" key={question.id}>
@@ -117,7 +280,7 @@ function PassageStep({ step, questionNumbers, onSelect }) {
                             <span>Question {questionNumbers[question.id]}</span>
                             <strong>{question.marks} marks</strong>
                         </div>
-                        <div className="exam-question-text math-content">{question.text}</div>
+                        <div className="exam-question-text math-content passage-preview" dangerouslySetInnerHTML={{ __html: question.text }} />
                         <QuestionOptions question={question} onSelect={onSelect} />
                     </div>
                 ))}
@@ -207,7 +370,7 @@ function StudentExamApp({ root }) {
 
     useEffect(() => {
         try {
-            window.localStorage.setItem(FONT_STEP_STORAGE_KEY, String(fontStepIndex));
+            window.localStorage.setItem(FONT_STEP_STORAGE_KEY, String(FONT_STEPS[fontStepIndex]));
         } catch {
             // Storage unavailable (private browsing, etc.) — the choice just
             // won't persist across reloads; the exam itself is unaffected.

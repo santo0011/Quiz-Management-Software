@@ -94,6 +94,7 @@
                 @include('admin.partials.change-password-form', [
                     'action' => route('admin.students.password.update', $studentRecord),
                     'fieldSuffix' => '_student_'.$studentRecord->id,
+                    'drawerId' => 'editStudentDrawer'.$studentRecord->id,
                 ])
                 </div>
             </div>

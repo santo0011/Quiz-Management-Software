@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AcademicSessionController;
 use App\Http\Controllers\Admin\AcademicSessionSelectionController;
+use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\BranchSelectionController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Admin\SchoolClassController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
 use App\Http\Controllers\Admin\SubjectController;
+use App\Http\Controllers\Auth\GuardianPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LoginOtpController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -29,6 +31,16 @@ use App\Http\Controllers\Branch\QuestionController as BranchQuestionController;
 use App\Http\Controllers\Branch\ResultController as BranchResultController;
 use App\Http\Controllers\Branch\SchoolClassController as BranchSchoolClassController;
 use App\Http\Controllers\Branch\StudentController as BranchStudentController;
+use App\Http\Controllers\Branch\TeacherController as BranchTeacherController;
+use App\Http\Controllers\Guardian\DashboardController as GuardianDashboardController;
+use App\Http\Controllers\Guardian\PasswordController as GuardianPasswordUpdateController;
+use App\Http\Controllers\Guardian\ProfileController as GuardianProfileController;
+use App\Http\Controllers\Guardian\StudentController as GuardianStudentController;
+use App\Http\Controllers\Teacher\AcademicSessionSelectionController as TeacherAcademicSessionSelectionController;
+use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
+use App\Http\Controllers\Teacher\PasswordController as TeacherPasswordUpdateController;
+use App\Http\Controllers\Teacher\ProfileController as TeacherProfileController;
+use App\Http\Controllers\Teacher\ResultController as TeacherResultController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\ExamApiController as StudentExamApiController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
@@ -41,10 +53,11 @@ Route::get('/', function () {
     return redirect($user ? RoleRedirector::dashboardUrl($user) : route('login'));
 });
 
-// Checked against both the web guard (Super Admin/Branch) and the student
-// guard, so an already-logged-in user of either kind is bounced to their own
-// dashboard instead of seeing the login/password-reset forms again.
-Route::middleware('guest:web,student')->group(function () {
+// Checked against the web guard (Super Admin/Branch), the student guard, the
+// guardian guard, and the teacher guard, so an already-logged-in user of any
+// kind is bounced to their own dashboard instead of seeing the login/
+// password-reset forms again.
+Route::middleware('guest:web,student,guardian,teacher')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.store');
     Route::get('/verify-login-otp', [LoginOtpController::class, 'show'])->name('login.otp');
@@ -60,13 +73,18 @@ Route::middleware('guest:web,student')->group(function () {
     Route::post('/student-login/send-otp', [StudentPasswordController::class, 'sendOtp'])->name('student-login.send-otp')->middleware('throttle:5,1');
     Route::post('/student-login/verify-otp', [StudentPasswordController::class, 'verifyOtp'])->name('student-login.verify-otp')->middleware('throttle:10,1');
     Route::post('/student-login/create-password', [StudentPasswordController::class, 'createPassword'])->name('student-login.create-password')->middleware('throttle:10,1');
+    Route::post('/guardian-login/check-email', [GuardianPasswordController::class, 'checkEmail'])->name('guardian-login.check-email')->middleware('throttle:20,1');
+    Route::post('/guardian-login/send-otp', [GuardianPasswordController::class, 'sendOtp'])->name('guardian-login.send-otp')->middleware('throttle:5,1');
+    Route::post('/guardian-login/verify-otp', [GuardianPasswordController::class, 'verifyOtp'])->name('guardian-login.verify-otp')->middleware('throttle:10,1');
+    Route::post('/guardian-login/create-password', [GuardianPasswordController::class, 'createPassword'])->name('guardian-login.create-password')->middleware('throttle:10,1');
 });
 
-Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:web,student')->name('logout');
+Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:web,student,guardian,teacher')->name('logout');
 
 Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::put('/password', [AdminPasswordController::class, 'update'])->name('password.update');
+    Route::put('/account/email', [AdminAccountController::class, 'updateEmail'])->name('account.email.update');
     Route::get('/branch-selection', [BranchSelectionController::class, 'index'])->name('branch-selection.index');
     Route::post('/branch-selection', [BranchSelectionController::class, 'store'])->name('branch-selection.store');
     Route::delete('/branch-selection', [BranchSelectionController::class, 'clear'])->name('branch-selection.clear');
@@ -93,7 +111,6 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::resource('exams', AdminExamController::class)->except(['store']);
     Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [AdminExamController::class, 'unpublish'])->name('exams.unpublish');
-    Route::put('/exams/{exam}/settings', [AdminExamController::class, 'updateSettings'])->name('exams.settings.update');
     Route::put('/exams/{exam}/category', [AdminExamController::class, 'updateCategory'])->name('exams.category.update');
     Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
     Route::get('/exams/{exam}/questions/create', [AdminQuestionController::class, 'create'])->name('questions.create');
@@ -128,6 +145,11 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     });
     Route::resource('students', BranchStudentController::class)->except(['create', 'store']);
     Route::post('/students/{student}/toggle-active', [BranchStudentController::class, 'toggleActive'])->name('students.toggle-active');
+    Route::get('/teachers', [BranchTeacherController::class, 'index'])->name('teachers.index');
+    Route::post('/teachers', [BranchTeacherController::class, 'store'])->name('teachers.store');
+    Route::put('/teachers/{teacher}', [BranchTeacherController::class, 'update'])->name('teachers.update');
+    Route::delete('/teachers/{teacher}', [BranchTeacherController::class, 'destroy'])->name('teachers.destroy');
+    Route::put('/teachers/{teacher}/password', [BranchTeacherController::class, 'updatePassword'])->name('teachers.password.update');
     Route::resource('question-categories', BranchQuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::middleware('require_academic_session:branch.exams.index')->group(function () {
         Route::post('/exams', [BranchExamController::class, 'store'])->name('exams.store');
@@ -135,7 +157,6 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     Route::resource('exams', BranchExamController::class)->except(['store']);
     Route::post('/exams/{exam}/publish', [BranchExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [BranchExamController::class, 'unpublish'])->name('exams.unpublish');
-    Route::put('/exams/{exam}/settings', [BranchExamController::class, 'updateSettings'])->name('exams.settings.update');
     Route::put('/exams/{exam}/category', [BranchExamController::class, 'updateCategory'])->name('exams.category.update');
     Route::get('/questions', [BranchQuestionController::class, 'index'])->name('questions.index');
     Route::get('/exams/{exam}/questions/create', [BranchQuestionController::class, 'create'])->name('questions.create');
@@ -169,4 +190,26 @@ Route::middleware(['auth:student', 'active', 'single_session'])->prefix('student
     Route::get('/profile', [StudentExamController::class, 'profile'])->name('profile');
     Route::get('/results', [StudentExamController::class, 'results'])->name('results.index');
     Route::get('/results/{attempt}', [StudentExamController::class, 'result'])->name('results.show');
+});
+
+Route::middleware(['auth:guardian', 'single_session'])->prefix('guardian')->name('guardian.')->group(function () {
+    Route::get('/dashboard', GuardianDashboardController::class)->name('dashboard');
+    Route::get('/profile', [GuardianProfileController::class, 'show'])->name('profile');
+    Route::get('/password', [GuardianPasswordUpdateController::class, 'edit'])->name('password.edit');
+    Route::put('/password', [GuardianPasswordUpdateController::class, 'update'])->name('password.update');
+    Route::get('/students/{student}', [GuardianStudentController::class, 'show'])->name('students.show');
+    Route::get('/students/{student}/results/{attempt}', [GuardianStudentController::class, 'result'])->name('students.results.show');
+    Route::get('/students/{student}/results/{attempt}/details', [GuardianStudentController::class, 'resultDetails'])->name('students.results.details');
+});
+
+Route::middleware(['auth:teacher', 'single_session'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/dashboard', TeacherDashboardController::class)->name('dashboard');
+    Route::post('/academic-session-selection', [TeacherAcademicSessionSelectionController::class, 'store'])->name('academic-session-selection.store');
+    Route::delete('/academic-session-selection', [TeacherAcademicSessionSelectionController::class, 'clear'])->name('academic-session-selection.clear');
+    Route::get('/profile', [TeacherProfileController::class, 'show'])->name('profile');
+    Route::get('/password', [TeacherPasswordUpdateController::class, 'edit'])->name('password.edit');
+    Route::put('/password', [TeacherPasswordUpdateController::class, 'update'])->name('password.update');
+    Route::get('/results', [TeacherResultController::class, 'index'])->name('results.index');
+    Route::get('/results/{attempt}', [TeacherResultController::class, 'show'])->name('results.show');
+    Route::post('/results/{attempt}/remark', [TeacherResultController::class, 'storeRemark'])->name('results.remark.store');
 });

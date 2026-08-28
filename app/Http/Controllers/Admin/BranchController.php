@@ -103,6 +103,7 @@ class BranchController extends Controller
     public function destroy(Branch $branch): RedirectResponse
     {
         $hasRelatedData = $branch->students()->exists()
+            || $branch->teachers()->exists()
             || $branch->classes()->exists()
             || $branch->exams()->exists()
             || $branch->exams()->whereHas('attempts')->exists()
@@ -126,7 +127,7 @@ class BranchController extends Controller
         ], [
             'password.required' => 'Please enter a new password.',
             'password.min' => 'Password must be at least 6 characters.',
-            'password.confirmed' => 'Password confirmation does not match.',
+            'password.confirmed' => 'Passwords do not match.',
         ]);
 
         abort_if(! $branch->user, 404, 'This branch has no linked login account.');

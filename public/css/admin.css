@@ -1846,25 +1846,172 @@ body {
     padding: 28px;
 }
 
+.unified-login-shell {
+    display: flex;
+    align-items: stretch;
+    width: min(100%, 880px);
+    background: #fff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(20, 32, 54, .16);
+    border: 1px solid var(--line);
+}
+
+.login-hero {
+    position: relative;
+    flex: 0 0 420px;
+    padding: 38px 40px;
+    background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 55%, var(--accent) 130%);
+    color: #fff;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.login-hero-glow {
+    position: absolute;
+    top: -35%;
+    right: -20%;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, .18), transparent 70%);
+    pointer-events: none;
+}
+
+.login-hero-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+}
+
+.login-hero .login-brand {
+    margin-bottom: 26px;
+}
+
+.login-hero .brand-mark {
+    background: rgba(255, 255, 255, .16);
+    color: #fff;
+}
+
+.login-hero .login-brand strong {
+    color: #fff;
+}
+
+.login-hero .login-brand span {
+    color: rgba(255, 255, 255, .72);
+}
+
+.login-hero-title {
+    font-size: 1.36rem;
+    font-weight: 850;
+    line-height: 1.28;
+    margin: 0 0 8px;
+}
+
+.login-hero-subtitle {
+    color: rgba(255, 255, 255, .78);
+    font-size: .86rem;
+    line-height: 1.5;
+    margin: 0 0 22px;
+}
+
+.login-hero-role-select {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.login-hero-role-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    padding: 9px 10px;
+    text-align: left;
+    color: #fff;
+    cursor: pointer;
+    transition: background .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+.login-hero-role-btn:hover {
+    background: rgba(255, 255, 255, .08);
+}
+
+.login-hero-role-btn.active {
+    background: rgba(255, 255, 255, .16);
+    border-color: rgba(255, 255, 255, .28);
+    box-shadow: 0 10px 24px rgba(9, 20, 45, .18);
+}
+
+.login-hero-role-icon {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .14);
+    display: grid;
+    place-items: center;
+    font-size: .98rem;
+    transition: background .16s ease;
+}
+
+.login-hero-role-btn.active .login-hero-role-icon {
+    background: rgba(255, 255, 255, .24);
+}
+
+.login-hero-role-copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.login-hero-role-copy strong {
+    font-size: .9rem;
+    font-weight: 800;
+}
+
+.login-hero-role-copy span {
+    font-size: .78rem;
+    color: rgba(255, 255, 255, .7);
+}
+
+.login-hero-role-arrow {
+    flex: 0 0 auto;
+    font-size: .85rem;
+    color: rgba(255, 255, 255, .55);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity .16s ease, transform .16s ease;
+}
+
+.login-hero-role-btn.active .login-hero-role-arrow,
+.login-hero-role-btn:hover .login-hero-role-arrow {
+    opacity: 1;
+    transform: translateX(0);
+}
+
 .unified-login-panel {
-    width: min(100%, 520px);
-    padding: 30px;
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 34px 44px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .login-brand-wide {
     padding-bottom: 18px;
     border-bottom: 1px solid var(--line);
-}
-
-.login-type-selector {
-    margin: 22px 0 24px;
-    padding: 5px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #f8fafc;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
 }
 
 .login-type-option {
@@ -1887,8 +2034,48 @@ body {
     box-shadow: 0 10px 24px rgba(35, 86, 216, .22);
 }
 
+.login-type-selector-mobile {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    margin: 0 0 18px;
+    padding: 4px;
+    border-radius: 12px;
+    background: #eef3f8;
+    border: 1px solid var(--line);
+    scrollbar-width: none;
+}
+
+.login-type-selector-mobile::-webkit-scrollbar {
+    display: none;
+}
+
+.login-type-selector-mobile .login-type-option {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    min-width: 92px;
+    min-height: 42px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    line-height: 1.1;
+    white-space: normal;
+    text-align: center;
+}
+
+.login-type-selector-mobile .login-type-option i {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
 .login-heading {
-    margin-bottom: 22px;
+    margin-bottom: 16px;
 }
 
 .login-heading span {
@@ -1907,14 +2094,15 @@ body {
 }
 
 .login-panel h1 {
-    font-size: 2rem;
+    font-size: 1.55rem;
     font-weight: 850;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
 }
 
 .login-panel p {
     color: var(--muted);
-    margin-bottom: 26px;
+    font-size: .9rem;
+    margin-bottom: 18px;
 }
 
 .auth-link {
@@ -1959,7 +2147,7 @@ body {
 }
 
 .login-form-row {
-    margin: 2px 0 22px;
+    margin: 2px 0 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1967,12 +2155,37 @@ body {
 }
 
 .login-submit {
-    min-height: 50px;
+    min-height: 46px;
+}
+
+.login-form .mb-3 {
+    margin-bottom: 14px;
 }
 
 .auth-link:hover {
     color: var(--primary-dark);
     text-decoration: underline;
+}
+
+/* Unified login page: below the lg breakpoint the hero panel (hidden via
+   d-none d-lg-flex in the markup) collapses out entirely, so the shell
+   becomes a single centered card sized for a comfortable one-column form. */
+@media (max-width: 991.98px) {
+    .unified-login-wrap {
+        padding: 20px 16px;
+    }
+
+    .unified-login-shell {
+        width: 100%;
+        max-width: 440px;
+        margin: 0 auto;
+    }
+
+    .unified-login-panel {
+        max-width: none;
+        margin: 0;
+        padding: 28px 26px;
+    }
 }
 
 @media (max-width: 991.98px) {
@@ -2112,10 +2325,9 @@ body {
         padding: 12px;
     }
 
-    .login-panel,
-    .unified-login-panel {
+    .login-panel {
         width: 100%;
-        max-width: 430px;
+        max-width: 400px;
         border-radius: 14px;
         padding: 18px;
         box-shadow: 0 16px 40px rgba(20, 32, 54, 0.12);
@@ -2123,6 +2335,14 @@ body {
 
     .unified-login-wrap {
         padding: 12px;
+    }
+
+    .unified-login-shell {
+        max-width: 400px;
+    }
+
+    .unified-login-panel {
+        padding: 22px 20px;
     }
 
     .login-brand {
@@ -2147,40 +2367,6 @@ body {
 
     .login-brand span {
         font-size: 0.76rem;
-    }
-
-    .login-type-selector {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 4px;
-        margin: 14px 0 16px;
-        padding: 4px;
-        border-radius: 12px;
-        background: #eef3f8;
-    }
-
-    .login-type-option {
-        min-width: 0;
-        min-height: 42px;
-        flex-direction: column;
-        justify-content: center;
-        gap: 3px;
-        padding: 6px 4px;
-        border-radius: 10px;
-        font-size: 0.72rem;
-        line-height: 1.1;
-        white-space: normal;
-        text-align: center;
-    }
-
-    .login-type-option i {
-        font-size: 0.95rem;
-        line-height: 1;
-    }
-
-    .login-type-option.active {
-        background: #2356d8;
-        color: #fff;
-        box-shadow: 0 8px 18px rgba(35, 86, 216, 0.24);
     }
 
     .login-heading {
@@ -2330,11 +2516,6 @@ body {
     .login-panel,
     .unified-login-panel {
         padding: 14px;
-    }
-
-    .login-type-option {
-        min-height: 40px;
-        font-size: 0.68rem;
     }
 
     .auth-inline-link {
@@ -3086,6 +3267,20 @@ body {
     line-height: 1.55;
 }
 
+/* Question text renders as rich HTML (same CKEditor as Summaries) via
+   .passage-preview for its paragraph/image/table styling, but .passage-preview
+   also carries its own fixed padding and font-size (meant for a standalone
+   boxed preview elsewhere). Both rules have equal (single-class) specificity,
+   so without this compound override .passage-preview's fixed 0.94rem would
+   win on source order alone and the Text Size control would silently stop
+   affecting Questions (including Questions under a Summary, which use this
+   same class combination) while still working on the Summary panel. */
+.exam-question-text.passage-preview {
+    padding: 0;
+    font-size: calc(1.18rem * var(--exam-font-scale, 1));
+    line-height: 1.55;
+}
+
 /* Anti-copy protection: applies to every element inside the exam runner
    (question text, passage/summary content, MCQ options, palette, etc.).
    Scoped to .exam-runner-shell, which only renders while a student is
@@ -3149,15 +3344,20 @@ body {
     overflow-wrap: anywhere;
 }
 
-/* Passage/Summary question group — student exam runner */
+/* Passage/Summary question group — student exam runner.
+   Flex (not grid) so the Summary panel's width can be driven imperatively
+   by the resize-handle drag logic in student-exam.jsx: the panel gets an
+   explicit inline pixel width (flex: 0 0 auto so it never grows/shrinks on
+   its own), the handle is a fixed-width column, and the questions column
+   fills whatever space is left (flex: 1 1 0%). */
 .passage-step-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
-    gap: 24px;
-    align-items: start;
+    display: flex;
+    align-items: flex-start;
 }
 
 .passage-panel {
+    flex: 0 0 auto;
+    width: 38%;
     /* .admin-topbar (min-height: 88px) is sticky within the same scroll
        container (.admin-main) that this panel scrolls inside, so "top" and
        "max-height" both need to clear it — otherwise this panel slides up
@@ -3270,6 +3470,8 @@ body {
 }
 
 .passage-questions-column {
+    flex: 1 1 0%;
+    min-width: 0;
     display: grid;
     gap: 26px;
 }
@@ -3288,16 +3490,118 @@ body {
     display: none;
 }
 
+/* Draggable divider between the Summary and Question/Answer panels — same
+   idea as a textarea's resize grip, but full-height and mouse/touch/keyboard
+   operable. Width must match PASSAGE_DIVIDER_WIDTH in student-exam.jsx. */
+.passage-resize-handle {
+    flex: 0 0 20px;
+    width: 20px;
+    align-self: stretch;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: col-resize;
+    touch-action: none;
+}
+
+.passage-resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+    background: rgba(23, 32, 51, 0.12);
+    border-radius: 2px;
+    transition: background-color 0.15s ease, width 0.15s ease;
+}
+
+.passage-resize-grip {
+    position: relative;
+    z-index: 1;
+    width: 16px;
+    height: 34px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid rgba(23, 32, 51, 0.14);
+    box-shadow: 0 4px 10px rgba(23, 32, 51, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.passage-resize-grip::before,
+.passage-resize-grip::after {
+    content: '';
+    width: 2px;
+    height: 14px;
+    border-radius: 2px;
+    background: rgba(23, 32, 51, 0.28);
+}
+
+.passage-resize-handle:hover::before,
+.passage-resize-handle:focus-visible::before,
+.passage-step-grid.is-resizing .passage-resize-handle::before {
+    background: var(--accent, #0f9f8f);
+    width: 3px;
+}
+
+.passage-resize-handle:hover .passage-resize-grip,
+.passage-resize-handle:focus-visible .passage-resize-grip,
+.passage-step-grid.is-resizing .passage-resize-grip {
+    border-color: var(--accent, #0f9f8f);
+    box-shadow: 0 6px 14px rgba(15, 159, 143, 0.25);
+    transform: scaleX(1.1);
+}
+
+.passage-resize-handle:focus-visible {
+    outline: none;
+}
+
+/* While actively dragging, disable transitions/text-selection so the panel
+   tracks the pointer immediately instead of easing/selecting text underneath
+   fast mouse movement. */
+.passage-step-grid.is-resizing .passage-panel,
+.passage-step-grid.is-resizing .passage-questions-column {
+    user-select: none;
+}
+
+body.is-resizing-panels {
+    cursor: col-resize;
+    user-select: none;
+}
+
+body.is-resizing-panels * {
+    cursor: col-resize !important;
+}
+
 @media (max-width: 767.98px) {
     .passage-step-grid {
-        grid-template-columns: 1fr;
+        flex-direction: column;
         gap: 16px;
+    }
+
+    /* The drag-resize divider is JS-disabled below this breakpoint
+       (student-exam.jsx doesn't render it at all); this is a pure fallback
+       in case it's ever present in the DOM anyway. */
+    .passage-resize-handle {
+        display: none;
     }
 
     .passage-panel {
         position: static;
         max-height: none;
         padding: 16px 18px;
+        width: 100% !important;
+        flex-basis: auto;
+    }
+
+    .passage-questions-column {
+        flex-basis: auto;
     }
 
     /* Once the passage panel goes full-width (stacked above its questions
@@ -4038,6 +4342,15 @@ body {
     color: var(--ink);
 }
 
+/* Question text now renders as rich HTML (same CKEditor as Summaries) via
+   .passage-preview for its paragraph/image/table styling, but that class's
+   own padding is meant for a standalone boxed preview — here it already
+   sits inside .question-item-header's padding, so reset it to avoid a
+   double-indent against the badges/marks row above it. */
+.question-item-text.passage-preview {
+    padding: 0;
+}
+
 /* Student Result Details only: this markup (.question-item-text etc.) is
    shared with the Admin/Branch result-review page via the same
    answer-item partial, so scope to .student-content — the Student Panel's
@@ -4661,7 +4974,7 @@ form .status-badge.status-published:hover {
 }
 
 .login-panel h1 {
-    font-size: 1.7rem;
+    font-size: 1.55rem;
 }
 
 .exam-hero-title {
@@ -4697,6 +5010,8 @@ form .status-badge.status-published:hover {
 .student-profile-top-actions {
     display: flex;
     justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
     margin-bottom: 12px;
 }
 
@@ -6483,6 +6798,13 @@ form .status-badge.status-published:hover {
         line-height: 1.45;
     }
 
+    /* Same specificity fix as the desktop rule above — keeps this breakpoint's
+       font-size winning over .passage-preview's fixed 0.94rem. */
+    .exam-question-text.passage-preview {
+        font-size: calc(1rem * var(--exam-font-scale, 1));
+        line-height: 1.45;
+    }
+
     .exam-toolbar {
         padding: 12px;
         gap: 12px;
@@ -6752,5 +7074,211 @@ form .status-badge.status-published:hover {
     .math-tool-btn {
         min-height: 32px;
         font-size: 0.78rem;
+    }
+}
+
+/* ==========================================================================
+   Guardian Panel — "My Students" dashboard cards + the multi-student switcher
+   shown on a Student's profile/result pages. Built from the same tokens as
+   the rest of the app (--primary/--accent/--ink, the shared card shadow) so
+   it reads as one system alongside the Admin/Branch/Student panels.
+   ========================================================================== */
+.guardian-student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px;
+}
+
+.guardian-student-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid rgba(23, 32, 51, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(23, 32, 51, 0.055);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.guardian-student-card:hover,
+.guardian-student-card:focus-visible {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px rgba(23, 32, 51, 0.1);
+    border-color: rgba(35, 86, 216, 0.3);
+    color: inherit;
+}
+
+.guardian-student-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.guardian-student-card-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+}
+
+.guardian-student-card-arrow {
+    color: var(--muted);
+    font-size: 1.1rem;
+    transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.guardian-student-card:hover .guardian-student-card-arrow {
+    transform: translateX(3px);
+    color: var(--primary);
+}
+
+.guardian-student-card h3 {
+    margin: 0;
+    font-size: 1.08rem;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.guardian-student-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.86rem;
+    color: var(--muted);
+}
+
+.guardian-student-card-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.guardian-student-card-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(23, 32, 51, 0.12);
+}
+
+.guardian-student-card-stats strong {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.guardian-student-card-stats span {
+    font-size: 0.76rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.guardian-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid rgba(23, 32, 51, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(23, 32, 51, 0.055);
+}
+
+.guardian-switcher-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    flex: 0 0 auto;
+}
+
+.guardian-switcher-list {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    flex: 1 1 auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.guardian-switcher-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px 8px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(23, 32, 51, 0.1);
+    background: #fbfcfe;
+    text-decoration: none;
+    color: inherit;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.guardian-switcher-pill:hover,
+.guardian-switcher-pill:focus-visible {
+    border-color: rgba(35, 86, 216, 0.35);
+    color: inherit;
+}
+
+.guardian-switcher-pill.active {
+    background: linear-gradient(135deg, rgba(35, 86, 216, 0.1), rgba(15, 159, 143, 0.1));
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(35, 86, 216, 0.12);
+}
+
+.guardian-switcher-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 0.82rem;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    flex: 0 0 auto;
+}
+
+.guardian-switcher-pill strong {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.25;
+}
+
+.guardian-switcher-pill small {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.2;
+}
+
+@media (max-width: 576px) {
+    .guardian-student-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .guardian-switcher {
+        flex-direction: column;
+        align-items: stretch;
     }
 }

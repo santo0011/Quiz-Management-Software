@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Support\RoleRedirector;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,6 +21,12 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withSchedule(function (Schedule $schedule): void {
+        // Safety net for exam attempts whose time ran out while the
+        // student was away and never touched the exam runner again to
+        // trigger its own lazy expiry check.
+        $schedule->command('exams:submit-expired')->everyMinute();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => EnsureUserHasRole::class,

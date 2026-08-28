@@ -1,6 +1,9 @@
 @php($prefix = $prefix ?? 'admin')
 @php($optionValues = old('options', $question->exists ? $question->options->pluck('option_text')->all() : ['', '', '', '']))
 @php($correctIndex = old('correct_option', $question->exists ? max(0, $question->options->values()->search(fn ($option) => $option->is_correct)) : 0))
+{{-- Only questions that belong to a Summary/Passage use the rich-text
+     (CKEditor) editor; standalone questions keep the plain math-editor. --}}
+@php($useRichEditor = $question->passage_group_id !== null)
 
 <form method="POST" action="{{ $action }}" class="admin-form question-form" data-question-form>
     @csrf
@@ -20,16 +23,27 @@
         <div class="question-card-body">
             <div class="mb-3">
                 <label for="question_text" class="form-label">Question Text <span class="required-mark">*</span></label>
-                @include('partials.math-editor', [
-                    'mathId' => 'question_text',
-                    'mathName' => 'question_text',
-                    'mathValue' => old('question_text', $question->question_text),
-                    'mathPlaceholder' => 'Enter question text or math expression...',
-                    'mathRows' => 3,
-                    'mathRequired' => true,
-                    'mathClass' => $errors->has('question_text') ? 'is-invalid' : '',
-                ])
-                <div class="form-text">Use the toolbar or type LaTeX like <code>\sqrt{25}</code>, <code>x^2 + 2x + 1</code>, or <code>\frac{a}{b}</code>.</div>
+                @if ($useRichEditor)
+                    @include('partials.summary-editor', [
+                        'mathId' => 'question_text',
+                        'mathName' => 'question_text',
+                        'mathValue' => old('question_text', $question->question_text),
+                        'mathPlaceholder' => 'Enter the question text...',
+                        'mathRows' => 3,
+                        'mathClass' => $errors->has('question_text') ? 'is-invalid' : '',
+                    ])
+                @else
+                    @include('partials.math-editor', [
+                        'mathId' => 'question_text',
+                        'mathName' => 'question_text',
+                        'mathValue' => old('question_text', $question->question_text),
+                        'mathPlaceholder' => 'Enter question text or math expression...',
+                        'mathRows' => 3,
+                        'mathRequired' => true,
+                        'mathClass' => $errors->has('question_text') ? 'is-invalid' : '',
+                    ])
+                    <div class="form-text">Use the toolbar or type LaTeX like <code>\sqrt{25}</code>, <code>x^2 + 2x + 1</code>, or <code>\frac{a}{b}</code>.</div>
+                @endif
                 @error('question_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 

@@ -61,7 +61,7 @@
                                         {{ $schoolClass->branch?->name }}
                                     @endif
                                 </td>
-                                <td>{{ $schoolClass->created_at->format('d M Y, h:i A') }}</td>
+                                <td>{{ $schoolClass->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">
                                         <!-- <a href="{{ route('admin.classes.show', $schoolClass) }}" class="btn btn-sm btn-soft" title="View">

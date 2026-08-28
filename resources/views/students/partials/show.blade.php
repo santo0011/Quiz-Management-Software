@@ -120,6 +120,15 @@
         </div>
         <div class="student-detail-item">
             <div class="student-detail-icon">
+                <i class="bi bi-envelope-heart-fill"></i>
+            </div>
+            <div>
+                <dt>Guardian Email</dt>
+                <dd>{{ $student->guardian_email ?? '—' }}</dd>
+            </div>
+        </div>
+        <div class="student-detail-item">
+            <div class="student-detail-icon">
                 <i class="bi bi-people-fill"></i>
             </div>
             <div>

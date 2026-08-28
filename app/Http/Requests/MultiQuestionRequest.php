@@ -3,11 +3,38 @@
 namespace App\Http\Requests;
 
 use App\Models\Exam;
+use App\Support\HtmlSanitizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class MultiQuestionRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        // Only questions being added under a Summary/Passage use the rich-text
+        // (CKEditor) editor and need their HTML sanitized before storage.
+        // Standalone questions ("Add Another Question") use the plain
+        // math-editor and are rendered escaped as plain text, same as before
+        // CKEditor existed, so their text is left untouched here.
+        if (! $this->route('passageGroup')) {
+            return;
+        }
+
+        $questions = $this->input('questions');
+
+        if (! is_array($questions)) {
+            return;
+        }
+
+        foreach ($questions as $index => $question) {
+            if (is_array($question) && array_key_exists('question_text', $question)) {
+                $questions[$index]['question_text'] = HtmlSanitizer::sanitize($question['question_text']);
+            }
+        }
+
+        $this->merge(['questions' => $questions]);
+    }
+
     public function authorize(): bool
     {
         $exam = $this->route('exam');

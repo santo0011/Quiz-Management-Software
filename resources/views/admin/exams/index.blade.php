@@ -63,6 +63,7 @@
                     'action' => route('admin.exams.store'),
                     'method' => 'POST',
                     'button' => 'Save Exam',
+                    'drawerId' => 'addExamDrawer',
                 ])
             </div>
         </div>

@@ -1,4 +1,6 @@
 @php($fieldSuffix = $fieldSuffix ?? '')
+@php($useOldInput = isset($drawerId) ? old('_drawer') === $drawerId : true)
+@php($hasPasswordError = $useOldInput && $errors->has('password'))
 
 <section class="exam-form-section change-password-card mt-4">
     <div class="exam-form-section-title">
@@ -12,15 +14,25 @@
     <form method="POST" action="{{ $action }}" class="password-change-form">
         @csrf
         @method('PUT')
+        @isset($drawerId)
+            <input type="hidden" name="_drawer" value="{{ $drawerId }}">
+        @endisset
+
+        @if ($hasPasswordError)
+            <div class="feedback-alert mb-3">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>{{ $errors->first('password') }}</span>
+            </div>
+        @endif
 
         <div class="row g-3">
             <div class="col-md-6">
                 <label for="password{{ $fieldSuffix }}" class="form-label">New Password <span class="required-mark">*</span></label>
-                <input id="password{{ $fieldSuffix }}" type="password" name="password" class="form-control" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters">
+                <input id="password{{ $fieldSuffix }}" type="password" name="password" class="form-control{{ $hasPasswordError ? ' is-invalid' : '' }}" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters">
             </div>
             <div class="col-md-6">
                 <label for="password_confirmation{{ $fieldSuffix }}" class="form-label">Confirm Password <span class="required-mark">*</span></label>
-                <input id="password_confirmation{{ $fieldSuffix }}" type="password" name="password_confirmation" class="form-control" required minlength="6" autocomplete="new-password" placeholder="Re-enter password">
+                <input id="password_confirmation{{ $fieldSuffix }}" type="password" name="password_confirmation" class="form-control{{ $hasPasswordError ? ' is-invalid' : '' }}" required minlength="6" autocomplete="new-password" placeholder="Re-enter password">
             </div>
         </div>
 

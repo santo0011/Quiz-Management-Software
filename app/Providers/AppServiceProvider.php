@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Services\AcademicSessionResolver;
 use App\Services\SingleSessionService;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -35,18 +36,56 @@ class AppServiceProvider extends ServiceProvider
         $this->applyStoredMailSettings();
         $this->registerSingleSessionOnRememberLogin();
         $this->shareAcademicSessionWithNavbar();
+        $this->blockDestructiveArtisanCommandsInProduction();
+    }
+
+    /**
+     * Hard safety net for live data: these commands drop/rebuild the entire
+     * schema (or wipe every table), destroying every Student, Exam,
+     * Question, Result, Session, Grade, and Subject in the database. Laravel
+     * already asks for interactive confirmation on "production", but a
+     * `--force` flag (routine in deploy scripts) silently skips that prompt
+     * — this listener refuses to run them at all when APP_ENV=production,
+     * with no way to override via a flag. Anything short of these (plain
+     * `migrate`, `migrate:rollback`, `db:seed`) is left alone: normal
+     * forward migrations only add/alter, never drop existing data (see the
+     * migration review in DEPLOYMENT.md), and rollback is sometimes a
+     * legitimate way to undo a migration that hasn't shipped yet.
+     *
+     * Throws rather than calling exit(): a real `php artisan <cmd>`
+     * invocation runs through Symfony Console's exception-catching run
+     * loop, so this still prints cleanly and exits non-zero — but unlike
+     * exit(), it doesn't kill the whole PHP process, so it can't take down
+     * an in-process caller (Artisan::call(), or a test run) with it.
+     */
+    private function blockDestructiveArtisanCommandsInProduction(): void
+    {
+        Event::listen(CommandStarting::class, function (CommandStarting $event): void {
+            $blocked = ['migrate:fresh', 'migrate:refresh', 'migrate:reset', 'db:wipe'];
+
+            if (! $this->app->environment('production') || ! in_array($event->command, $blocked, true)) {
+                return;
+            }
+
+            throw new \RuntimeException(
+                "BLOCKED: \"{$event->command}\" is disabled in production. This command drops or wipes existing tables — ".
+                'it would permanently delete every Student, Exam, Question, Result, and other live record. Run it against '.
+                'a local/staging database instead. If production data genuinely needs to be reset, do that manually and '.
+                'deliberately outside of this application.'
+            );
+        });
     }
 
     /**
      * The navbar's Academic Session dropdown is rendered from
-     * layouts.admin/layouts.branch, which are included by every Admin/Branch
-     * page — sharing the data via a composer avoids threading it through
-     * every controller individually.
+     * layouts.admin/layouts.branch/layouts.teacher, which are included by
+     * every Admin/Branch/Teacher page — sharing the data via a composer
+     * avoids threading it through every controller individually.
      */
     private function shareAcademicSessionWithNavbar(): void
     {
-        View::composer(['layouts.admin', 'layouts.branch'], function ($view): void {
-            if (! Schema::hasTable('academic_sessions') || ! Auth::guard('web')->check()) {
+        View::composer(['layouts.admin', 'layouts.branch', 'layouts.teacher'], function ($view): void {
+            if (! Schema::hasTable('academic_sessions') || (! Auth::guard('web')->check() && ! Auth::guard('teacher')->check())) {
                 $view->with(['academicSessions' => collect(), 'selectedAcademicSession' => null]);
 
                 return;

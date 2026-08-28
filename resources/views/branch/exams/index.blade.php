@@ -55,6 +55,7 @@
                     'action' => route('branch.exams.store'),
                     'method' => 'POST',
                     'button' => 'Save Exam',
+                    'drawerId' => 'addExamDrawer',
                 ])
             </div>
         </div>
