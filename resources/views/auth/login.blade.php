@@ -12,8 +12,68 @@
 @php($selectedType = old('login_type', 'super_admin'))
 <body class="login-body">
     <main class="login-wrap unified-login-wrap">
+        <div class="unified-login-shell">
+            <aside class="login-hero d-none d-lg-flex">
+                <div class="login-hero-glow"></div>
+                <div class="login-hero-inner">
+                    <div class="login-brand">
+                        <div class="brand-mark">Q</div>
+                        <div>
+                            <strong>QuizCore</strong>
+                            <span>Quiz Management Software</span>
+                        </div>
+                    </div>
+
+                    <h2 class="login-hero-title">One secure sign-in for everyone.</h2>
+                    <p class="login-hero-subtitle">Select your role to continue.</p>
+
+                    <div class="login-hero-role-select" role="tablist" aria-label="Login type">
+                        <button type="button" class="login-hero-role-btn" data-login-type-button="super_admin" role="tab">
+                            <span class="login-hero-role-icon"><i class="bi bi-shield-lock-fill"></i></span>
+                            <span class="login-hero-role-copy">
+                                <strong>Super Admin</strong>
+                                <span>Full system control</span>
+                            </span>
+                            <i class="bi bi-chevron-right login-hero-role-arrow"></i>
+                        </button>
+                        <button type="button" class="login-hero-role-btn" data-login-type-button="branch" role="tab">
+                            <span class="login-hero-role-icon"><i class="bi bi-building-fill"></i></span>
+                            <span class="login-hero-role-copy">
+                                <strong>Branch</strong>
+                                <span>Manage your center</span>
+                            </span>
+                            <i class="bi bi-chevron-right login-hero-role-arrow"></i>
+                        </button>
+                        <button type="button" class="login-hero-role-btn" data-login-type-button="student" role="tab">
+                            <span class="login-hero-role-icon"><i class="bi bi-mortarboard-fill"></i></span>
+                            <span class="login-hero-role-copy">
+                                <strong>Student</strong>
+                                <span>Take exams &amp; view results</span>
+                            </span>
+                            <i class="bi bi-chevron-right login-hero-role-arrow"></i>
+                        </button>
+                        <button type="button" class="login-hero-role-btn" data-login-type-button="teacher" role="tab">
+                            <span class="login-hero-role-icon"><i class="bi bi-person-workspace"></i></span>
+                            <span class="login-hero-role-copy">
+                                <strong>Teacher</strong>
+                                <span>Review results &amp; add remarks</span>
+                            </span>
+                            <i class="bi bi-chevron-right login-hero-role-arrow"></i>
+                        </button>
+                        <button type="button" class="login-hero-role-btn" data-login-type-button="guardian" role="tab">
+                            <span class="login-hero-role-icon"><i class="bi bi-person-heart"></i></span>
+                            <span class="login-hero-role-copy">
+                                <strong>Guardian</strong>
+                                <span>Track your child's progress</span>
+                            </span>
+                            <i class="bi bi-chevron-right login-hero-role-arrow"></i>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
         <section class="login-panel unified-login-panel">
-            <div class="login-brand login-brand-wide">
+            <div class="login-brand login-brand-wide d-lg-none">
                 <div class="brand-mark">Q</div>
                 <div>
                     <strong>QuizCore</strong>
@@ -21,7 +81,7 @@
                 </div>
             </div>
 
-            <div class="login-type-selector" role="tablist" aria-label="Login type">
+            <div class="login-type-selector-mobile d-lg-none" role="tablist" aria-label="Login type">
                 <button type="button" class="login-type-option" data-login-type-button="super_admin" role="tab">
                     <i class="bi bi-shield-lock-fill"></i>
                     <span>Super Admin</span>
@@ -33,6 +93,14 @@
                 <button type="button" class="login-type-option" data-login-type-button="student" role="tab">
                     <i class="bi bi-mortarboard-fill"></i>
                     <span>Student</span>
+                </button>
+                <button type="button" class="login-type-option" data-login-type-button="teacher" role="tab">
+                    <i class="bi bi-person-workspace"></i>
+                    <span>Teacher</span>
+                </button>
+                <button type="button" class="login-type-option" data-login-type-button="guardian" role="tab">
+                    <i class="bi bi-person-heart"></i>
+                    <span>Guardian</span>
                 </button>
             </div>
 
@@ -168,6 +236,7 @@
                 </button>
             </form>
         </section>
+        </div>
     </main>
     <script>
         const loginConfigs = {
@@ -207,11 +276,42 @@
                 icon: 'bi bi-mortarboard-fill',
                 forgot: true,
             },
+            teacher: {
+                kicker: 'Teacher Workspace',
+                title: 'Teacher Login',
+                subtitle: 'Sign in to review results and add remarks',
+                emailLabel: 'Teacher Email',
+                emailPlaceholder: 'teacher@example.com',
+                passwordLabel: 'Password',
+                passwordPlaceholder: 'Enter your password',
+                button: 'Login as Teacher',
+                icon: 'bi bi-person-workspace',
+                forgot: false,
+            },
+            guardian: {
+                kicker: 'Guardian Portal',
+                title: 'Guardian Login',
+                subtitle: 'Enter your guardian email first to continue securely',
+                emailLabel: 'Guardian Email',
+                emailPlaceholder: 'guardian@example.com',
+                passwordLabel: 'Password',
+                passwordPlaceholder: 'Enter your password',
+                button: 'Login as Guardian',
+                icon: 'bi bi-person-heart',
+                forgot: false,
+            },
         };
+
+        // Student and Guardian both use the same "enter email first" two-step
+        // flow (check email -> password OR OTP-based password setup) driven
+        // by the shared UI groups below; every other type is a plain
+        // email+password form.
+        const TWO_STEP_TYPES = ['student', 'guardian'];
+        const isTwoStepType = (type) => TWO_STEP_TYPES.includes(type);
 
         const LOGIN_TYPE_KEY = 'quizcore.login.type';
         const savedLoginType = localStorage.getItem(LOGIN_TYPE_KEY);
-        const validTypes = ['super_admin', 'branch', 'student'];
+        const validTypes = ['super_admin', 'branch', 'student', 'teacher', 'guardian'];
         const initialType = validTypes.includes(savedLoginType) ? savedLoginType : 'super_admin';
 
         const typeInput = document.getElementById('loginType');
@@ -234,12 +334,21 @@
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         let isSubmitting = false;
-        const endpoints = {
-            checkEmail: @json(route('student-login.check-email')),
-            sendOtp: @json(route('student-login.send-otp')),
-            verifyOtp: @json(route('student-login.verify-otp')),
-            createPassword: @json(route('student-login.create-password')),
+        const endpointsByType = {
+            student: {
+                checkEmail: @json(route('student-login.check-email')),
+                sendOtp: @json(route('student-login.send-otp')),
+                verifyOtp: @json(route('student-login.verify-otp')),
+                createPassword: @json(route('student-login.create-password')),
+            },
+            guardian: {
+                checkEmail: @json(route('guardian-login.check-email')),
+                sendOtp: @json(route('guardian-login.send-otp')),
+                verifyOtp: @json(route('guardian-login.verify-otp')),
+                createPassword: @json(route('guardian-login.create-password')),
+            },
         };
+        const currentEndpoints = () => endpointsByType[typeInput.value] || endpointsByType.student;
 
         function clearStudentMessages() {
             studentSuccess.classList.add('d-none');
@@ -323,7 +432,7 @@
             setLoading(studentContinueButton, true, 'Continue');
 
             try {
-                const data = await postJson(endpoints.checkEmail, { email: email.value });
+                const data = await postJson(currentEndpoints().checkEmail, { email: email.value });
                 showStudentMessage('success', data.message);
 
                 studentContinueButton.classList.add('d-none');
@@ -358,7 +467,7 @@
             setLoading(sendOtpButton, true, 'Send OTP & Create Password');
 
             try {
-                const data = await postJson(endpoints.sendOtp, { email: email.value });
+                const data = await postJson(currentEndpoints().sendOtp, { email: email.value });
                 showStudentMessage('success', data.message);
                 sendOtpButton.classList.add('d-none');
                 otpGroup.classList.remove('d-none');
@@ -376,7 +485,7 @@
             verifyOtpButton.disabled = true;
 
             try {
-                const data = await postJson(endpoints.verifyOtp, {
+                const data = await postJson(currentEndpoints().verifyOtp, {
                     email: email.value,
                     otp: studentOtp.value,
                 });
@@ -396,7 +505,7 @@
             createPasswordButton.disabled = true;
 
             try {
-                const data = await postJson(endpoints.createPassword, {
+                const data = await postJson(currentEndpoints().createPassword, {
                     password: newStudentPassword.value,
                     password_confirmation: newStudentPasswordConfirmation.value,
                 });
@@ -434,7 +543,7 @@
             icon.classList.remove('d-none');
             spinner.classList.add('d-none');
 
-            if (type === 'student') {
+            if (isTwoStepType(type)) {
                 resetStudentFlow();
             } else {
                 clearStudentMessages();
@@ -463,13 +572,13 @@
         setLoginType(initialType);
 
         email.addEventListener('input', () => {
-            if (typeInput.value === 'student') {
+            if (isTwoStepType(typeInput.value)) {
                 resetStudentFlow();
             }
         });
 
         password.addEventListener('input', () => {
-            if (typeInput.value === 'student') {
+            if (isTwoStepType(typeInput.value)) {
                 loginButton.disabled = password.value.trim() === '';
             }
         });
@@ -485,7 +594,7 @@
                 return;
             }
 
-            if (typeInput.value === 'student' && passwordGroup.classList.contains('d-none')) {
+            if (isTwoStepType(typeInput.value) && passwordGroup.classList.contains('d-none')) {
                 event.preventDefault();
                 checkStudentEmail();
                 return;
@@ -528,7 +637,7 @@
             });
         });
 
-        if (typeInput.value === 'student' && email.value.trim()) {
+        if (isTwoStepType(typeInput.value) && email.value.trim()) {
             checkStudentEmail();
         }
 

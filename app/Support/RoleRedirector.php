@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\Guardian;
 use App\Models\Student;
+use App\Models\Teacher;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,6 +23,14 @@ class RoleRedirector
             return 'student.dashboard';
         }
 
+        if ($user instanceof Guardian) {
+            return 'guardian.dashboard';
+        }
+
+        if ($user instanceof Teacher) {
+            return 'teacher.dashboard';
+        }
+
         return $user->role === 'Super Admin' ? 'admin.dashboard' : 'branch.dashboard';
     }
 
@@ -30,8 +40,8 @@ class RoleRedirector
     }
 
     /**
-     * The currently authenticated account, checked across both guards
-     * (web, student), or null when nobody is logged in.
+     * The currently authenticated account, checked across all guards
+     * (web, student, guardian), or null when nobody is logged in.
      */
     public static function currentUser(): ?Authenticatable
     {
@@ -41,6 +51,14 @@ class RoleRedirector
 
         if (Auth::guard('student')->check()) {
             return Auth::guard('student')->user();
+        }
+
+        if (Auth::guard('guardian')->check()) {
+            return Auth::guard('guardian')->user();
+        }
+
+        if (Auth::guard('teacher')->check()) {
+            return Auth::guard('teacher')->user();
         }
 
         return null;

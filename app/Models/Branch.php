@@ -34,6 +34,11 @@ class Branch extends Model
         return $this->hasMany(Student::class);
     }
 
+    public function teachers()
+    {
+        return $this->hasMany(Teacher::class);
+    }
+
     public function classes()
     {
         return $this->hasMany(SchoolClass::class);

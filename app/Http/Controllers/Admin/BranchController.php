@@ -103,6 +103,7 @@ class BranchController extends Controller
     public function destroy(Branch $branch): RedirectResponse
     {
         $hasRelatedData = $branch->students()->exists()
+            || $branch->teachers()->exists()
             || $branch->classes()->exists()
             || $branch->exams()->exists()
             || $branch->exams()->whereHas('attempts')->exists()

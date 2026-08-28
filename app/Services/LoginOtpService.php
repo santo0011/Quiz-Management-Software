@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Mail\BranchLoginOtpMail;
+use App\Mail\GuardianLoginOtpMail;
 use App\Mail\StudentLoginOtpMail;
 use App\Mail\SuperAdminLoginOtpMail;
+use App\Mail\TeacherLoginOtpMail;
 use App\Models\Branch;
 use App\Models\Student;
 use Carbon\Carbon;
@@ -63,6 +65,8 @@ class LoginOtpService
                     $otp
                 )),
                 'student' => Mail::to($email)->send(new StudentLoginOtpMail($otp, Student::where('email', $email)->first())),
+                'guardian' => Mail::to($email)->send(new GuardianLoginOtpMail($otp)),
+                'teacher' => Mail::to($email)->send(new TeacherLoginOtpMail($otp)),
                 default => Mail::to($email)->send(new SuperAdminLoginOtpMail($otp)),
             };
 

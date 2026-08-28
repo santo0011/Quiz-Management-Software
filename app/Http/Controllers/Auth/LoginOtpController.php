@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Guardian;
 use App\Models\Student;
+use App\Models\Teacher;
 use App\Models\User;
 use App\Services\LoginOtpService;
 use App\Services\SingleSessionService;
@@ -30,6 +32,8 @@ class LoginOtpController extends Controller
         $typeLabel = match ($pending['type']) {
             'branch' => 'Branch',
             'student' => 'Student',
+            'guardian' => 'Guardian',
+            'teacher' => 'Teacher',
             default => 'Super Admin',
         };
 
@@ -85,6 +89,30 @@ class LoginOtpController extends Controller
 
             return redirect()
                 ->intended(RoleRedirector::dashboardUrl($student))
+                ->with('success', 'Login successful. Welcome back!');
+        }
+
+        if ($loginType === 'guardian') {
+            $guardian = Guardian::where('email', $email)->firstOrFail();
+
+            Auth::guard('guardian')->login($guardian, true);
+            $request->session()->regenerate();
+            SingleSessionService::establish($guardian, 'guardian');
+
+            return redirect()
+                ->intended(RoleRedirector::dashboardUrl($guardian))
+                ->with('success', 'Login successful. Welcome back!');
+        }
+
+        if ($loginType === 'teacher') {
+            $teacher = Teacher::where('email', $email)->firstOrFail();
+
+            Auth::guard('teacher')->login($teacher, true);
+            $request->session()->regenerate();
+            SingleSessionService::establish($teacher, 'teacher');
+
+            return redirect()
+                ->intended(RoleRedirector::dashboardUrl($teacher))
                 ->with('success', 'Login successful. Welcome back!');
         }
 

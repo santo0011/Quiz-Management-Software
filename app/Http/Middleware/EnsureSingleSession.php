@@ -15,15 +15,31 @@ class EnsureSingleSession
     /**
      * Handle an incoming request.
      *
-     * Enforces a single active session for Student and Branch accounts.
-     * When a newer login (from any device) has replaced this session's
-     * token, the current session is logged out immediately. Super Admin
-     * users are intentionally exempt.
+     * Enforces a single active session for Student, Guardian, and Branch
+     * accounts. When a newer login (from any device) has replaced this
+     * session's token, the current session is logged out immediately.
+     * Super Admin users are intentionally exempt.
      */
     public function handle(Request $request, Closure $next): Response
     {
         if (Auth::guard('student')->check()) {
             $response = $this->enforce($request, 'student', Auth::guard('student')->user());
+
+            if ($response) {
+                return $response;
+            }
+        }
+
+        if (Auth::guard('guardian')->check()) {
+            $response = $this->enforce($request, 'guardian', Auth::guard('guardian')->user());
+
+            if ($response) {
+                return $response;
+            }
+        }
+
+        if (Auth::guard('teacher')->check()) {
+            $response = $this->enforce($request, 'teacher', Auth::guard('teacher')->user());
 
             if ($response) {
                 return $response;
