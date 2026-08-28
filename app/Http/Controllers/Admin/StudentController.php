@@ -123,7 +123,7 @@ class StudentController extends Controller
         ], [
             'password.required' => 'Please enter a new password.',
             'password.min' => 'Password must be at least 6 characters.',
-            'password.confirmed' => 'Password confirmation does not match.',
+            'password.confirmed' => 'Passwords do not match.',
         ]);
 
         $student->update([

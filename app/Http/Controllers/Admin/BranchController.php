@@ -127,7 +127,7 @@ class BranchController extends Controller
         ], [
             'password.required' => 'Please enter a new password.',
             'password.min' => 'Password must be at least 6 characters.',
-            'password.confirmed' => 'Password confirmation does not match.',
+            'password.confirmed' => 'Passwords do not match.',
         ]);
 
         abort_if(! $branch->user, 404, 'This branch has no linked login account.');

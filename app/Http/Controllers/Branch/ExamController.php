@@ -36,6 +36,7 @@ class ExamController extends Controller
         return view('branch.exams.index', [
             'branch' => $branch,
             'selectedSessionId' => $selectedSessionId,
+            'selectedAcademicSession' => AcademicSessionResolver::selected($request),
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
             'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),

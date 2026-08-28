@@ -36,6 +36,7 @@ class ExamController extends Controller
             'branches' => Branch::orderBy('name')->get(),
             'selectedBranchId' => $branchId,
             'selectedSessionId' => $selectedSessionId,
+            'selectedAcademicSession' => AcademicSessionResolver::selected($request),
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
             // Super Admin exams have no branch selection, so the Add Exam

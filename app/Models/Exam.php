@@ -111,17 +111,41 @@ class Exam extends Model
         return $this->branch_id === null;
     }
 
-    public function scopeAvailableForStudent(Builder $query, Student $student): Builder
+    /**
+     * The exam-eligibility rule: an Exam is only usable by a Student when
+     * its Session, Grade, and Subject all match the Student's own Session,
+     * Grade, and assigned Subjects (a Student may have several Subjects —
+     * matching any one of them is enough). Branch scoping (own branch or a
+     * Super-Admin-created global exam) is included since it's the same
+     * "does this Student belong to this Exam" question.
+     *
+     * This is the single source of truth for that rule — every place that
+     * lists or authorizes Exams for a Student (dashboard, available,
+     * upcoming, the single-exam page) builds on this scope so the matching
+     * logic can never drift out of sync between call sites.
+     */
+    public function scopeEligibleForStudent(Builder $query, Student $student): Builder
     {
         return $query->where(fn (Builder $q) => $q->where('branch_id', $student->branch_id)->orWhereNull('branch_id'))
             ->where('school_class_id', $student->class_id)
-            ->where('status', self::STATUS_PUBLISHED)
-            ->where(fn (Builder $query) => $query->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
+            ->where(fn (Builder $q) => $q->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
             ->where(function (Builder $query) use ($student): void {
                 $student->session_id
                     ? $query->whereNull('session_id')->orWhere('session_id', $student->session_id)
                     : $query->whereNull('session_id');
-            })
+            });
+    }
+
+    /**
+     * Eligible Exams that are also currently publishable/open for
+     * attempting: published, and within their scheduled time window (if
+     * any). Does not exclude Exams the Student already submitted — callers
+     * that need that add their own `whereDoesntHave('attempts', ...)`.
+     */
+    public function scopeAvailableForStudent(Builder $query, Student $student): Builder
+    {
+        return $query->eligibleForStudent($student)
+            ->where('status', self::STATUS_PUBLISHED)
             ->where(function (Builder $query): void {
                 $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
             })
