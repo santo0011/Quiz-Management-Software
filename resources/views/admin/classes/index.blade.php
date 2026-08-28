@@ -64,9 +64,9 @@
                                 <td>{{ $schoolClass->created_at->format('d M Y, h:i A') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">
-                                        <a href="{{ route('admin.classes.show', $schoolClass) }}" class="btn btn-sm btn-soft" title="View">
+                                        <!-- <a href="{{ route('admin.classes.show', $schoolClass) }}" class="btn btn-sm btn-soft" title="View">
                                             <i class="bi bi-eye-fill"></i>
-                                        </a>
+                                        </a> -->
                                         <button type="button" class="btn btn-sm btn-soft" title="Edit" data-bs-toggle="offcanvas" data-bs-target="#editClassDrawer{{ $schoolClass->id }}" aria-controls="editClassDrawer{{ $schoolClass->id }}">
                                             <i class="bi bi-pencil-fill"></i>
                                         </button>
