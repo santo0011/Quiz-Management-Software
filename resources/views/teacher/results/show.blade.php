@@ -4,7 +4,9 @@
 @section('page-title', 'Result Details')
 
 @section('content')
-    @include('results.partials.show', ['prefix' => 'teacher'])
+    <div class="teacher-answer-review">
+        @include('results.partials.show', ['prefix' => 'teacher'])
+    </div>
 
     <section class="content-panel narrow-panel mt-4">
         <div class="panel-header">

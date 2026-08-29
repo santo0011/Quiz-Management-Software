@@ -90,7 +90,7 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label for="total_marks" class="form-label">Total Marks</label>
-                    <input id="total_marks" type="number" min="0" name="total_marks" value="{{ old('total_marks', $exam->total_marks ?? 0) }}" class="form-control @error('total_marks') is-invalid @enderror">
+                    <input id="total_marks" type="number" min="0" name="total_marks" value="{{ old('total_marks', $exam->total_marks ?? 0) }}" class="form-control @error('total_marks') is-invalid @enderror" data-strip-leading-zero>
                     @error('total_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4">
@@ -166,3 +166,17 @@
         <a href="{{ route($prefix.'.exams.index') }}" class="btn btn-soft">Cancel</a>
     </div>
 </form>
+
+<script>
+    // Total Marks starts pre-filled with 0. Strip that leading zero as soon
+    // as the user types a real digit, so "10" doesn't become "010" — purely
+    // a display/input fix, the submitted value and its validation are
+    // untouched.
+    document.querySelectorAll('[data-strip-leading-zero]').forEach(function (input) {
+        input.addEventListener('input', function () {
+            if (/^0+(?=\d)/.test(this.value)) {
+                this.value = this.value.replace(/^0+(?=\d)/, '');
+            }
+        });
+    });
+</script>

@@ -3739,6 +3739,36 @@ body.is-resizing-panels * {
     .performance-metrics {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    /* Teacher Dashboard has only 3 stat cards (not the 7-8 tile results
+       page the 2-up rule above is tuned for), so on phones they stack one
+       per row instead of wrapping 2+1. Desktop/tablet keep the shared
+       .result-card-grid behavior untouched. */
+    .result-card-grid.teacher-dashboard-stats {
+        grid-template-columns: 1fr;
+    }
+
+    /* At full row width the centered icon+label/value cluster from the
+       2-up tile style above would float in the middle with large empty
+       gaps on both sides — a plain left/right row reads better here. */
+    .teacher-dashboard-stats .result-card {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 56px;
+        padding: 8px 14px;
+    }
+
+    .teacher-dashboard-stats .result-card strong {
+        font-size: 1.15rem;
+    }
+
+    .teacher-dashboard-stats .result-card-icon {
+        flex: 0 0 28px;
+        width: 28px;
+        height: 28px;
+        font-size: 0.85rem;
+    }
 }
 
 /* ============================================
@@ -4413,6 +4443,68 @@ body.is-resizing-panels * {
     min-width: 0;
     font-size: 0.92rem;
     color: var(--ink);
+}
+
+/* Teacher Panel Answer Review, mobile only: slightly smaller Question /
+   Student Answer / Correct Answer text so more fits on screen without
+   scrolling as much. Scoped to .teacher-answer-review (the wrapper around
+   the shared results.partials.show include on the Teacher result page)
+   so Admin/Branch/Student and Teacher's own desktop/tablet view — which
+   reuse the same .question-item-text/.option-text classes — are untouched.
+   The Remark textarea below this wrapper is not part of it. */
+@media (max-width: 575.98px) {
+    .teacher-answer-review .question-item-text {
+        font-size: 0.92rem;
+    }
+
+    .teacher-answer-review .option-text {
+        font-size: 0.85rem;
+    }
+
+    /* Passage/Summary question header: the "Passage/Summary Question"
+       badge plus the marks badge don't fit on one line at phone widths —
+       let them wrap instead of overflowing the card. */
+    .teacher-answer-review .question-item-meta {
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+
+    /* Summary content is rich, arbitrary CKEditor HTML — a wide table, an
+       image with an inline width= attribute (which beats a plain CSS
+       max-width rule), or a long unbroken word/URL can all push wider than
+       the screen. Rather than chase each cause individually, make the
+       passage/summary box itself the thing that scrolls: anything inside
+       that's too wide scrolls within its own card instead of stretching
+       the page. Text also wraps instead of overflowing. */
+    .teacher-answer-review .passage-preview {
+        padding-left: 14px;
+        padding-right: 14px;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
+    .teacher-answer-review .passage-preview img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    .teacher-answer-review .passage-preview table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Belt-and-suspenders: the card and the question list around it never
+       grow past the viewport even if something inside briefly measures
+       wider before wrapping/scrolling kicks in. */
+    .teacher-answer-review .question-admin-item,
+    .teacher-answer-review .question-list {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
 }
 
 .correct-badge {
@@ -5444,7 +5536,7 @@ form .status-badge.status-published:hover {
     }
 
     .admin-topbar {
-        min-height: 58px;
+        min-height: 64px;
         padding: 8px 10px;
         gap: 8px;
         align-items: center;
@@ -5807,7 +5899,7 @@ form .status-badge.status-published:hover {
     }
 
     .super-admin-panel .admin-topbar {
-        min-height: 58px;
+        min-height: 64px;
         padding: 8px 10px;
         gap: 8px;
     }
