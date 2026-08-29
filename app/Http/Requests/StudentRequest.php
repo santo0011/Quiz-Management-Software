@@ -28,11 +28,25 @@ class StudentRequest extends FormRequest
     {
         $studentId = $this->route('student')?->id;
         $isBranch = $this->user()?->role === 'Branch';
+        $isCreate = ! $studentId;
+        $guardianType = $this->input('guardian_type');
 
         return [
             'student_name' => ['required', 'string', 'max:255'],
-            'guardian_name' => ['required', 'string', 'max:255'],
-            'guardian_email' => ['nullable', 'email', 'max:255'],
+            'guardian_type' => $isCreate ? ['required', Rule::in(['new', 'existing'])] : ['nullable'],
+            'guardian_id' => [
+                'nullable',
+                'exists:guardians,id',
+                Rule::requiredIf($isCreate && $guardianType === 'existing'),
+            ],
+            'guardian_name' => [
+                Rule::requiredIf(! $isCreate || $guardianType !== 'existing'),
+                'string', 'max:255',
+            ],
+            'guardian_email' => [
+                'nullable', 'email', 'max:255',
+                Rule::requiredIf($isCreate && $guardianType === 'new'),
+            ],
             'branch_id' => $isBranch ? ['nullable'] : ['sometimes', 'required', 'exists:branches,id'],
             'class_id' => ['nullable', 'required_without:class', 'exists:school_classes,id'],
             'class' => ['nullable', 'required_without:class_id', 'string', 'max:100'],
@@ -68,7 +82,11 @@ class StudentRequest extends FormRequest
     {
         return [
             'student_name.required' => 'Please enter the student name.',
+            'guardian_type.required' => 'Please choose whether this is a new or existing guardian.',
+            'guardian_id.required' => 'Please search and select an existing guardian.',
+            'guardian_id.exists' => 'Please select a valid guardian from the list.',
             'guardian_name.required' => 'Please enter the guardian name.',
+            'guardian_email.required' => 'Please enter the guardian email address.',
             'guardian_email.email' => 'Please enter a valid guardian email address.',
             'class_id.required' => 'Please select the grade.',
             'class_id.required_without' => 'Please select the grade.',

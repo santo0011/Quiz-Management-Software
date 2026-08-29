@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AcademicSession;
 use App\Models\Branch;
+use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -100,7 +101,27 @@ class StudentManagementTest extends TestCase
         ]);
     }
 
-    public function test_guardian_email_is_optional(): void
+    public function test_guardian_email_is_required_for_a_new_guardian(): void
+    {
+        [, , $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
+
+        $payload = $this->studentPayload([
+            'email' => 'no-guardian-email-student@example.com',
+        ]);
+        unset($payload['guardian_email']);
+
+        $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->post(route('branch.students.store'), $payload)
+            ->assertSessionHasErrors(['guardian_email' => 'Please enter the guardian email address.']);
+
+        $this->assertDatabaseMissing('students', [
+            'email' => 'no-guardian-email-student@example.com',
+        ]);
+    }
+
+    public function test_new_guardian_creates_a_guardian_account(): void
     {
         [, , $branchUser] = $this->makeBranchUser();
         $session = $this->makeAcademicSession();
@@ -108,13 +129,101 @@ class StudentManagementTest extends TestCase
         $this->actingAs($branchUser)
             ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $this->studentPayload([
-                'email' => 'no-guardian-email-student@example.com',
+                'email' => 'fresh-guardian-student@example.com',
+                'guardian_name' => 'Fresh Guardian',
+                'guardian_email' => 'fresh-guardian@example.com',
             ]))
             ->assertRedirect(route('branch.students.index'));
 
+        $guardian = Guardian::where('email', 'fresh-guardian@example.com')->first();
+        $this->assertNotNull($guardian);
+        $this->assertSame('Fresh Guardian', $guardian->name);
+
         $this->assertDatabaseHas('students', [
-            'email' => 'no-guardian-email-student@example.com',
-            'guardian_email' => null,
+            'email' => 'fresh-guardian-student@example.com',
+            'guardian_email' => 'fresh-guardian@example.com',
+            'guardian_id' => $guardian->id,
+        ]);
+    }
+
+    public function test_reusing_the_same_guardian_email_does_not_create_a_duplicate_guardian(): void
+    {
+        [, , $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
+
+        $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->post(route('branch.students.store'), $this->studentPayload([
+                'student_name' => 'First Sibling',
+                'email' => 'first-sibling@example.com',
+                'guardian_name' => 'Shared Guardian',
+                'guardian_email' => 'shared-guardian@example.com',
+            ]))
+            ->assertRedirect(route('branch.students.index'));
+
+        $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->post(route('branch.students.store'), $this->studentPayload([
+                'student_name' => 'Second Sibling',
+                'email' => 'second-sibling@example.com',
+                'guardian_name' => 'Shared Guardian',
+                'guardian_email' => 'SHARED-GUARDIAN@example.com',
+            ]))
+            ->assertRedirect(route('branch.students.index'));
+
+        $this->assertSame(1, Guardian::where('email', 'shared-guardian@example.com')->count());
+
+        $guardian = Guardian::where('email', 'shared-guardian@example.com')->first();
+        $this->assertSame(2, Student::where('guardian_id', $guardian->id)->count());
+    }
+
+    public function test_existing_guardian_links_the_student_and_ignores_submitted_name_and_email(): void
+    {
+        [, , $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
+        $guardian = Guardian::create(['name' => 'Real Guardian', 'email' => 'real-guardian@example.com']);
+
+        $payload = $this->studentPayload([
+            'email' => 'linked-student@example.com',
+            'guardian_type' => 'existing',
+            'guardian_id' => $guardian->id,
+            'guardian_name' => 'Tampered Name',
+            'guardian_email' => 'tampered@example.com',
+        ]);
+
+        $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->post(route('branch.students.store'), $payload)
+            ->assertRedirect(route('branch.students.index'));
+
+        $this->assertDatabaseHas('students', [
+            'email' => 'linked-student@example.com',
+            'guardian_id' => $guardian->id,
+            'guardian_name' => 'Real Guardian',
+            'guardian_email' => 'real-guardian@example.com',
+        ]);
+
+        $this->assertSame(1, Guardian::count());
+    }
+
+    public function test_existing_guardian_type_requires_a_guardian_id(): void
+    {
+        [, , $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
+
+        $payload = $this->studentPayload([
+            'email' => 'no-guardian-picked@example.com',
+            'guardian_type' => 'existing',
+        ]);
+        unset($payload['guardian_name'], $payload['guardian_email']);
+
+        $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->post(route('branch.students.store'), $payload)
+            ->assertSessionHasErrors(['guardian_id' => 'Please search and select an existing guardian.']);
+
+        $this->assertDatabaseMissing('students', [
+            'email' => 'no-guardian-picked@example.com',
         ]);
     }
 
@@ -196,7 +305,9 @@ class StudentManagementTest extends TestCase
         return array_merge([
             'branch_id' => 1,
             'student_name' => 'Test Student',
+            'guardian_type' => 'new',
             'guardian_name' => 'Test Guardian',
+            'guardian_email' => 'test-guardian@example.com',
             'class' => 'Class 10',
             'phone_number' => '9876543210',
             'email' => 'student@example.com',

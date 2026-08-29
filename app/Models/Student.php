@@ -14,6 +14,7 @@ class Student extends Authenticatable
         'student_name',
         'guardian_name',
         'guardian_email',
+        'guardian_id',
         'class',
         'phone_number',
         'email',
@@ -55,6 +56,11 @@ class Student extends Authenticatable
     public function schoolClass()
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function guardian()
+    {
+        return $this->belongsTo(Guardian::class);
     }
 
     public function attempts()
