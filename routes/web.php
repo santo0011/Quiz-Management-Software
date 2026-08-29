@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\BranchSelectionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
+use App\Http\Controllers\Admin\GuardianController as AdminGuardianController;
 use App\Http\Controllers\Admin\PassageGroupController as AdminPassageGroupController;
 use App\Http\Controllers\Admin\PasswordController as AdminPasswordController;
 use App\Http\Controllers\Admin\QuestionCategoryController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Auth\StudentPasswordController;
 use App\Http\Controllers\Branch\AcademicSessionSelectionController as BranchAcademicSessionSelectionController;
 use App\Http\Controllers\Branch\DashboardController as BranchDashboardController;
 use App\Http\Controllers\Branch\ExamController as BranchExamController;
+use App\Http\Controllers\Branch\GuardianController as BranchGuardianController;
 use App\Http\Controllers\Branch\PassageGroupController as BranchPassageGroupController;
 use App\Http\Controllers\Branch\PasswordController as BranchPasswordController;
 use App\Http\Controllers\Branch\QuestionCategoryController as BranchQuestionCategoryController;
@@ -97,6 +99,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::put('/branches/{branch}/password', [BranchController::class, 'updatePassword'])->name('branches.password.update');
     Route::resource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
     Route::resource('subjects', SubjectController::class);
+    Route::get('/guardians/search', [AdminGuardianController::class, 'search'])->name('guardians.search');
     Route::middleware('require_academic_session:admin.students.index')->group(function () {
         Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
         Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
@@ -139,6 +142,7 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     Route::post('/academic-session-selection', [BranchAcademicSessionSelectionController::class, 'store'])->name('academic-session-selection.store');
     Route::delete('/academic-session-selection', [BranchAcademicSessionSelectionController::class, 'clear'])->name('academic-session-selection.clear');
     Route::resource('classes', BranchSchoolClassController::class)->parameters(['classes' => 'class']);
+    Route::get('/guardians/search', [BranchGuardianController::class, 'search'])->name('guardians.search');
     Route::middleware('require_academic_session:branch.students.index')->group(function () {
         Route::get('/students/create', [BranchStudentController::class, 'create'])->name('students.create');
         Route::post('/students', [BranchStudentController::class, 'store'])->name('students.store');

@@ -65,6 +65,17 @@
                 </div>
             </div>
         @endif
+        @if ($errors->any())
+            <div class="toast admin-toast text-bg-danger border-0" role="status" aria-live="polite" aria-atomic="true" data-bs-delay="6000">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Could not save — please fix the {{ Str::plural('error', $errors->count()) }} highlighted below.
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
@@ -480,6 +491,10 @@
             drawerIds.some((drawerId) => {
                 const drawerEl = document.getElementById(drawerId);
                 if (drawerEl) {
+                    drawerEl.addEventListener('shown.bs.offcanvas', () => {
+                        const firstInvalid = drawerEl.querySelector('.is-invalid, .invalid-feedback.d-block');
+                        firstInvalid?.closest('.col-12, .col-md-6, .mb-3')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, { once: true });
                     bootstrap.Offcanvas.getOrCreateInstance(drawerEl).show();
                     return true;
                 }

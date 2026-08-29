@@ -8,6 +8,7 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Services\AcademicSessionResolver;
+use App\Services\GuardianResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -63,7 +64,7 @@ class StudentController extends Controller
         $selectedSessionId = AcademicSessionResolver::selectedId($request);
         abort_if(! $selectedSessionId, 403, 'Please select an academic session first.');
 
-        $validated = $request->validated();
+        $validated = GuardianResolver::resolve($request->validated());
         $subjectIds = $validated['subject_ids'] ?? [];
         unset($validated['subject_ids']);
         $schoolClass = $this->resolveSchoolClass($validated, $branch->id);

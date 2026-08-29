@@ -1,4 +1,4 @@
-<form method="POST" action="{{ $action }}" class="admin-form">
+<form method="POST" action="{{ $action }}" class="admin-form" data-guardian-picker-root data-guardian-search-url="{{ route('branch.guardians.search') }}">
     @csrf
     @isset($drawerId)
         <input type="hidden" name="_drawer" value="{{ $drawerId }}">
@@ -27,20 +27,24 @@
                 @error('student_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
             @endif
         </div>
-        <div class="col-md-6">
-            <label for="guardian_name" class="form-label">Guardian Name <span class="required-mark">*</span></label>
-            <input id="guardian_name" type="text" name="guardian_name" value="{{ $useOldInput ? old('guardian_name', $student->guardian_name) : $student->guardian_name }}" class="form-control{{ $useOldInput && $errors->has('guardian_name') ? ' is-invalid' : '' }}" required maxlength="255">
-            @if ($useOldInput)
-                @error('guardian_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            @endif
-        </div>
-        <div class="col-md-6">
-            <label for="guardian_email" class="form-label">Guardian Email</label>
-            <input id="guardian_email" type="email" name="guardian_email" value="{{ $useOldInput ? old('guardian_email', $student->guardian_email) : $student->guardian_email }}" class="form-control{{ $useOldInput && $errors->has('guardian_email') ? ' is-invalid' : '' }}" maxlength="255">
-            @if ($useOldInput)
-                @error('guardian_email')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            @endif
-        </div>
+        @if ($student->exists)
+            <div class="col-md-6">
+                <label for="guardian_name" class="form-label">Guardian Name <span class="required-mark">*</span></label>
+                <input id="guardian_name" type="text" name="guardian_name" value="{{ $useOldInput ? old('guardian_name', $student->guardian_name) : $student->guardian_name }}" class="form-control{{ $useOldInput && $errors->has('guardian_name') ? ' is-invalid' : '' }}" required maxlength="255">
+                @if ($useOldInput)
+                    @error('guardian_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @endif
+            </div>
+            <div class="col-md-6">
+                <label for="guardian_email" class="form-label">Guardian Email</label>
+                <input id="guardian_email" type="email" name="guardian_email" value="{{ $useOldInput ? old('guardian_email', $student->guardian_email) : $student->guardian_email }}" class="form-control{{ $useOldInput && $errors->has('guardian_email') ? ' is-invalid' : '' }}" maxlength="255">
+                @if ($useOldInput)
+                    @error('guardian_email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @endif
+            </div>
+        @else
+            @include('partials.guardian-fields', ['useOldInput' => $useOldInput])
+        @endif
         <div class="col-md-6">
             <label for="class_id" class="form-label">Grade <span class="required-mark">*</span></label>
             <select id="class_id" name="class_id" class="form-select form-control{{ $useOldInput && $errors->has('class_id') ? ' is-invalid' : '' }}" required>
