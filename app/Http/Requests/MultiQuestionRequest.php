@@ -11,15 +11,9 @@ class MultiQuestionRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        // Only questions being added under a Summary/Passage use the rich-text
-        // (CKEditor) editor and need their HTML sanitized before storage.
-        // Standalone questions ("Add Another Question") use the plain
-        // math-editor and are rendered escaped as plain text, same as before
-        // CKEditor existed, so their text is left untouched here.
-        if (! $this->route('passageGroup')) {
-            return;
-        }
-
+        // All question text (standalone or under a Summary/Passage) now comes
+        // from the CKEditor question-text field, so it always needs sanitizing
+        // before storage — it's later rendered as raw HTML.
         $questions = $this->input('questions');
 
         if (! is_array($questions)) {

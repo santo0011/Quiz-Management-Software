@@ -15,8 +15,6 @@ class PassageGroupController extends Controller
 {
     public function create(Exam $exam): View
     {
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
-
         return view('admin.passage-groups.create', [
             'selectedBranch' => $exam->branch,
             'exam' => $exam,
@@ -26,8 +24,6 @@ class PassageGroupController extends Controller
 
     public function store(PassageGroupRequest $request, Exam $exam): RedirectResponse
     {
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
-
         $passageGroup = DB::transaction(function () use ($request, $exam) {
             $validated = $request->safe()->only(['content']);
             $validated['title'] = 'Summary '.($exam->passageGroups()->count() + 1);
@@ -43,8 +39,6 @@ class PassageGroupController extends Controller
 
     public function edit(PassageGroup $passageGroup): View
     {
-        abort_if($passageGroup->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
-
         return view('admin.passage-groups.edit', [
             'selectedBranch' => $passageGroup->exam->branch,
             'exam' => $passageGroup->exam,
@@ -54,8 +48,6 @@ class PassageGroupController extends Controller
 
     public function update(PassageGroupRequest $request, PassageGroup $passageGroup): RedirectResponse
     {
-        abort_if($passageGroup->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
-
         DB::transaction(function () use ($request, $passageGroup): void {
             $passageGroup->update($request->safe()->only(['content']));
         });
@@ -65,8 +57,6 @@ class PassageGroupController extends Controller
 
     public function destroy(PassageGroup $passageGroup): RedirectResponse
     {
-        abort_if($passageGroup->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
-
         $exam = $passageGroup->exam;
 
         DB::transaction(function () use ($passageGroup): void {

@@ -41,7 +41,7 @@
                         <i class="bi bi-globe2"></i>
                         Managed by Super Admin
                     </span>
-                @elseif (!$exam->hasBeenAttempted())
+                @else
                     <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-light btn-exam-action">
                         <i class="bi bi-list-check"></i>
                         Manage Questions
@@ -58,7 +58,7 @@
                                 Publish Exam
                             </button>
                         </form>
-                    @else
+                    @elseif (!$exam->hasBeenAttempted())
                         <form method="POST" action="{{ route($prefix.'.exams.unpublish', $exam) }}" data-unpublish-exam>
                             @csrf
                             <button type="submit" class="btn btn-warning btn-exam-action">
@@ -66,12 +66,12 @@
                                 Unpublish Exam
                             </button>
                         </form>
+                    @else
+                        <span class="exam-published-lock" data-bs-toggle="tooltip" data-bs-title="{{ \App\Models\Exam::UNPUBLISH_LOCK_MESSAGE }}">
+                            <i class="bi bi-lock-fill"></i>
+                            Unpublish Locked
+                        </span>
                     @endif
-                @else
-                    <span class="exam-published-lock" data-bs-toggle="tooltip" data-bs-title="{{ \App\Models\Exam::LOCK_MESSAGE }}">
-                        <i class="bi bi-lock-fill"></i>
-                        Locked - Student Attempted
-                    </span>
                 @endif
             </div>
         </div>

@@ -463,7 +463,7 @@ function StudentExamApp({ root }) {
                             <span>Question {questionNumbers[activeStep.question.id]} of {allQuestions.length}</span>
                             <strong>{activeStep.question.marks} marks</strong>
                         </div>
-                        <div className="exam-question-text math-content">{activeStep.question.text}</div>
+                        <div className="exam-question-text math-content passage-preview" dangerouslySetInnerHTML={{ __html: activeStep.question.text }} />
                         <QuestionOptions question={activeStep.question} onSelect={saveAnswer} />
                     </>
                 ) : (

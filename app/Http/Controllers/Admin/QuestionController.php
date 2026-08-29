@@ -43,8 +43,6 @@ class QuestionController extends Controller
 
     public function store(MultiQuestionRequest $request, Exam $exam): RedirectResponse
     {
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
-
         $count = $this->createQuestionsFromRequest($request, $exam);
         $message = $count > 1
             ? "{$count} questions added successfully."
@@ -55,7 +53,6 @@ class QuestionController extends Controller
 
     public function createForPassage(Exam $exam, PassageGroup $passageGroup): View
     {
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         abort_if($passageGroup->exam_id !== $exam->id, 404);
 
         return view('admin.passage-groups.questions-create', [
@@ -69,7 +66,6 @@ class QuestionController extends Controller
 
     public function storeForPassage(MultiQuestionRequest $request, Exam $exam, PassageGroup $passageGroup): RedirectResponse
     {
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         abort_if($passageGroup->exam_id !== $exam->id, 404);
 
         $count = $this->createQuestionsFromRequest($request, $exam, $passageGroup);
@@ -122,8 +118,6 @@ class QuestionController extends Controller
 
     public function edit(Question $question): View
     {
-        abort_if($question->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
-
         return view('admin.questions.edit', [
             'selectedBranch' => $question->exam->branch,
             'exam' => $question->exam->load('schoolClass', 'category'),
@@ -134,7 +128,6 @@ class QuestionController extends Controller
 
     public function update(QuestionRequest $request, Question $question): RedirectResponse
     {
-        abort_if($question->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         $exam = $question->exam;
         $this->saveQuestion($request, $exam, $question);
         $exam->recalculateTotalMarks();
@@ -144,7 +137,6 @@ class QuestionController extends Controller
 
     public function destroy(Question $question): RedirectResponse
     {
-        abort_if($question->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         $exam = $question->exam;
         $question->delete();
         $exam->refresh();

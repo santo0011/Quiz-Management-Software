@@ -17,7 +17,6 @@ class PassageGroupController extends Controller
     public function create(Request $request, Exam $exam): View
     {
         $this->authorizeExam($request, $exam);
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         return view('branch.passage-groups.create', [
             'branch' => $request->user()->branch,
@@ -29,7 +28,6 @@ class PassageGroupController extends Controller
     public function store(PassageGroupRequest $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         $passageGroup = DB::transaction(function () use ($request, $exam) {
             $validated = $request->safe()->only(['content']);
@@ -47,7 +45,6 @@ class PassageGroupController extends Controller
     public function edit(Request $request, PassageGroup $passageGroup): View
     {
         $this->authorizeExam($request, $passageGroup->exam);
-        abort_if($passageGroup->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         return view('branch.passage-groups.edit', [
             'branch' => $request->user()->branch,
@@ -59,7 +56,6 @@ class PassageGroupController extends Controller
     public function update(PassageGroupRequest $request, PassageGroup $passageGroup): RedirectResponse
     {
         $this->authorizeExam($request, $passageGroup->exam);
-        abort_if($passageGroup->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         DB::transaction(function () use ($request, $passageGroup): void {
             $passageGroup->update($request->safe()->only(['content']));
@@ -71,7 +67,6 @@ class PassageGroupController extends Controller
     public function destroy(Request $request, PassageGroup $passageGroup): RedirectResponse
     {
         $this->authorizeExam($request, $passageGroup->exam);
-        abort_if($passageGroup->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         $exam = $passageGroup->exam;
 

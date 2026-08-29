@@ -78,7 +78,6 @@ class ExamController extends Controller
     {
         $this->authorizeExam($request, $exam);
         $this->authorizeSessionScope($request, $exam);
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         return view('branch.exams.edit', [
             'branch' => $request->user()->branch,
@@ -92,7 +91,6 @@ class ExamController extends Controller
     {
         $this->authorizeExam($request, $exam);
         $this->authorizeSessionScope($request, $exam);
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         $exam->update($request->validated());
 
@@ -109,7 +107,6 @@ class ExamController extends Controller
     public function reorderItems(Request $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         $validated = $request->validate([
             'type' => ['required', 'in:question,passage_group'],
@@ -187,7 +184,7 @@ class ExamController extends Controller
 
         if ($exam->hasBeenAttempted()) {
             return redirect()->route('branch.exams.index')
-                ->with('error', Exam::LOCK_MESSAGE);
+                ->with('error', Exam::DELETE_LOCK_MESSAGE);
         }
 
         $exam->delete();

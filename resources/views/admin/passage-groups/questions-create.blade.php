@@ -49,7 +49,6 @@
                 'defaultMarks' => $exam->marks_per_question ?? 1,
                 'existingQuestions' => $passageGroup->questions,
                 'categories' => $categories,
-                'useRichEditor' => true,
             ])
         @endif
     </section>

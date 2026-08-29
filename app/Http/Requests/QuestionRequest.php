@@ -12,13 +12,10 @@ class QuestionRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        // Only questions that belong to a Summary/Passage use the rich-text
-        // (CKEditor) editor and need their HTML sanitized before storage —
-        // standalone questions use the plain math-editor and are rendered
-        // escaped as plain text, so their text is left untouched here.
-        $isSummaryQuestion = $this->route('question')?->passage_group_id !== null;
-
-        if ($isSummaryQuestion && $this->has('question_text')) {
+        // All question text (standalone or under a Summary/Passage) now comes
+        // from the CKEditor question-text field, so it always needs sanitizing
+        // before storage — it's later rendered as raw HTML.
+        if ($this->has('question_text')) {
             $this->merge(['question_text' => HtmlSanitizer::sanitize($this->input('question_text'))]);
         }
     }

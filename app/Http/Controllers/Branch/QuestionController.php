@@ -42,7 +42,6 @@ class QuestionController extends Controller
     public function store(MultiQuestionRequest $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         $count = $this->createQuestionsFromRequest($request, $exam);
         $message = $count > 1
@@ -55,7 +54,6 @@ class QuestionController extends Controller
     public function createForPassage(Request $request, Exam $exam, PassageGroup $passageGroup): View
     {
         $this->authorizeExam($request, $exam);
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         abort_if($passageGroup->exam_id !== $exam->id, 404);
 
         return view('branch.passage-groups.questions-create', [
@@ -70,7 +68,6 @@ class QuestionController extends Controller
     public function storeForPassage(MultiQuestionRequest $request, Exam $exam, PassageGroup $passageGroup): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
-        abort_if($exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         abort_if($passageGroup->exam_id !== $exam->id, 404);
 
         $count = $this->createQuestionsFromRequest($request, $exam, $passageGroup);
@@ -124,7 +121,6 @@ class QuestionController extends Controller
     public function edit(Request $request, Question $question): View
     {
         $this->authorizeExam($request, $question->exam);
-        abort_if($question->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
 
         return view('branch.questions.edit', [
             'branch' => $request->user()->branch,
@@ -137,7 +133,6 @@ class QuestionController extends Controller
     public function update(QuestionRequest $request, Question $question): RedirectResponse
     {
         $this->authorizeExam($request, $question->exam);
-        abort_if($question->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         $exam = $question->exam;
         $this->saveQuestion($request, $exam, $question);
         $exam->recalculateTotalMarks();
@@ -148,7 +143,6 @@ class QuestionController extends Controller
     public function destroy(Request $request, Question $question): RedirectResponse
     {
         $this->authorizeExam($request, $question->exam);
-        abort_if($question->exam->hasBeenAttempted(), 403, Exam::LOCK_MESSAGE);
         $exam = $question->exam;
         $question->delete();
         $exam->refresh();

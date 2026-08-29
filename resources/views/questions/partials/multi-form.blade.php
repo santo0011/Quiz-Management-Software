@@ -3,12 +3,8 @@
 @php($oldQuestions = old('_form_key') === $formKey ? old('questions', [[]]) : [[]])
 @php($existingQuestions = $existingQuestions ?? collect())
 @php($existingCount = $existingQuestions->count())
-{{-- Only questions added under a Summary/Passage use the rich-text (CKEditor)
-     editor; standalone "Add Another Question" keeps the plain math-editor
-     input it always had. --}}
-@php($useRichEditor = $useRichEditor ?? false)
 
-<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-form-id="{{ $formKey }}" data-default-marks="{{ (int) ($defaultMarks ?? 1) }}" data-existing-count="{{ $existingCount }}" data-use-rich-editor="{{ $useRichEditor ? '1' : '0' }}">
+<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-form-id="{{ $formKey }}" data-default-marks="{{ (int) ($defaultMarks ?? 1) }}" data-existing-count="{{ $existingCount }}">
     @csrf
     <input type="hidden" name="_form_key" value="{{ $formKey }}">
 
@@ -102,26 +98,14 @@
                 <div class="question-card-body">
                     <div class="question-field-group">
                         <label class="form-label">Question Text <span class="required-mark">*</span></label>
-                        @if ($useRichEditor)
-                            @include('partials.summary-editor', [
-                                'mathId' => $formKey . '_q' . $qIndex . '_question_text',
-                                'mathName' => 'questions[' . $qIndex . '][question_text]',
-                                'mathValue' => $oldQ['question_text'] ?? '',
-                                'mathPlaceholder' => 'Enter the question text...',
-                                'mathRows' => 3,
-                                'mathClass' => $errors->has('questions.' . $qIndex . '.question_text') ? 'is-invalid' : '',
-                            ])
-                        @else
-                            @include('partials.math-editor', [
-                                'mathId' => $formKey . '_q' . $qIndex . '_question_text',
-                                'mathName' => 'questions[' . $qIndex . '][question_text]',
-                                'mathValue' => $oldQ['question_text'] ?? '',
-                                'mathPlaceholder' => 'Enter question text or math expression...',
-                                'mathRows' => 2,
-                                'mathRequired' => true,
-                                'mathClass' => $errors->has('questions.' . $qIndex . '.question_text') ? 'is-invalid' : '',
-                            ])
-                        @endif
+                        @include('partials.summary-editor', [
+                            'mathId' => $formKey . '_q' . $qIndex . '_question_text',
+                            'mathName' => 'questions[' . $qIndex . '][question_text]',
+                            'mathValue' => $oldQ['question_text'] ?? '',
+                            'mathPlaceholder' => 'Enter the question text...',
+                            'mathRows' => 3,
+                            'mathClass' => $errors->has('questions.' . $qIndex . '.question_text') ? 'is-invalid' : '',
+                        ])
                         @error('questions.'.$qIndex.'.question_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
@@ -234,9 +218,11 @@
             return '<option value="">Select category</option>' + CATEGORIES.map((c) => `<option value="${c.id}"${String(c.id) === defaultId ? ' selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
         };
 
-        // Shared math-toolbar markup for every plain (non-rich) text field —
-        // Answer Options always use this, and so does Question Text when this
-        // form instance is NOT a "questions under a Summary" form.
+        // Shared math-toolbar markup for every plain-textarea field — Answer
+        // Options and Explanation always use this (see mathFieldHtml below).
+        // The same snippet list is reused, unwrapped, inside richFieldHtml's
+        // CKEditor "Insert Math" staging popover (see ckeditor-math-buttons
+        // blade partial and summary-editor.blade.php's initMathToolFor).
         const MATH_TOOLBAR_BUTTONS_HTML = `
             <button type="button" class="math-tool-btn" data-math-insert="\\frac{}{}" title="Fraction">a/b</button>
             <button type="button" class="math-tool-btn" data-math-insert="^{}" title="Superscript">x²</button>
@@ -304,12 +290,22 @@
         `;
 
         const richFieldHtml = (name, { rows = 3, placeholder = '' } = {}) => `
-            <textarea name="${name}" rows="${rows}" class="form-control" placeholder="${placeholder}" data-summary-editor></textarea>
+            <div class="ckeditor-field-wrap" data-ckeditor-field-wrap>
+                <div class="ckeditor-math-wrap" data-ckeditor-math-wrap>
+                    <button type="button" class="ckeditor-math-toggle" data-math-toggle aria-label="Insert math equation" title="Insert Math Equation"><i class="bi bi-plus-square-fill"></i> Insert Math</button>
+                    <div class="math-toolbar-popover" data-math-toolbar hidden>
+                        <div class="math-toolbar-header"><span>Insert Math Equation</span><button type="button" class="btn-close btn-close-sm" data-math-close aria-label="Close"></button></div>
+                        <div class="ckeditor-math-staging"><input type="text" class="form-control form-control-sm" data-math-staging placeholder="e.g. \\frac{1}{2} + x^2" autocomplete="off"></div>
+                        <div class="math-toolbar-grid">${MATH_TOOLBAR_BUTTONS_HTML}</div>
+                        <div class="ckeditor-math-actions"><button type="button" class="btn btn-sm btn-primary" data-math-confirm>Insert Equation</button></div>
+                    </div>
+                </div>
+                <textarea name="${name}" rows="${rows}" class="form-control" placeholder="${placeholder}" data-summary-editor></textarea>
+            </div>
         `;
 
         const form = document.querySelector('[data-multi-question-form][data-form-id="' + formId + '"]');
         if (form) {
-            const useRichEditor = form.dataset.useRichEditor === '1';
             const list = form.querySelector('[data-multi-question-list]');
             const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             const existingCount = parseInt(form.dataset.existingCount || '0', 10);
@@ -410,9 +406,7 @@
                     <div class="question-card-body">
                         <div class="question-field-group">
                             <label class="form-label">Question Text <span class="required-mark">*</span></label>
-                            ${useRichEditor
-                                ? richFieldHtml(`questions[${qIdx}][question_text]`, { rows: 3, placeholder: 'Enter the question text...' })
-                                : mathFieldHtml(`questions[${qIdx}][question_text]`, { rows: 2, placeholder: 'Enter question text or math expression...', required: true })}
+                            ${richFieldHtml(`questions[${qIdx}][question_text]`, { rows: 3, placeholder: 'Enter the question text...' })}
                         </div>
                         <div class="row g-2 question-meta-row">
                             <div class="col-md-6">

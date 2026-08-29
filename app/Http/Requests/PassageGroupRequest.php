@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use App\Models\Exam;
 use App\Support\HtmlSanitizer;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PassageGroupRequest extends FormRequest
@@ -15,10 +14,6 @@ class PassageGroupRequest extends FormRequest
 
         if (! $exam instanceof Exam) {
             return false;
-        }
-
-        if ($exam->hasBeenAttempted()) {
-            throw new AuthorizationException(Exam::LOCK_MESSAGE);
         }
 
         if ($this->user()?->role === 'Branch') {

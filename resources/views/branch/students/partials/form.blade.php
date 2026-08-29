@@ -81,14 +81,12 @@
             @if (($subjects ?? collect())->isEmpty())
                 <div class="form-text">No subjects found. Ask the Super Admin to add one first.</div>
             @else
-                <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2 subject-checkbox-grid">
+                <div class="subject-checkbox-grid">
                     @foreach ($subjects as $subject)
-                        <div class="col">
-                            <label class="form-check module-check">
-                                <input type="checkbox" name="subject_ids[]" value="{{ $subject->id }}" class="form-check-input" @checked(in_array($subject->id, $selectedSubjectIds))>
-                                <span>{{ $subject->name }}</span>
-                            </label>
-                        </div>
+                        <label class="form-check module-check">
+                            <input type="checkbox" name="subject_ids[]" value="{{ $subject->id }}" class="form-check-input" @checked(in_array($subject->id, $selectedSubjectIds))>
+                            <span>{{ $subject->name }}</span>
+                        </label>
                     @endforeach
                 </div>
             @endif
