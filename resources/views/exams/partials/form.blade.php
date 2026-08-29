@@ -1,13 +1,12 @@
 @php($prefix = $prefix ?? 'admin')
-@php($isLocked = $exam->exists && $exam->hasBeenAttempted())
 @php($examSession = $exam->exists ? $exam->session : ($selectedAcademicSession ?? null))
 
-@if ($isLocked)
+@if ($exam->exists && $exam->hasBeenAttempted())
     <div class="feedback-alert info mb-4">
-        <i class="bi bi-lock-fill"></i>
+        <i class="bi bi-info-circle-fill"></i>
         <div>
-            <strong>This exam is locked.</strong>
-            <p class="mb-0">{{ \App\Models\Exam::LOCK_MESSAGE }}</p>
+            <strong>A student has already attended this exam.</strong>
+            <p class="mb-0">You can still edit its details below. Existing results will not be affected.</p>
         </div>
     </div>
 @endif
@@ -20,7 +19,7 @@
     @isset($drawerId)
         <input type="hidden" name="_drawer" value="{{ $drawerId }}">
     @endisset
-    <fieldset {{ $isLocked ? 'disabled' : '' }}>
+    <fieldset>
 
     <div class="exam-form-sections">
         @if ($examSession)
@@ -157,12 +156,10 @@
     </fieldset>
 
     <div class="d-flex gap-2 mt-4">
-        @if (!$isLocked)
-            <button class="btn btn-primary" type="submit">
-                <i class="bi bi-check-circle-fill"></i>
-                {{ $button }}
-            </button>
-        @endif
+        <button class="btn btn-primary" type="submit">
+            <i class="bi bi-check-circle-fill"></i>
+            {{ $button }}
+        </button>
         <a href="{{ route($prefix.'.exams.index') }}" class="btn btn-soft">Cancel</a>
     </div>
 </form>

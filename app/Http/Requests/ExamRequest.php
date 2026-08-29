@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Exam;
 use App\Models\SchoolClass;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ExamRequest extends FormRequest
@@ -12,10 +10,6 @@ class ExamRequest extends FormRequest
     public function authorize(): bool
     {
         $exam = $this->route('exam');
-
-        if ($exam && $exam->hasBeenAttempted() && $this->isMethod('PUT')) {
-            throw new AuthorizationException(Exam::LOCK_MESSAGE);
-        }
 
         if ($this->user()?->role === 'Branch') {
             return ! $exam || $exam->branch_id === $this->user()->branch_id;

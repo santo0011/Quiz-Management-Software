@@ -12,11 +12,7 @@
                     {{ $answer?->is_correct ? 'Correct' : ($answer?->question_option_id ? 'Wrong' : 'Unanswered') }} · {{ $answer?->marks_awarded ?? 0 }} marks
                 </span>
             </div>
-            @if ($question->passage_group_id)
-                <div class="math-content passage-preview question-item-text">{!! \App\Support\HtmlSanitizer::sanitize($question->question_text) !!}</div>
-            @else
-                <h3 class="math-content question-item-text">{{ $question->question_text }}</h3>
-            @endif
+            <div class="math-content passage-preview question-item-text">{!! \App\Support\HtmlSanitizer::sanitize($question->question_text) !!}</div>
         </div>
     </div>
     <div class="option-preview">

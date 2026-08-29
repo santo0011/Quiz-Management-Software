@@ -13,7 +13,7 @@ class Exam extends Model
     public const STATUS_PUBLISHED = 'published';
     public const STATUS_CLOSED = 'closed';
 
-    public const LOCK_MESSAGE = 'This exam cannot be edited or deleted because a student has already attended this exam.';
+    public const DELETE_LOCK_MESSAGE = 'This exam cannot be deleted because a student has already attended this exam.';
 
     public const UNPUBLISH_LOCK_MESSAGE = 'This exam cannot be unpublished because a student has already attended this exam.';
 
@@ -161,8 +161,8 @@ class Exam extends Model
 
     /**
      * Whether any student has started (attempted) this exam. Once true, the
-     * exam, its questions, and its settings are locked from further edits
-     * or deletion — regardless of publish status.
+     * exam can no longer be deleted or unpublished — regardless of publish
+     * status. Its settings and questions remain editable.
      */
     public function hasBeenAttempted(): bool
     {

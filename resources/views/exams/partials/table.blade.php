@@ -83,18 +83,20 @@
                                     <span class="publish-lock-hint" data-bs-toggle="tooltip" data-bs-title="Managed by the Super Admin.">
                                         <i class="bi bi-globe2"></i>
                                     </span>
-                                @elseif (!$exam->hasBeenAttempted())
+                                @else
                                     <a href="{{ route($prefix.'.questions.create', $exam) }}" class="btn btn-sm btn-soft" title="Add Question"><i class="bi bi-patch-plus-fill"></i></a>
                                     <a href="{{ route($prefix.'.exams.edit', $exam) }}" class="btn btn-sm btn-soft" title="Edit"><i class="bi bi-pencil-fill"></i></a>
-                                    <form method="POST" action="{{ route($prefix.'.exams.destroy', $exam) }}" data-confirm-delete>
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-sm btn-danger-soft" type="submit" title="Delete"><i class="bi bi-trash-fill"></i></button>
-                                    </form>
-                                @else
-                                    <span class="publish-lock-hint" data-bs-toggle="tooltip" data-bs-title="{{ \App\Models\Exam::LOCK_MESSAGE }}">
-                                        <i class="bi bi-lock-fill"></i>
-                                    </span>
+                                    @if (!$exam->hasBeenAttempted())
+                                        <form method="POST" action="{{ route($prefix.'.exams.destroy', $exam) }}" data-confirm-delete>
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-danger-soft" type="submit" title="Delete"><i class="bi bi-trash-fill"></i></button>
+                                        </form>
+                                    @else
+                                        <span class="publish-lock-hint" data-bs-toggle="tooltip" data-bs-title="{{ \App\Models\Exam::DELETE_LOCK_MESSAGE }}">
+                                            <i class="bi bi-lock-fill"></i>
+                                        </span>
+                                    @endif
                                 @endif
                             </div>
                         </td>

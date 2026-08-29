@@ -22,16 +22,16 @@ class QuestionCkeditorTest extends TestCase
 {
     use RefreshDatabase;
 
-    // --- Standalone questions ("Add Another Question") keep the plain math-editor ---
+    // --- Standalone questions ("Add Another Question") now use CKEditor too ---
 
-    public function test_standalone_multi_question_store_keeps_text_unsanitized(): void
+    public function test_standalone_multi_question_store_sanitizes_rich_html_question_text(): void
     {
         [$admin, $exam, $category] = $this->makeExamFixture();
 
         $this->actingAs($admin)->post(route('admin.questions.store', $exam), [
             'questions' => [
                 [
-                    'question_text' => 'If x < 5 and x > 2, find x. <not-a-real-tag>',
+                    'question_text' => '<p>If x &lt; 5 and x &gt; 2, find x.</p><script>alert(1)</script><img src="data:image/png;base64,aGVsbG8=" onerror="alert(2)">',
                     'marks' => 5,
                     'question_category_id' => $category->id,
                     'options' => ['3', '4', '6', '7'],
@@ -43,17 +43,20 @@ class QuestionCkeditorTest extends TestCase
         $question = Question::where('exam_id', $exam->id)->firstOrFail();
 
         $this->assertNull($question->passage_group_id);
-        $this->assertSame('If x < 5 and x > 2, find x. <not-a-real-tag>', $question->question_text);
+        $this->assertStringContainsString('<p>If x', $question->question_text);
+        $this->assertStringContainsString('<img src="data:image/png;base64,aGVsbG8="', $question->question_text);
+        $this->assertStringNotContainsString('<script>', $question->question_text);
+        $this->assertStringNotContainsString('onerror', $question->question_text);
     }
 
-    public function test_standalone_single_question_update_keeps_text_unsanitized(): void
+    public function test_standalone_single_question_update_sanitizes_rich_html_question_text(): void
     {
         [$admin, $exam, $category] = $this->makeExamFixture();
 
         $question = $this->makeStandaloneQuestion($exam, $category, 'Original question');
 
         $this->actingAs($admin)->put(route('admin.questions.update', $question), [
-            'question_text' => 'Updated question with a < b',
+            'question_text' => '<p>Updated <em>question</em></p><script>alert(1)</script>',
             'marks' => 5,
             'question_category_id' => $category->id,
             'options' => ['A', 'B'],
@@ -61,10 +64,11 @@ class QuestionCkeditorTest extends TestCase
         ])->assertRedirect();
 
         $question->refresh();
-        $this->assertSame('Updated question with a < b', $question->question_text);
+        $this->assertStringContainsString('<em>question</em>', $question->question_text);
+        $this->assertStringNotContainsString('<script>', $question->question_text);
     }
 
-    public function test_standalone_question_edit_form_uses_plain_math_editor(): void
+    public function test_standalone_question_edit_form_uses_ckeditor(): void
     {
         [$admin, $exam, $category] = $this->makeExamFixture();
 
@@ -73,42 +77,40 @@ class QuestionCkeditorTest extends TestCase
         $response = $this->actingAs($admin)->get(route('admin.questions.edit', $question));
 
         $response->assertOk();
-        $response->assertDontSee('data-summary-editor', false);
-        $response->assertSee('data-math-textarea', false);
+        $response->assertSee('data-summary-editor', false);
         $response->assertSee('name="question_text"', false);
-        $response->assertSee('Use the toolbar or type LaTeX');
     }
 
-    public function test_question_management_page_renders_standalone_question_as_escaped_text(): void
+    public function test_question_management_page_renders_standalone_question_as_html(): void
     {
         [$admin, $exam, $category] = $this->makeExamFixture();
 
-        $this->makeStandaloneQuestion($exam, $category, 'What is <strong>H2O</strong>?');
+        $this->makeStandaloneQuestion($exam, $category, '<p>What is <strong>H2O</strong>?</p>');
 
         $response = $this->actingAs($admin)
             ->withSession(['admin_selected_academic_session_id' => $exam->session_id])
             ->get(route('admin.questions.create', $exam));
 
         $response->assertOk();
-        $response->assertDontSee('<strong>H2O</strong>', false);
-        $response->assertSee('&lt;strong&gt;H2O&lt;/strong&gt;', false);
+        $response->assertSee('<strong>H2O</strong>', false);
+        $response->assertDontSee('&lt;strong&gt;', false);
     }
 
-    public function test_result_review_page_renders_standalone_question_as_escaped_text(): void
+    public function test_result_review_page_renders_standalone_question_as_html(): void
     {
         [$admin, $exam, $category] = $this->makeExamFixture();
 
-        $question = $this->makeStandaloneQuestion($exam, $category, 'What is <strong>2+2</strong>?');
+        $question = $this->makeStandaloneQuestion($exam, $category, '<p>What is <strong>2+2</strong>?</p>');
         $attempt = $this->makeSubmittedAttempt($exam, $question);
 
         $response = $this->actingAs($admin)->get(route('admin.results.show', $attempt));
 
         $response->assertOk();
-        $response->assertDontSee('<strong>2+2</strong>', false);
-        $response->assertSee('&lt;strong&gt;2+2&lt;/strong&gt;', false);
+        $response->assertSee('<strong>2+2</strong>', false);
+        $response->assertDontSee('&lt;strong&gt;', false);
     }
 
-    // --- Questions added under a Summary keep the rich-text (CKEditor) editor ---
+    // --- Questions added under a Summary keep using the rich-text (CKEditor) editor ---
 
     public function test_summary_multi_question_store_sanitizes_rich_html_question_text(): void
     {
@@ -165,7 +167,6 @@ class QuestionCkeditorTest extends TestCase
         $response->assertOk();
         $response->assertSee('data-summary-editor', false);
         $response->assertSee('name="question_text"', false);
-        $response->assertDontSee('Use the toolbar or type LaTeX');
     }
 
     public function test_question_management_page_renders_summary_question_as_html(): void
@@ -195,6 +196,48 @@ class QuestionCkeditorTest extends TestCase
         $response->assertOk();
         $response->assertSee('<strong>the capital of France</strong>', false);
         $response->assertDontSee('&lt;strong&gt;', false);
+    }
+
+    // --- The "Insert Math" equation tool is available on every CKEditor question-text field ---
+
+    public function test_standalone_question_edit_form_includes_math_equation_tool(): void
+    {
+        [$admin, $exam, $category] = $this->makeExamFixture();
+        $question = $this->makeStandaloneQuestion($exam, $category, 'Plain question text');
+
+        $response = $this->actingAs($admin)->get(route('admin.questions.edit', $question));
+
+        $response->assertOk();
+        $response->assertSee('data-ckeditor-math-wrap', false);
+        $response->assertSee('data-math-staging', false);
+        $response->assertSee('Insert Equation', false);
+    }
+
+    public function test_summary_question_edit_form_includes_math_equation_tool(): void
+    {
+        [$admin, $exam, $category] = $this->makeExamFixture();
+        $group = $this->makePassageGroup($exam);
+        $question = $this->makeSummaryQuestion($exam, $group, $category, 'Plain question text');
+
+        $response = $this->actingAs($admin)->get(route('admin.questions.edit', $question));
+
+        $response->assertOk();
+        $response->assertSee('data-ckeditor-math-wrap', false);
+        $response->assertSee('data-math-staging', false);
+        $response->assertSee('Insert Equation', false);
+    }
+
+    public function test_passage_summary_form_includes_math_equation_tool(): void
+    {
+        [$admin, $exam] = $this->makeExamFixture();
+        $group = $this->makePassageGroup($exam);
+
+        $response = $this->actingAs($admin)->get(route('admin.passage-groups.edit', $group));
+
+        $response->assertOk();
+        $response->assertSee('data-ckeditor-math-wrap', false);
+        $response->assertSee('data-math-staging', false);
+        $response->assertSee('Insert Equation', false);
     }
 
     private function makeExamFixture(): array

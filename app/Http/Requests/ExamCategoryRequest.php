@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\Exam;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,10 +14,6 @@ class ExamCategoryRequest extends FormRequest
 
         if (! $exam instanceof Exam) {
             return false;
-        }
-
-        if ($exam->hasBeenAttempted()) {
-            throw new AuthorizationException(Exam::LOCK_MESSAGE);
         }
 
         if ($this->user()?->role === 'Branch') {
