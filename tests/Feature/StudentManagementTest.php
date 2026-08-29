@@ -101,7 +101,7 @@ class StudentManagementTest extends TestCase
         ]);
     }
 
-    public function test_guardian_email_is_required_for_a_new_guardian(): void
+    public function test_guardian_email_is_optional_for_a_new_guardian(): void
     {
         [, , $branchUser] = $this->makeBranchUser();
         $session = $this->makeAcademicSession();
@@ -114,10 +114,12 @@ class StudentManagementTest extends TestCase
         $this->actingAs($branchUser)
             ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $payload)
-            ->assertSessionHasErrors(['guardian_email' => 'Please enter the guardian email address.']);
+            ->assertRedirect(route('branch.students.index'));
 
-        $this->assertDatabaseMissing('students', [
+        $this->assertDatabaseHas('students', [
             'email' => 'no-guardian-email-student@example.com',
+            'guardian_email' => null,
+            'guardian_id' => null,
         ]);
     }
 
@@ -204,6 +206,46 @@ class StudentManagementTest extends TestCase
         ]);
 
         $this->assertSame(1, Guardian::count());
+    }
+
+    /**
+     * Regression test for a real bug: the actual "Existing Guardian" UI
+     * submits guardian_name/guardian_email as empty strings (it clears them
+     * via JS rather than omitting the fields), and Laravel's global
+     * ConvertEmptyStringsToNull middleware turns those into null before
+     * validation runs. A `null` value is NOT treated the same as an empty
+     * string by the validator — only 'nullable' fields skip their
+     * non-required rules for a null value — so guardian_name's 'string'
+     * rule failed with "must be a string" on every real submission until
+     * 'nullable' was added to it. This test submits empty strings (not
+     * omitted keys) specifically so it exercises that middleware
+     * conversion, matching the real request instead of a synthetic one.
+     */
+    public function test_existing_guardian_submission_with_empty_name_and_email_succeeds(): void
+    {
+        [, , $branchUser] = $this->makeBranchUser();
+        $session = $this->makeAcademicSession();
+        $guardian = Guardian::create(['name' => 'Real Guardian', 'email' => 'real-guardian-2@example.com']);
+
+        $payload = $this->studentPayload([
+            'email' => 'linked-student-empty-fields@example.com',
+            'guardian_type' => 'existing',
+            'guardian_id' => $guardian->id,
+            'guardian_name' => '',
+            'guardian_email' => '',
+        ]);
+
+        $this->actingAs($branchUser)
+            ->withSession(['branch_selected_academic_session_id' => $session->id])
+            ->post(route('branch.students.store'), $payload)
+            ->assertRedirect(route('branch.students.index'));
+
+        $this->assertDatabaseHas('students', [
+            'email' => 'linked-student-empty-fields@example.com',
+            'guardian_id' => $guardian->id,
+            'guardian_name' => 'Real Guardian',
+            'guardian_email' => 'real-guardian-2@example.com',
+        ]);
     }
 
     public function test_existing_guardian_type_requires_a_guardian_id(): void

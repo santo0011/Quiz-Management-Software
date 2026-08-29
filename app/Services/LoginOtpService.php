@@ -12,6 +12,7 @@ use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -72,6 +73,12 @@ class LoginOtpService
 
             return true;
         } catch (\Throwable $e) {
+            Log::error('Login OTP email failed to send.', [
+                'login_type' => $loginType,
+                'email' => $email,
+                'exception' => $e->getMessage(),
+            ]);
+
             return false;
         }
     }

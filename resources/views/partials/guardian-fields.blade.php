@@ -34,11 +34,12 @@
 </div>
 
 <div class="col-md-6" data-guardian-new-field>
-    <label for="guardian_email" class="form-label">Guardian Email <span class="required-mark">*</span></label>
+    <label for="guardian_email" class="form-label">Guardian Email</label>
     <input id="guardian_email" type="email" name="guardian_email" value="{{ $useOldInput ? old('guardian_email') : '' }}" class="form-control{{ $useOldInput && $errors->has('guardian_email') ? ' is-invalid' : '' }}" maxlength="255" data-guardian-email-input>
     @if ($useOldInput)
         @error('guardian_email')<div class="invalid-feedback">{{ $message }}</div>@enderror
     @endif
+    <div class="form-text">Optional, but adding it lets this Guardian log in later and links siblings to the same account.</div>
 </div>
 
 <div class="col-12" data-guardian-existing-field data-old-name="{{ $oldGuardian?->name }}" data-old-email="{{ $oldGuardian?->email }}" hidden>
@@ -93,7 +94,6 @@
                     newFields.forEach((el) => el.classList.toggle('d-none', isExisting));
                     if (existingField) existingField.hidden = ! isExisting;
                     if (nameInput) nameInput.required = ! isExisting;
-                    if (emailInput) emailInput.required = ! isExisting;
 
                     if (isExisting) {
                         if (nameInput) nameInput.value = '';
@@ -131,12 +131,32 @@
                     return div.innerHTML;
                 }
 
+                // The dropdown is position: fixed (see admin.css) so it can
+                // escape the "Add Student" offcanvas drawer's overflow-y:
+                // auto clipping — which means its coordinates have to be
+                // set here in JS relative to the viewport, recomputed
+                // whenever it's (re)shown or the drawer/page scrolls.
+                function positionDropdown() {
+                    if (! searchInput || ! dropdown) return;
+
+                    const rect = searchInput.getBoundingClientRect();
+                    dropdown.style.left = rect.left + 'px';
+                    dropdown.style.top = (rect.bottom + 6) + 'px';
+                    dropdown.style.width = rect.width + 'px';
+                }
+
+                function showDropdown() {
+                    if (! dropdown) return;
+                    positionDropdown();
+                    dropdown.hidden = false;
+                }
+
                 function renderResults(guardians) {
                     if (! dropdown) return;
 
                     if (! guardians.length) {
                         dropdown.innerHTML = '<div class="guardian-dropdown-empty">No matching guardian found.</div>';
-                        dropdown.hidden = false;
+                        showDropdown();
 
                         return;
                     }
@@ -147,8 +167,19 @@
                             '<span>' + escapeHtml(guardian.email) + '</span>' +
                         '</button>'
                     )).join('');
-                    dropdown.hidden = false;
+                    showDropdown();
                 }
+
+                // Capture phase: scroll events on a nested scrollable
+                // element (like the offcanvas body) don't bubble, but they
+                // are still observable on ancestors during capture.
+                document.addEventListener('scroll', () => {
+                    if (dropdown && ! dropdown.hidden) positionDropdown();
+                }, true);
+
+                window.addEventListener('resize', () => {
+                    if (dropdown && ! dropdown.hidden) positionDropdown();
+                });
 
                 let debounceTimer;
                 searchInput?.addEventListener('input', () => {

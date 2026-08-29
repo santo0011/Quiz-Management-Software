@@ -1013,12 +1013,19 @@ body {
     padding-left: 38px;
 }
 
+/* position: fixed (not absolute) and coordinates set inline by JS
+   (positionGuardianDropdown() below) — the Student Create form most
+   commonly opens inside the "Add Student" offcanvas drawer, and Bootstrap's
+   .offcanvas-body is overflow-y: auto, which would otherwise clip an
+   absolutely-positioned dropdown the moment the form is tall enough to
+   scroll (exactly the case here: Guardian Type + this search box sit above
+   Grade/Phone/Email/Subjects). Fixed positioning escapes that clipping
+   since it's relative to the viewport; the z-index clears both Bootstrap's
+   .offcanvas (1045) and its backdrop (1040) so results render above the
+   open drawer. */
 .guardian-search-dropdown {
-    position: absolute;
-    z-index: 20;
-    left: 0;
-    right: 0;
-    top: calc(100% + 6px);
+    position: fixed;
+    z-index: 1200;
     background: #fff;
     border: 1px solid var(--line);
     border-radius: 10px;

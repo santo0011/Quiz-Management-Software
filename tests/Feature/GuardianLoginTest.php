@@ -80,6 +80,61 @@ class GuardianLoginTest extends TestCase
         $this->assertNotNull($student->guardian_email);
     }
 
+    /**
+     * Regression test: a reported bug claimed the OTP email stops sending
+     * once a second Student shares the same guardian_email. Investigation
+     * found no code path that behaves differently for 1 vs 2+ matching
+     * Students (every guardian_email lookup here uses ->exists()/->get(),
+     * never ->first()/->sole(), and the actual mail send doesn't touch
+     * Student at all) — this test pins that down explicitly: two Students
+     * sharing one guardian_email must still get exactly one OTP email, one
+     * Guardian account, and access to both Students after verifying.
+     */
+    public function test_guardian_with_two_students_sharing_one_email_can_still_receive_and_verify_a_single_otp(): void
+    {
+        Mail::fake();
+
+        $studentOne = $this->makeStudentWithGuardianEmail('shared-guardian@example.com', 'Sibling One');
+        $studentTwo = $this->makeStudentWithGuardianEmail('shared-guardian@example.com', 'Sibling Two');
+
+        $this->postJson(route('guardian-login.check-email'), [
+            'email' => 'shared-guardian@example.com',
+        ])->assertOk()->assertJsonPath('status', 'password_setup_required');
+
+        $this->postJson(route('guardian-login.send-otp'), [
+            'email' => 'shared-guardian@example.com',
+        ])->assertOk();
+
+        // Exactly one OTP email for the account, not one per linked Student.
+        Mail::assertSentCount(1);
+
+        $otp = null;
+        Mail::assertSent(GuardianLoginOtpMail::class, function (GuardianLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return strlen($mail->otp) === 6;
+        });
+
+        $this->postJson(route('guardian-login.verify-otp'), [
+            'email' => 'shared-guardian@example.com',
+            'otp' => $otp,
+        ])->assertOk();
+
+        $this->postJson(route('guardian-login.create-password'), [
+            'password' => 'secure-password',
+            'password_confirmation' => 'secure-password',
+        ])->assertOk()->assertJsonPath('redirect', route('guardian.dashboard'));
+
+        $this->assertSame(1, Guardian::where('email', 'shared-guardian@example.com')->count());
+
+        $guardian = Guardian::where('email', 'shared-guardian@example.com')->firstOrFail();
+        $this->assertAuthenticatedAs($guardian, 'guardian');
+
+        $dashboardHtml = $this->get(route('guardian.dashboard'))->assertOk()->getContent();
+        $this->assertStringContainsString($studentOne->student_name, $dashboardHtml);
+        $this->assertStringContainsString($studentTwo->student_name, $dashboardHtml);
+    }
+
     public function test_otp_cannot_be_reused_or_guessed_after_expiry(): void
     {
         Mail::fake();
@@ -112,6 +167,38 @@ class GuardianLoginTest extends TestCase
         ])->assertRedirect(route('login.otp'));
 
         $this->assertGuest('guardian');
+
+        $otp = null;
+        Mail::assertSent(GuardianLoginOtpMail::class, function (GuardianLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('guardian.dashboard'));
+
+        $this->assertAuthenticatedAs($guardian, 'guardian');
+    }
+
+    public function test_guardian_with_two_students_and_existing_password_still_receives_login_otp(): void
+    {
+        Mail::fake();
+        $this->makeStudentWithGuardianEmail('shared-guardian-2@example.com', 'Sibling A');
+        $this->makeStudentWithGuardianEmail('shared-guardian-2@example.com', 'Sibling B');
+
+        $guardian = Guardian::create([
+            'email' => 'shared-guardian-2@example.com',
+            'password' => Hash::make('existing-password'),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'guardian',
+            'email' => 'shared-guardian-2@example.com',
+            'password' => 'existing-password',
+        ])->assertRedirect(route('login.otp'));
+
+        Mail::assertSentCount(1);
 
         $otp = null;
         Mail::assertSent(GuardianLoginOtpMail::class, function (GuardianLoginOtpMail $mail) use (&$otp): bool {

@@ -30,8 +30,16 @@ class GuardianResolver
         }
 
         if ($guardianType === 'new') {
-            $email = strtolower(trim($validated['guardian_email']));
+            $email = strtolower(trim($validated['guardian_email'] ?? ''));
             $name = trim($validated['guardian_name'] ?? '');
+
+            // Guardian Email is optional here (unchanged from before this
+            // feature existed) — without one there's no account to create
+            // or link, so the Student just keeps its free-text guardian_name
+            // like it always did.
+            if ($email === '') {
+                return $validated;
+            }
 
             $guardian = Guardian::firstOrCreate(['email' => $email], ['name' => $name]);
 

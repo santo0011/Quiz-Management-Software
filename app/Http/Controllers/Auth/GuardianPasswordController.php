@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\GuardianLoginOtpMail;
 use App\Models\Guardian;
 use App\Models\Student;
+use App\Services\LoginOtpService;
 use App\Services\SingleSessionService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
@@ -80,7 +82,7 @@ class GuardianPasswordController extends Controller
             'email' => $email,
             'user_type' => 'guardian',
             'otp_hash' => Hash::make($otp),
-            'expires_at' => now()->addMinutes(10),
+            'expires_at' => now()->addMinutes(LoginOtpService::OTP_EXPIRY_MINUTES),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -88,6 +90,11 @@ class GuardianPasswordController extends Controller
         try {
             Mail::to($email)->send(new GuardianLoginOtpMail($otp));
         } catch (\Throwable $e) {
+            Log::error('Guardian login OTP email failed to send.', [
+                'email' => $email,
+                'exception' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'message' => 'OTP could not be sent. Please try again later.',
             ], 500);
