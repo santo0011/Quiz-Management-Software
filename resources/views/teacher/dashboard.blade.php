@@ -19,7 +19,7 @@
                 <p>Choose a session from the navbar dropdown above to view your results.</p>
             </div>
         @else
-            <div class="result-card-grid">
+            <div class="result-card-grid teacher-dashboard-stats">
                 <div class="result-card color-blue">
                     <div class="result-card-left">
                         <div class="result-card-icon"><i class="bi bi-bar-chart-fill"></i></div>
