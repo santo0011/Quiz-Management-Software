@@ -4445,26 +4445,39 @@ body.is-resizing-panels * {
     color: var(--ink);
 }
 
-/* Teacher Panel Answer Review, mobile only: slightly smaller Question /
-   Student Answer / Correct Answer text so more fits on screen without
-   scrolling as much. Scoped to .teacher-answer-review (the wrapper around
-   the shared results.partials.show include on the Teacher result page)
-   so Admin/Branch/Student and Teacher's own desktop/tablet view — which
-   reuse the same .question-item-text/.option-text classes — are untouched.
-   The Remark textarea below this wrapper is not part of it. */
+/* Answer Review / Result Details, mobile only, ALL panels (Super Admin,
+   Branch, Teacher, Student, Guardian): every one of these panels renders
+   Questions/Student Answers/Correct Answers/Summary content through the
+   same shared markup (.question-item-text, .option-text, .passage-preview,
+   etc. — see results/partials/show.blade.php, results/partials/answer-item
+   .blade.php, student/results/show.blade.php, guardian/students/
+   result-details.blade.php), so one unscoped mobile rule set keeps the
+   compact font sizing and responsive behavior consistent everywhere
+   instead of duplicating it per panel. Desktop/tablet are untouched since
+   this only fires below 575.98px. */
 @media (max-width: 575.98px) {
-    .teacher-answer-review .question-item-text {
+    .question-item-text,
+    /* Wins over the pre-existing, non-mobile-scoped Student Panel rule
+       (.student-content ... .question-item-text { font-size: 0.94rem })
+       so Student's mobile size matches every other panel. */
+    .student-content .question-admin-item:not(.passage-group-item) .question-item-text {
         font-size: 0.92rem;
     }
 
-    .teacher-answer-review .option-text {
+    .option-text {
         font-size: 0.85rem;
+    }
+
+    /* Teacher's displayed remark text (the read-only box shown after a
+       remark is saved — not the remark input, which is left alone). */
+    .remark-display-text {
+        font-size: 0.9rem;
     }
 
     /* Passage/Summary question header: the "Passage/Summary Question"
        badge plus the marks badge don't fit on one line at phone widths —
        let them wrap instead of overflowing the card. */
-    .teacher-answer-review .question-item-meta {
+    .question-item-meta {
         flex-wrap: wrap;
         row-gap: 6px;
     }
@@ -4476,7 +4489,7 @@ body.is-resizing-panels * {
        passage/summary box itself the thing that scrolls: anything inside
        that's too wide scrolls within its own card instead of stretching
        the page. Text also wraps instead of overflowing. */
-    .teacher-answer-review .passage-preview {
+    .passage-preview {
         padding-left: 14px;
         padding-right: 14px;
         max-width: 100%;
@@ -4486,12 +4499,12 @@ body.is-resizing-panels * {
         word-break: break-word;
     }
 
-    .teacher-answer-review .passage-preview img {
+    .passage-preview img {
         max-width: 100% !important;
         height: auto !important;
     }
 
-    .teacher-answer-review .passage-preview table {
+    .passage-preview table {
         display: block;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
@@ -4500,8 +4513,8 @@ body.is-resizing-panels * {
     /* Belt-and-suspenders: the card and the question list around it never
        grow past the viewport even if something inside briefly measures
        wider before wrapping/scrolling kicks in. */
-    .teacher-answer-review .question-admin-item,
-    .teacher-answer-review .question-list {
+    .question-admin-item,
+    .question-list {
         max-width: 100%;
         overflow-x: hidden;
     }
@@ -5643,6 +5656,24 @@ form .status-badge.status-published:hover {
         border-radius: 12px;
         padding: 16px;
         box-shadow: 0 10px 24px rgba(20, 32, 54, 0.07);
+    }
+
+    /* A flex item's default min-width is its content's intrinsic width,
+       not 0 — so a long name or email in the untitled wrapper div next to
+       the avatar could otherwise force this row wider than the screen and
+       put the whole page into horizontal scroll. */
+    .student-profile-summary {
+        gap: 12px;
+    }
+
+    .student-profile-summary > div:last-child {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .student-profile-summary h3,
+    .student-profile-summary p {
+        overflow-wrap: anywhere;
     }
 
     .dashboard-hero {
@@ -6981,6 +7012,76 @@ form .status-badge.status-published:hover {
 
     .exam-controls .btn {
         flex: 1 1 100%;
+    }
+}
+
+/* "My Profile"-style pages, mobile only: Teacher/Student/Guardian's own
+   profile page and Guardian's per-student page (teacher/profile,
+   student/profile, guardian/profile, guardian/students/show,
+   guardian/students/result — all wrap this markup in <section
+   class="student-section">). A centered, stacked header plus a
+   single-column detail list reads far better on a phone than the
+   compact 2-col icon grid: labels/values (email, branch name, subjects)
+   no longer get squeezed into a half-width column, and there's no
+   leftover half-empty tile when the field count is odd. Scoped to
+   .student-section so the Admin/Branch "view student" page — which
+   reuses the same .student-details-grid/.student-detail-item markup
+   inside .student-details-panel, not .student-section, and needs to
+   stay compact since it's someone else's record, not a short personal
+   profile — keeps its existing 2-col layout untouched. Placed after
+   every earlier .student-content-scoped rule for these same classes so
+   it wins the equal-specificity cascade. */
+@media (max-width: 767.98px) {
+    .student-section .student-profile-summary {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+        padding: 22px 16px;
+    }
+
+    .student-section .student-profile-summary > div:last-child {
+        width: 100%;
+    }
+
+    .student-section .student-profile-summary .student-profile-avatar-lg {
+        width: 68px;
+        height: 68px;
+        flex-basis: 68px;
+        font-size: 1.7rem;
+        border-radius: 18px;
+    }
+
+    .student-section .student-profile-summary h3 {
+        font-size: 1.1rem;
+    }
+
+    .student-section .student-profile-summary p {
+        font-size: 0.86rem;
+    }
+
+    .student-section .student-details-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .student-section .student-detail-item {
+        padding: 12px 14px;
+    }
+
+    .student-section .student-detail-icon {
+        flex-basis: 34px;
+        width: 34px;
+        height: 34px;
+        font-size: 0.9rem;
+    }
+
+    .student-section .student-detail-item dt {
+        font-size: 0.7rem;
+    }
+
+    .student-section .student-detail-item dd {
+        font-size: 0.88rem;
+        overflow-wrap: anywhere;
     }
 }
 

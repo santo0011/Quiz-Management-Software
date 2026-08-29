@@ -4,9 +4,7 @@
 @section('page-title', 'Result Details')
 
 @section('content')
-    <div class="teacher-answer-review">
-        @include('results.partials.show', ['prefix' => 'teacher'])
-    </div>
+    @include('results.partials.show', ['prefix' => 'teacher'])
 
     <section class="content-panel narrow-panel mt-4">
         <div class="panel-header">
@@ -17,7 +15,7 @@
         </div>
 
         @if ($attempt->teacher_remark)
-            <div class="alert alert-light border mb-3" style="white-space: pre-line;">
+            <div class="alert alert-light border mb-3 remark-display-text" style="white-space: pre-line;">
                 {{ $attempt->teacher_remark }}
             </div>
             <p class="text-muted small mb-3">
