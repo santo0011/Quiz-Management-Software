@@ -41,7 +41,7 @@
         <div class="col-12">
             <label class="form-check module-check">
                 <input type="checkbox" name="is_active" value="1" class="form-check-input" @checked($useOldInput ? old('is_active', $academicSession->is_active) : $academicSession->is_active)>
-                <span>Active (open for creating students and exams)</span>
+                <span>Active (open for creating exams)</span>
             </label>
         </div>
     </div>

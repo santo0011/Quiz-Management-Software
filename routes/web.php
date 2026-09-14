@@ -95,10 +95,8 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::resource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
     Route::resource('subjects', SubjectController::class);
     Route::get('/guardians/search', [AdminGuardianController::class, 'search'])->name('guardians.search');
-    Route::middleware('require_academic_session:admin.students.index')->group(function () {
-        Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
-        Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
-    });
+    Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
+    Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
     Route::resource('students', AdminStudentController::class)->except(['create', 'store']);
     Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
     Route::put('/students/{student}/password', [AdminStudentController::class, 'updatePassword'])->name('students.password.update');
@@ -138,10 +136,8 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     Route::delete('/academic-session-selection', [BranchAcademicSessionSelectionController::class, 'clear'])->name('academic-session-selection.clear');
     Route::resource('classes', BranchSchoolClassController::class)->parameters(['classes' => 'class']);
     Route::get('/guardians/search', [BranchGuardianController::class, 'search'])->name('guardians.search');
-    Route::middleware('require_academic_session:branch.students.index')->group(function () {
-        Route::get('/students/create', [BranchStudentController::class, 'create'])->name('students.create');
-        Route::post('/students', [BranchStudentController::class, 'store'])->name('students.store');
-    });
+    Route::get('/students/create', [BranchStudentController::class, 'create'])->name('students.create');
+    Route::post('/students', [BranchStudentController::class, 'store'])->name('students.store');
     Route::resource('students', BranchStudentController::class)->except(['create', 'store']);
     Route::post('/students/{student}/toggle-active', [BranchStudentController::class, 'toggleActive'])->name('students.toggle-active');
     Route::get('/teachers', [BranchTeacherController::class, 'index'])->name('teachers.index');

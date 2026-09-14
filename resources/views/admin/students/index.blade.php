@@ -12,39 +12,30 @@
             </div>
         </div>
 
-        @if (! $selectedSessionId)
-            <div class="empty-state">
-                <i class="bi bi-calendar-range"></i>
-                <h3>Select an academic session to continue</h3>
-                <p>Choose a session from the navbar dropdown above to manage students.</p>
-            </div>
-        @else
-            <form method="GET" action="{{ route('admin.students.index') }}" class="filter-bar">
-                <select name="branch_id" class="form-select">
-                    <option value="">All Branches</option>
-                    @foreach ($branches as $branch)
-                        <option value="{{ $branch->id }}" @selected(($filters['branch_id'] ?? '') == $branch->id)>{{ $branch->name }}</option>
-                    @endforeach
-                </select>
-                <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search name, guardian, email, phone">
-                <select name="class" class="form-select">
-                    <option value="">All grades</option>
-                    @foreach ($classes as $class)
-                        <option value="{{ $class->name }}" @selected(($filters['class'] ?? '') === $class->name)>{{ $class->name }}</option>
-                    @endforeach
-                </select>
-                <button type="submit" class="btn btn-soft">
-                    <i class="bi bi-search"></i>
-                    Filter
-                </button>
-            </form>
+        <form method="GET" action="{{ route('admin.students.index') }}" class="filter-bar">
+            <select name="branch_id" class="form-select">
+                <option value="">All Branches</option>
+                @foreach ($branches as $branch)
+                    <option value="{{ $branch->id }}" @selected(($filters['branch_id'] ?? '') == $branch->id)>{{ $branch->name }}</option>
+                @endforeach
+            </select>
+            <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search name, guardian, email, phone">
+            <select name="class" class="form-select">
+                <option value="">All grades</option>
+                @foreach ($classes as $class)
+                    <option value="{{ $class->name }}" @selected(($filters['class'] ?? '') === $class->name)>{{ $class->name }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="btn btn-soft">
+                <i class="bi bi-search"></i>
+                Filter
+            </button>
+        </form>
 
-            @include('admin.students.partials.table', ['students' => $students])
-        @endif
+        @include('admin.students.partials.table', ['students' => $students])
     </section>
 
-    @if ($selectedSessionId)
-        @foreach ($students as $studentRecord)
+    @foreach ($students as $studentRecord)
             <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editStudentDrawer{{ $studentRecord->id }}" aria-labelledby="editStudentDrawerLabel{{ $studentRecord->id }}">
                 <div class="offcanvas-header student-drawer-header">
                     <div>
@@ -72,6 +63,5 @@
                 </div>
             </div>
         @endforeach
-    @endif
 
 @endsection

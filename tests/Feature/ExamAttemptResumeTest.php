@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Console\Commands\SubmitExpiredExamAttempts;
-use App\Models\AcademicSession;
 use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
@@ -185,17 +184,10 @@ class ExamAttemptResumeTest extends TestCase
     {
         $branch = Branch::create(['name' => 'Main Branch', 'email' => 'main@example.com']);
         $class = SchoolClass::create(['branch_id' => $branch->id, 'name' => 'Class 10']);
-        $session = AcademicSession::create([
-            'name' => '2026-2027',
-            'start_date' => '2026-06-01',
-            'end_date' => '2027-05-31',
-            'is_active' => true,
-        ]);
 
         $student = Student::create([
             'branch_id' => $branch->id,
             'class_id' => $class->id,
-            'session_id' => $session->id,
             'student_name' => 'Test Student',
             'guardian_name' => 'Guardian',
             'class' => $class->name,

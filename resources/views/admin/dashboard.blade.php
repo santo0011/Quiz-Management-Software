@@ -27,11 +27,7 @@
                 <i class="bi bi-people-fill"></i>
                 <div>
                     <span>Total Students</span>
-                    @if (is_null($studentCount))
-                        <strong class="metric-card-prompt">Select a session</strong>
-                    @else
-                        <strong>{{ $studentCount }}</strong>
-                    @endif
+                    <strong>{{ $studentCount }}</strong>
                 </div>
             </div>
         </div>

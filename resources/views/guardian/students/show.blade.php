@@ -36,15 +36,6 @@
             </div>
             <div class="student-detail-item">
                 <div class="student-detail-icon">
-                    <i class="bi bi-calendar-range"></i>
-                </div>
-                <div>
-                    <dt>Academic Session</dt>
-                    <dd>{{ $student->session?->name ?? '—' }}</dd>
-                </div>
-            </div>
-            <div class="student-detail-item">
-                <div class="student-detail-icon">
                     <i class="bi bi-building"></i>
                 </div>
                 <div>

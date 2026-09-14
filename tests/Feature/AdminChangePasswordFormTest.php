@@ -86,17 +86,10 @@ class AdminChangePasswordFormTest extends TestCase
     public function test_password_edit_form_shows_error_only_for_the_submitted_row(): void
     {
         $admin = $this->makeAdmin();
-        $session = \App\Models\AcademicSession::create([
-            'name' => 'Session '.uniqid(),
-            'start_date' => now()->subMonth(),
-            'end_date' => now()->addMonths(6),
-            'is_active' => true,
-        ]);
-        $studentOne = $this->makeStudent('student-one', $session);
-        $studentTwo = $this->makeStudent('student-two', $session);
+        $studentOne = $this->makeStudent('student-one');
+        $studentTwo = $this->makeStudent('student-two');
 
-        $this->withSession(['admin_selected_academic_session_id' => $session->id])
-            ->actingAs($admin)
+        $this->actingAs($admin)
             ->put(route('admin.students.password.update', $studentOne), [
                 '_drawer' => 'editStudentDrawer'.$studentOne->id,
                 'password' => 'new-password-1',
@@ -144,7 +137,7 @@ class AdminChangePasswordFormTest extends TestCase
         return [$branch, $branchUser];
     }
 
-    private function makeStudent(string $name = 'test-student', ?\App\Models\AcademicSession $session = null): Student
+    private function makeStudent(string $name = 'test-student'): Student
     {
         $branch = Branch::create(['name' => 'Branch '.uniqid(), 'email' => 'branch-'.uniqid().'@example.com', 'is_active' => true]);
         $class = SchoolClass::create(['branch_id' => $branch->id, 'name' => 'Class 10']);
@@ -152,7 +145,6 @@ class AdminChangePasswordFormTest extends TestCase
         return Student::create([
             'branch_id' => $branch->id,
             'class_id' => $class->id,
-            'session_id' => $session?->id,
             'student_name' => $name,
             'guardian_name' => 'Guardian',
             'class' => $class->name,

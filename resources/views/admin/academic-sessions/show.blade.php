@@ -57,15 +57,6 @@
             </div>
         </div>
         <div class="exam-stat-card">
-            <div class="exam-stat-icon success">
-                <i class="bi bi-people-fill"></i>
-            </div>
-            <div class="exam-stat-body">
-                <span>Students</span>
-                <strong>{{ $academicSession->students()->count() }}</strong>
-            </div>
-        </div>
-        <div class="exam-stat-card">
             <div class="exam-stat-icon warning">
                 <i class="bi bi-journal-check"></i>
             </div>

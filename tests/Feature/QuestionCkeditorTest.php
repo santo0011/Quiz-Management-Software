@@ -329,7 +329,6 @@ class QuestionCkeditorTest extends TestCase
         $student = Student::create([
             'branch_id' => $branch->id,
             'class_id' => $exam->school_class_id,
-            'session_id' => $exam->session_id,
             'student_name' => 'Test Student',
             'guardian_name' => 'Guardian',
             'class' => $exam->schoolClass->name,

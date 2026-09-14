@@ -8,7 +8,7 @@
         <div class="panel-header">
             <div>
                 <h2>Academic Sessions</h2>
-                <p>Manage the academic years students, exams, and results are organized under.</p>
+                <p>Manage the academic years exams and results are organized under.</p>
             </div>
             <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addSessionDrawer" aria-controls="addSessionDrawer">
                 <i class="bi bi-plus-circle-fill"></i>
@@ -28,7 +28,7 @@
             <div class="empty-state">
                 <i class="bi bi-calendar-range"></i>
                 <h3>No academic sessions found</h3>
-                <p>Add a session before creating students or exams.</p>
+                <p>Add a session before creating exams.</p>
             </div>
         @else
             <div class="table-responsive">
@@ -68,7 +68,7 @@
                                                 <i class="bi {{ $item->is_active ? 'bi-pause-circle-fill' : 'bi-play-circle-fill' }}"></i>
                                             </button>
                                         </form>
-                                        @if ($item->students_count || $item->exams_count || $item->exam_attempts_count)
+                                        @if ($item->exams_count || $item->exam_attempts_count)
                                             <span class="publish-lock-hint" data-bs-toggle="tooltip" data-bs-title="{{ \App\Models\AcademicSession::DELETE_LOCK_MESSAGE }}">
                                                 <i class="bi bi-lock-fill"></i>
                                             </span>

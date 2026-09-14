@@ -34,11 +34,6 @@ class AcademicSession extends Model
         return $this->is_active;
     }
 
-    public function students()
-    {
-        return $this->hasMany(Student::class, 'session_id');
-    }
-
     public function exams()
     {
         return $this->hasMany(Exam::class, 'session_id');
@@ -50,15 +45,15 @@ class AcademicSession extends Model
     }
 
     /**
-     * Whether any Student, Exam, or Exam Attempt (result) is still tied to
-     * this session — the single source of truth for whether it may be
-     * deleted, checked both by the delete guard and by the UI so the
-     * Delete action is disabled up front instead of failing after a click.
+     * Whether any Exam or Exam Attempt (result) is still tied to this
+     * session — the single source of truth for whether it may be deleted,
+     * checked both by the delete guard and by the UI so the Delete action
+     * is disabled up front instead of failing after a click. Students are
+     * no longer session-scoped, so they don't factor into this check.
      */
     public function hasRelatedData(): bool
     {
-        return $this->students()->exists()
-            || $this->exams()->exists()
+        return $this->exams()->exists()
             || $this->examAttempts()->exists();
     }
 }

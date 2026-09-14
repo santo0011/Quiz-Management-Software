@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\AcademicSession;
 use App\Models\Branch;
 use App\Models\Guardian;
 use App\Models\Student;
@@ -18,25 +17,20 @@ class StudentManagementTest extends TestCase
     public function test_branch_user_only_sees_own_students(): void
     {
         [$branch, $otherBranch, $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
 
         $ownStudent = Student::create($this->studentPayload([
             'branch_id' => $branch->id,
             'student_name' => 'Own Student',
             'email' => 'own@example.com',
-            'session_id' => $session->id,
         ]));
 
         Student::create($this->studentPayload([
             'branch_id' => $otherBranch->id,
             'student_name' => 'Other Student',
             'email' => 'other@example.com',
-            'session_id' => $session->id,
         ]));
 
-        $response = $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
-            ->get(route('branch.students.index'));
+        $response = $this->actingAs($branchUser)->get(route('branch.students.index'));
 
         $response->assertOk();
         $response->assertSee($ownStudent->student_name);
@@ -66,10 +60,8 @@ class StudentManagementTest extends TestCase
     public function test_branch_created_student_is_forced_to_authenticated_branch(): void
     {
         [$branch, , $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $this->studentPayload([
                 'branch_id' => 999,
                 'email' => 'new@example.com',
@@ -84,11 +76,9 @@ class StudentManagementTest extends TestCase
 
     public function test_guardian_email_is_saved_when_provided(): void
     {
-        [$branch, , $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
+        [, , $branchUser] = $this->makeBranchUser();
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $this->studentPayload([
                 'email' => 'guardian-email-student@example.com',
                 'guardian_email' => 'guardian@example.com',
@@ -104,7 +94,6 @@ class StudentManagementTest extends TestCase
     public function test_guardian_email_is_optional_for_a_new_guardian(): void
     {
         [, , $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
 
         $payload = $this->studentPayload([
             'email' => 'no-guardian-email-student@example.com',
@@ -112,7 +101,6 @@ class StudentManagementTest extends TestCase
         unset($payload['guardian_email']);
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $payload)
             ->assertRedirect(route('branch.students.index'));
 
@@ -126,10 +114,8 @@ class StudentManagementTest extends TestCase
     public function test_new_guardian_creates_a_guardian_account(): void
     {
         [, , $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $this->studentPayload([
                 'email' => 'fresh-guardian-student@example.com',
                 'guardian_name' => 'Fresh Guardian',
@@ -151,10 +137,8 @@ class StudentManagementTest extends TestCase
     public function test_reusing_the_same_guardian_email_does_not_create_a_duplicate_guardian(): void
     {
         [, , $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $this->studentPayload([
                 'student_name' => 'First Sibling',
                 'email' => 'first-sibling@example.com',
@@ -164,7 +148,6 @@ class StudentManagementTest extends TestCase
             ->assertRedirect(route('branch.students.index'));
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $this->studentPayload([
                 'student_name' => 'Second Sibling',
                 'email' => 'second-sibling@example.com',
@@ -182,7 +165,6 @@ class StudentManagementTest extends TestCase
     public function test_existing_guardian_links_the_student_and_ignores_submitted_name_and_email(): void
     {
         [, , $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
         $guardian = Guardian::create(['name' => 'Real Guardian', 'email' => 'real-guardian@example.com']);
 
         $payload = $this->studentPayload([
@@ -194,7 +176,6 @@ class StudentManagementTest extends TestCase
         ]);
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $payload)
             ->assertRedirect(route('branch.students.index'));
 
@@ -224,7 +205,6 @@ class StudentManagementTest extends TestCase
     public function test_existing_guardian_submission_with_empty_name_and_email_succeeds(): void
     {
         [, , $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
         $guardian = Guardian::create(['name' => 'Real Guardian', 'email' => 'real-guardian-2@example.com']);
 
         $payload = $this->studentPayload([
@@ -236,7 +216,6 @@ class StudentManagementTest extends TestCase
         ]);
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $payload)
             ->assertRedirect(route('branch.students.index'));
 
@@ -251,7 +230,6 @@ class StudentManagementTest extends TestCase
     public function test_existing_guardian_type_requires_a_guardian_id(): void
     {
         [, , $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
 
         $payload = $this->studentPayload([
             'email' => 'no-guardian-picked@example.com',
@@ -260,7 +238,6 @@ class StudentManagementTest extends TestCase
         unset($payload['guardian_name'], $payload['guardian_email']);
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $payload)
             ->assertSessionHasErrors(['guardian_id' => 'Please search and select an existing guardian.']);
 
@@ -272,10 +249,8 @@ class StudentManagementTest extends TestCase
     public function test_guardian_email_must_be_a_valid_address(): void
     {
         [, , $branchUser] = $this->makeBranchUser();
-        $session = $this->makeAcademicSession();
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.students.store'), $this->studentPayload([
                 'email' => 'invalid-guardian-email-student@example.com',
                 'guardian_email' => 'not-an-email',
@@ -330,16 +305,6 @@ class StudentManagementTest extends TestCase
             Branch::create(['name' => 'Kolkata Branch', 'email' => 'kolkata@example.com']),
             Branch::create(['name' => 'Delhi Branch', 'email' => 'delhi@example.com']),
         ];
-    }
-
-    private function makeAcademicSession(): AcademicSession
-    {
-        return AcademicSession::create([
-            'name' => '2026-2027',
-            'start_date' => '2026-06-01',
-            'end_date' => '2027-05-31',
-            'is_active' => true,
-        ]);
     }
 
     private function studentPayload(array $overrides = []): array

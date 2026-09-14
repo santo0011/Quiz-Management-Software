@@ -13,7 +13,7 @@ class AcademicSessionController extends Controller
 {
     public function index(Request $request): View
     {
-        $sessions = AcademicSession::withCount(['students', 'exams', 'examAttempts'])
+        $sessions = AcademicSession::withCount(['exams', 'examAttempts'])
             ->when($request->filled('search'), fn ($query) => $query->where('name', 'like', '%'.$request->string('search')->toString().'%'))
             ->latest('start_date')
             ->paginate(20)
