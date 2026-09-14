@@ -8,21 +8,87 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="{{ asset('css/admin.css') }}" rel="stylesheet">
     <style>
+        .otp-page-heading {
+            margin-bottom: 16px;
+        }
+
+        .otp-page-heading h1 {
+            margin-bottom: 4px;
+        }
+
+        .otp-page-heading p {
+            margin-bottom: 0;
+        }
+
+        .otp-email-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f3f7ff;
+            border: 1px solid #dde6fb;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
+        }
+
+        .otp-email-card i {
+            flex: 0 0 auto;
+            font-size: 1.05rem;
+            color: var(--primary);
+        }
+
+        .otp-email-card-text {
+            min-width: 0;
+            font-size: 0.88rem;
+            color: var(--muted);
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .otp-email-card-text strong {
+            color: #1b2536;
+            font-weight: 700;
+        }
+
+        .otp-form-group {
+            margin-bottom: 18px;
+        }
+
+        .otp-input-wrap {
+            width: 100%;
+        }
+
         .otp-input {
-            font-size: 1.75rem;
-            letter-spacing: 0.6em;
+            width: 100%;
+            height: 42px;
+            padding: 0.25rem 0.6em;
+            font-size: 1.3rem;
+            letter-spacing: 0.5em;
             text-align: center;
             font-weight: 700;
-            padding-left: 0.6em;
+            line-height: 1.2;
+        }
+
+        .otp-input.is-invalid {
+            margin-bottom: 0;
+        }
+
+        .otp-input + .invalid-feedback {
+            text-align: center;
         }
 
         .otp-meta {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             font-size: 0.85rem;
             color: var(--muted);
-            margin: 14px 0 18px;
+            margin: 14px 0 20px;
+        }
+
+        .otp-resend-row {
+            text-align: center;
+            margin-top: 14px;
         }
 
         .otp-resend-btn {
@@ -38,10 +104,15 @@
             cursor: not-allowed;
         }
 
-        .otp-email-note {
-            font-size: 0.9rem;
-            color: var(--muted);
-            margin: -14px 0 22px;
+        @media (max-width: 480px) {
+            .otp-email-card {
+                padding: 10px 12px;
+            }
+
+            .otp-input {
+                font-size: 1.15rem;
+                letter-spacing: 0.35em;
+            }
         }
     </style>
 </head>
@@ -56,26 +127,32 @@
                 </div>
             </div>
 
-            <h1>Verify your identity</h1>
-            <p>Enter the 6-digit code sent to your {{ $typeLabel }} email to finish signing in.</p>
-            <p class="otp-email-note"><i class="bi bi-envelope-check"></i> Code sent to <strong>{{ $maskedEmail }}</strong></p>
+            <div class="otp-page-heading">
+                <h1>Verify your identity</h1>
+                <p>Enter the 6-digit code sent to your {{ $typeLabel }} email to finish signing in.</p>
+            </div>
+
+            <div class="otp-email-card">
+                <i class="bi bi-envelope-check"></i>
+                <span class="otp-email-card-text">OTP sent to: <strong>{{ $maskedEmail }}</strong></span>
+            </div>
 
             @if (session('success'))
-                <div class="alert alert-success feedback-alert success" role="alert">
+                <div class="alert alert-success feedback-alert success" role="alert" data-auto-dismiss>
                     <i class="bi bi-check-circle-fill"></i>
                     <span>{{ session('success') }}</span>
                 </div>
             @endif
 
             @if (session('otp_success'))
-                <div class="alert alert-success feedback-alert success" role="alert">
+                <div class="alert alert-success feedback-alert success" role="alert" data-auto-dismiss>
                     <i class="bi bi-check-circle-fill"></i>
                     <span>{{ session('otp_success') }}</span>
                 </div>
             @endif
 
             @if (session('otp_error'))
-                <div class="alert alert-danger feedback-alert" role="alert">
+                <div class="alert alert-danger feedback-alert" role="alert" data-auto-dismiss>
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <span>{{ session('otp_error') }}</span>
                 </div>
@@ -83,23 +160,25 @@
 
             <form method="POST" action="{{ route('login.otp.verify') }}" class="login-form">
                 @csrf
-                <div class="mb-2">
-                    <label for="otp" class="form-label">6-Digit Verification Code</label>
-                    <input
-                        id="otp"
-                        type="text"
-                        name="otp"
-                        class="form-control otp-input @error('otp') is-invalid @enderror"
-                        inputmode="numeric"
-                        pattern="[0-9]{6}"
-                        maxlength="6"
-                        autocomplete="one-time-code"
-                        autofocus
-                        required
-                    >
-                    @error('otp')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                <div class="otp-form-group">
+                    <label for="otp" class="form-label text-center d-block">6-Digit Verification Code</label>
+                    <div class="otp-input-wrap">
+                        <input
+                            id="otp"
+                            type="text"
+                            name="otp"
+                            class="form-control otp-input @error('otp') is-invalid @enderror"
+                            inputmode="numeric"
+                            pattern="[0-9]{6}"
+                            maxlength="6"
+                            autocomplete="one-time-code"
+                            autofocus
+                            required
+                        >
+                        @error('otp')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="otp-meta">
@@ -112,7 +191,7 @@
                 </button>
             </form>
 
-            <form method="POST" action="{{ route('login.otp.resend') }}" id="resendForm">
+            <form method="POST" action="{{ route('login.otp.resend') }}" id="resendForm" class="otp-resend-row">
                 @csrf
                 <button type="submit" class="otp-resend-btn" id="resendBtn" disabled>
                     Resend code <span id="resendCountdown"></span>
@@ -158,6 +237,14 @@
             }
 
             tickResend();
+
+            document.querySelectorAll('[data-auto-dismiss]').forEach((alertEl) => {
+                setTimeout(() => {
+                    alertEl.style.transition = 'opacity 0.4s ease';
+                    alertEl.style.opacity = '0';
+                    setTimeout(() => alertEl.remove(), 400);
+                }, 6000);
+            });
         })();
     </script>
     @include('partials.global-forms')

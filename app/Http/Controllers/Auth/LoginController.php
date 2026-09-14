@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Guardian;
+use App\Models\Setting;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Services\LoginOtpService;
+use App\Services\SingleSessionService;
+use App\Services\ZohoStudentService;
+use App\Support\RoleRedirector;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +28,35 @@ class LoginController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
+        $loginType = $request->input('login_type');
+
+        if ($loginType === 'student') {
+            $isTeacherOverride = $request->boolean('teacher_override');
+
+            $rules = [
+                'login_type' => ['required', Rule::in(['super_admin', 'branch', 'student', 'guardian', 'teacher'])],
+                'nrich_student_id' => ['required', 'string'],
+            ];
+            $messages = [
+                'login_type.required' => 'Please select a login type.',
+                'login_type.in' => 'Please select a valid login type.',
+                'nrich_student_id.required' => 'Please enter your Student ID.',
+            ];
+
+            if ($isTeacherOverride) {
+                $rules['password'] = ['required', 'string'];
+                $messages['password.required'] = 'Please enter the Teacher Override password.';
+            }
+
+            $validated = $request->validate($rules, $messages);
+
+            if ($isTeacherOverride) {
+                return $this->loginStudentViaTeacherOverride($request, $validated['nrich_student_id'], $validated['password']);
+            }
+
+            return $this->loginStudent($request, $validated['nrich_student_id']);
+        }
+
         $credentials = $request->validate([
             'login_type' => ['required', Rule::in(['super_admin', 'branch', 'student', 'guardian', 'teacher'])],
             'email' => ['required', 'email'],
@@ -36,12 +69,7 @@ class LoginController extends Controller
             'password.required' => 'Password is required.',
         ]);
 
-        $loginType = $credentials['login_type'];
         unset($credentials['login_type']);
-
-        if ($loginType === 'student') {
-            return $this->loginStudent($request, $credentials);
-        }
 
         if ($loginType === 'guardian') {
             return $this->loginGuardian($request, $credentials);
@@ -72,7 +100,7 @@ class LoginController extends Controller
                 }
             }
 
-            return $this->issueOtpAndRedirect($request, $loginType, $user->email);
+            return $this->issueOtpAndRedirect($request, $loginType, $user->email, $request->boolean('remember'));
         }
 
         return back()
@@ -102,32 +130,119 @@ class LoginController extends Controller
         return redirect()->route('login');
     }
 
-    private function loginStudent(Request $request, array $credentials): RedirectResponse
+    /**
+     * Students are identified by their NRICH Student ID. Zoho is the sole
+     * source of truth for whether that ID is real — it is sent to Zoho API 2
+     * unconditionally, with no local lookup beforehand. As soon as Zoho
+     * confirms the ID, the student proceeds to the OTP screen; whether a
+     * local Student record exists is resolved only after the OTP itself is
+     * verified (see LoginOtpController::verifyStudentOtp()), since that's
+     * the point at which we actually need one to create a session.
+     *
+     * The one local check kept here is a fast-fail for an ALREADY-KNOWN
+     * deactivated account/branch, purely so a disabled student doesn't wait
+     * through an OTP email for nothing — it never rejects for a MISSING
+     * record, only for one that positively exists and is inactive.
+     */
+    private function loginStudent(Request $request, string $nrichStudentId): RedirectResponse
     {
-        $student = Student::where('email', $credentials['email'])->first();
+        $zohoStudentService = app(ZohoStudentService::class);
 
-        $validPassword = $student?->password && Hash::check($credentials['password'], $student->password);
-        $validLoginCode = $student?->login_code_hash && Hash::check($credentials['password'], $student->login_code_hash);
+        $result = $zohoStudentService->identify($nrichStudentId, sendOtp: true);
 
-        if ($student && ($validPassword || $validLoginCode)) {
-            if (! $student->isActive()) {
-                return back()
-                    ->with('login_error', 'This student account has been deactivated. Please contact your administrator.')
-                    ->withInput($request->only('email', 'login_type'));
-            }
-
-            if ($student->branch && ! $student->branch->isActive()) {
-                return back()
-                    ->with('login_error', 'This branch has been deactivated. Please contact your administrator.')
-                    ->withInput($request->only('email', 'login_type'));
-            }
-
-            return $this->issueOtpAndRedirect($request, 'student', $student->email);
+        if (! $result['ok']) {
+            return back()
+                ->with('login_error', $result['message'])
+                ->withInput($request->only('login_type'));
         }
 
-        return back()
-            ->with('login_error', 'The password you entered is incorrect. Please try again.')
-            ->withInput($request->only('email', 'login_type'));
+        $student = Student::where('zoho_student_id', $nrichStudentId)->first();
+
+        if ($student && ! $student->isActive()) {
+            return back()
+                ->with('login_error', 'This student account has been deactivated. Please contact your administrator.')
+                ->withInput($request->only('login_type'));
+        }
+
+        if ($student && $student->branch && ! $student->branch->isActive()) {
+            return back()
+                ->with('login_error', 'This branch has been deactivated. Please contact your administrator.')
+                ->withInput($request->only('login_type'));
+        }
+
+        if ($student) {
+            $zohoStudentService->syncStudentFromZoho($student, $result['data']);
+        }
+
+        $request->session()->regenerate();
+        $request->session()->put('pending_login', [
+            'type' => 'student',
+            'nrich_student_id' => $nrichStudentId,
+            'parent_email' => $zohoStudentService->extractParentEmail($result['data']),
+            'otp_sent_at' => now()->toIso8601String(),
+            'otp_validity_minutes' => $result['otp_validity'],
+            'otp_attempts' => 0,
+        ]);
+
+        return redirect()->route('login.otp');
+    }
+
+    /**
+     * Teacher Override: a Teacher signs a Student in directly using one
+     * common password (configured by Super Admin in Settings) instead of
+     * the Student receiving/entering a Zoho OTP. Zoho API 2 is still called
+     * to confirm the Student ID is valid — but with send_otp:false, so it
+     * never triggers an OTP email — and login completes immediately with no
+     * OTP screen at all.
+     */
+    private function loginStudentViaTeacherOverride(Request $request, string $nrichStudentId, string $password): RedirectResponse
+    {
+        $settings = Setting::current();
+
+        if (! $settings->hasCommonStudentPassword() || ! Hash::check($password, $settings->common_student_password)) {
+            return back()
+                ->with('login_error', 'Incorrect Teacher Override password.')
+                ->withInput($request->only('login_type'));
+        }
+
+        $student = Student::where('zoho_student_id', $nrichStudentId)->first();
+
+        if (! $student) {
+            return back()
+                ->with('login_error', 'No student account found with this Student ID.')
+                ->withInput($request->only('login_type'));
+        }
+
+        if (! $student->isActive()) {
+            return back()
+                ->with('login_error', 'This student account has been deactivated. Please contact your administrator.')
+                ->withInput($request->only('login_type'));
+        }
+
+        if ($student->branch && ! $student->branch->isActive()) {
+            return back()
+                ->with('login_error', 'This branch has been deactivated. Please contact your administrator.')
+                ->withInput($request->only('login_type'));
+        }
+
+        $zohoStudentService = app(ZohoStudentService::class);
+        $result = $zohoStudentService->identify($nrichStudentId, sendOtp: false);
+
+        if (! $result['ok']) {
+            return back()
+                ->with('login_error', $result['message'])
+                ->withInput($request->only('login_type'));
+        }
+
+        $zohoStudentService->syncStudentFromZoho($student, $result['data']);
+
+        Auth::guard('student')->login($student, true);
+        $request->session()->regenerate();
+        SingleSessionService::establish($student, 'student');
+
+        return redirect()
+            ->intended(RoleRedirector::dashboardUrl($student))
+            ->with('success', 'Login successful. Welcome back!');
     }
 
     /**
@@ -177,7 +292,7 @@ class LoginController extends Controller
      * login immediately, email a 6-digit OTP and park the pending login in
      * the session until it is verified by LoginOtpController.
      */
-    private function issueOtpAndRedirect(Request $request, string $loginType, string $email): RedirectResponse
+    private function issueOtpAndRedirect(Request $request, string $loginType, string $email, bool $remember = false): RedirectResponse
     {
         if (! LoginOtpService::send($loginType, $email)) {
             return back()
@@ -189,6 +304,7 @@ class LoginController extends Controller
         $request->session()->put('pending_login', [
             'type' => $loginType,
             'email' => $email,
+            'remember' => $remember,
         ]);
 
         return redirect()->route('login.otp');

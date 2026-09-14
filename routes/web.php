@@ -21,7 +21,6 @@ use App\Http\Controllers\Auth\GuardianPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LoginOtpController;
 use App\Http\Controllers\Auth\PasswordResetController;
-use App\Http\Controllers\Auth\StudentPasswordController;
 use App\Http\Controllers\Branch\AcademicSessionSelectionController as BranchAcademicSessionSelectionController;
 use App\Http\Controllers\Branch\DashboardController as BranchDashboardController;
 use App\Http\Controllers\Branch\ExamController as BranchExamController;
@@ -71,10 +70,6 @@ Route::middleware('guest:web,student,guardian,teacher')->group(function () {
     Route::post('/verify-reset-code', [PasswordResetController::class, 'verifyOtp'])->name('password.otp.verify');
     Route::get('/reset-password', [PasswordResetController::class, 'resetForm'])->name('password.reset.form');
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->name('password.update');
-    Route::post('/student-login/check-email', [StudentPasswordController::class, 'checkEmail'])->name('student-login.check-email')->middleware('throttle:20,1');
-    Route::post('/student-login/send-otp', [StudentPasswordController::class, 'sendOtp'])->name('student-login.send-otp')->middleware('throttle:5,1');
-    Route::post('/student-login/verify-otp', [StudentPasswordController::class, 'verifyOtp'])->name('student-login.verify-otp')->middleware('throttle:10,1');
-    Route::post('/student-login/create-password', [StudentPasswordController::class, 'createPassword'])->name('student-login.create-password')->middleware('throttle:10,1');
     Route::post('/guardian-login/check-email', [GuardianPasswordController::class, 'checkEmail'])->name('guardian-login.check-email')->middleware('throttle:20,1');
     Route::post('/guardian-login/send-otp', [GuardianPasswordController::class, 'sendOtp'])->name('guardian-login.send-otp')->middleware('throttle:5,1');
     Route::post('/guardian-login/verify-otp', [GuardianPasswordController::class, 'verifyOtp'])->name('guardian-login.verify-otp')->middleware('throttle:10,1');

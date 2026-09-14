@@ -29,6 +29,10 @@ class SettingsController extends Controller
             unset($validated['mail_password']);
         }
 
+        if (! $request->filled('common_student_password')) {
+            unset($validated['common_student_password']);
+        }
+
         if ($request->hasFile('logo')) {
             if ($settings->logo_path) {
                 Storage::disk('public')->delete($settings->logo_path);

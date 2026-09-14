@@ -3,14 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\Branch;
+use App\Models\Setting;
 use App\Models\Student;
 use App\Models\User;
 use App\Mail\BranchLoginOtpMail;
-use App\Mail\StudentLoginOtpMail;
-use App\Mail\StudentOtpMail;
 use App\Mail\SuperAdminLoginOtpMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -102,10 +102,114 @@ class UnifiedLoginTest extends TestCase
             ->assertRedirect(route('branch.dashboard'));
     }
 
-    public function test_student_can_login_with_six_digit_code(): void
+    public function test_student_can_login_with_nrich_student_id_and_zoho_otp(): void
     {
-        Mail::fake();
+        $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai@example.com']);
 
+        $student = Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student One',
+            'guardian_name' => 'Guardian One',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'student@example.com',
+            'zoho_student_id' => 'NL1184',
+        ]);
+
+        $zohoPayload = [
+            'status' => 'success',
+            'error' => [],
+            'Student' => ['NRICH_ID' => 'NL1184'],
+            'Parent' => ['Email' => 'parent@example.com'],
+            'Enrolment' => [
+                'classes' => [
+                    ['id' => '96867000000904800', 'name' => 'English | Grade 1 ( 1 on 1 ) | Clyde North', 'active' => true],
+                ],
+            ],
+        ];
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response($zohoPayload, 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1184',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->assertGuest('student');
+
+        $this->post(route('login.otp.verify'), ['otp' => '145263'])
+            ->assertRedirect(route('student.dashboard'));
+
+        $this->assertAuthenticated('student');
+
+        $student->refresh();
+        $this->assertSame('96867000000904800', $student->zoho_class_id);
+        $this->assertSame('English | Grade 1 ( 1 on 1 ) | Clyde North', $student->zoho_class_name);
+    }
+
+    public function test_student_login_rejects_an_id_zoho_itself_does_not_recognize(): void
+    {
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'error', 'error' => ['Student not found']], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'UNKNOWN-ID',
+        ])->assertSessionHas('login_error', 'No student account found with this Student ID.');
+
+        $this->assertGuest('student');
+    }
+
+    /**
+     * The core fix under test: Zoho is the source of truth for whether a
+     * Student ID is real. An ID Zoho recognizes must reach the OTP screen
+     * even when no local Student record exists yet for it — a missing local
+     * account is only surfaced (with a distinct, accurate message) after OTP
+     * verification, not at this first step.
+     */
+    public function test_student_reaches_otp_step_when_zoho_recognizes_the_id_even_with_no_local_record_yet(): void
+    {
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'success', 'error' => []], 200),
+        ]);
+
+        $this->assertDatabaseMissing('students', ['zoho_student_id' => 'NL1405']);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1405',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->assertGuest('student');
+    }
+
+    public function test_otp_verification_shows_a_distinct_error_when_zoho_confirms_but_no_local_account_exists(): void
+    {
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'success', 'error' => []], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1405',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->post(route('login.otp.verify'), ['otp' => '145263'])
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('login_error', 'Your Student ID was verified, but no matching account exists in this system yet. Please contact your administrator.');
+
+        $this->assertGuest('student');
+    }
+
+    public function test_student_login_shows_mapped_error_when_zoho_reports_student_not_found(): void
+    {
         $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai@example.com']);
 
         Student::create([
@@ -115,42 +219,89 @@ class UnifiedLoginTest extends TestCase
             'class' => 'Class 10',
             'phone_number' => '9876543210',
             'email' => 'student@example.com',
-            'login_code_hash' => Hash::make('654321'),
+            'zoho_student_id' => 'NL1184',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'error', 'error' => ['Student not found']], 200),
         ]);
 
         $this->post(route('login.store'), [
             'login_type' => 'student',
-            'email' => 'student@example.com',
-            'password' => '654321',
-        ])->assertRedirect(route('login.otp'));
+            'nrich_student_id' => 'NL1184',
+        ])->assertSessionHas('login_error', 'No student account found with this Student ID.');
 
         $this->assertGuest('student');
-
-        $otp = null;
-        Mail::assertSent(StudentLoginOtpMail::class, function (StudentLoginOtpMail $mail) use (&$otp): bool {
-            $otp = $mail->otp;
-
-            return true;
-        });
-
-        $this->post(route('login.otp.verify'), ['otp' => $otp])
-            ->assertRedirect(route('student.dashboard'));
-
-        $this->assertAuthenticated('student');
     }
 
-    public function test_student_email_check_requires_existing_student_account(): void
+    public function test_student_otp_verification_shows_specific_message_for_invalid_code(): void
     {
-        $this->postJson(route('student-login.check-email'), [
-            'email' => 'missing@example.com',
-        ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['email'])
-            ->assertJsonPath('errors.email.0', 'No student account found with this email address.');
+        $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student One',
+            'guardian_name' => 'Guardian One',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'student@example.com',
+            'zoho_student_id' => 'NL1184',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::sequence()
+                ->push(['status' => 'success', 'error' => []], 200)
+                ->push(['status' => 'error', 'error' => ['Invalid OTP entered.']], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1184',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->post(route('login.otp.verify'), ['otp' => '000000'])
+            ->assertSessionHas('otp_error', 'The verification code you entered is incorrect. Please try again.');
+
+        $this->assertGuest('student');
     }
 
-    public function test_student_without_password_can_create_password_with_single_use_otp(): void
+    public function test_student_otp_verification_shows_specific_message_for_expired_code(): void
     {
-        Mail::fake();
+        $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student One',
+            'guardian_name' => 'Guardian One',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'student@example.com',
+            'zoho_student_id' => 'NL1184',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::sequence()
+                ->push(['status' => 'success', 'error' => []], 200)
+                ->push(['status' => 'error', 'error' => ['OTP expired.']], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1184',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->post(route('login.otp.verify'), ['otp' => '000000'])
+            ->assertSessionHas('otp_error', 'This code has expired. Please request a new one.');
+
+        $this->assertGuest('student');
+    }
+
+    public function test_teacher_override_logs_student_in_directly_without_sending_an_otp(): void
+    {
+        Setting::current()->update(['common_student_password' => 'override-secret']);
 
         $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai@example.com']);
 
@@ -161,42 +312,85 @@ class UnifiedLoginTest extends TestCase
             'class' => 'Class 10',
             'phone_number' => '9876543210',
             'email' => 'student@example.com',
+            'zoho_student_id' => 'NL1184',
         ]);
 
-        $this->postJson(route('student-login.check-email'), [
-            'email' => $student->email,
-        ])->assertOk()
-            ->assertJsonPath('status', 'password_setup_required');
-
-        $this->postJson(route('student-login.send-otp'), [
-            'email' => $student->email,
-        ])->assertOk();
-
-        $otp = null;
-        Mail::assertSent(StudentOtpMail::class, function (StudentOtpMail $mail) use (&$otp): bool {
-            $otp = $mail->otp;
-
-            return strlen($mail->otp) === 6;
-        });
-
-        $this->postJson(route('student-login.verify-otp'), [
-            'email' => $student->email,
-            'otp' => $otp,
-        ])->assertOk();
-
-        $this->postJson(route('student-login.create-password'), [
-            'password' => 'secure-password',
-            'password_confirmation' => 'secure-password',
-        ])->assertOk()
-            ->assertJsonPath('redirect', route('student.dashboard'));
-
-        $student->refresh();
-
-        $this->assertTrue(Hash::check('secure-password', $student->password));
-        $this->assertDatabaseMissing('password_reset_otps', [
-            'email' => $student->email,
-            'used_at' => null,
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'success', 'error' => []], 200),
         ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1184',
+            'teacher_override' => '1',
+            'password' => 'override-secret',
+        ])->assertRedirect(route('student.dashboard'));
+
         $this->assertAuthenticatedAs($student, 'student');
+
+        // send_otp must have been sent as the literal string "false" and no
+        // verification_code step ever occurred (only one Zoho call, not two).
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'lms_portal_endpoint_1')
+                && $request['send_otp'] === 'false';
+        });
+        Http::assertSentCount(2); // 1 token request + 1 Zoho identify call, no OTP round trip.
+    }
+
+    public function test_teacher_override_rejects_an_incorrect_common_password(): void
+    {
+        Setting::current()->update(['common_student_password' => 'override-secret']);
+
+        $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student One',
+            'guardian_name' => 'Guardian One',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'student@example.com',
+            'zoho_student_id' => 'NL1184',
+        ]);
+
+        Http::fake();
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1184',
+            'teacher_override' => '1',
+            'password' => 'wrong-password',
+        ])->assertSessionHas('login_error', 'Incorrect Teacher Override password.');
+
+        $this->assertGuest('student');
+        Http::assertNothingSent();
+    }
+
+    public function test_teacher_override_fails_when_no_common_password_has_been_configured(): void
+    {
+        $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student One',
+            'guardian_name' => 'Guardian One',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'student@example.com',
+            'zoho_student_id' => 'NL1184',
+        ]);
+
+        Http::fake();
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1184',
+            'teacher_override' => '1',
+            'password' => 'anything',
+        ])->assertSessionHas('login_error', 'Incorrect Teacher Override password.');
+
+        $this->assertGuest('student');
+        Http::assertNothingSent();
     }
 }

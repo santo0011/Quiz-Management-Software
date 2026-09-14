@@ -23,6 +23,9 @@ class Student extends Authenticatable
         'zoho_student_id',
         'zoho_payload',
         'zoho_synced_at',
+        'zoho_class_id',
+        'zoho_class_name',
+        'zoho_grade',
         'is_active',
     ];
 

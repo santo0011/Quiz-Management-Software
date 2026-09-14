@@ -347,6 +347,7 @@ class StudentManagementTest extends TestCase
         return array_merge([
             'branch_id' => 1,
             'student_name' => 'Test Student',
+            'zoho_student_id' => 'NRICH-'.uniqid(),
             'guardian_type' => 'new',
             'guardian_name' => 'Test Guardian',
             'guardian_email' => 'test-guardian@example.com',

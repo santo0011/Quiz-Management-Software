@@ -24,6 +24,7 @@ class SettingsRequest extends FormRequest
             'mail_encryption' => ['nullable', 'string', 'in:tls,ssl,'],
             'mail_from_address' => ['nullable', 'email', 'max:255'],
             'mail_from_name' => ['nullable', 'string', 'max:255'],
+            'common_student_password' => ['nullable', 'string', 'min:6', 'max:255'],
         ];
     }
 
@@ -31,6 +32,7 @@ class SettingsRequest extends FormRequest
     {
         return [
             'mail_host.required_with' => 'Please enter the SMTP host to configure mail settings.',
+            'common_student_password.min' => 'The Teacher Override password must be at least 6 characters.',
         ];
     }
 }

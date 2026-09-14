@@ -26,6 +26,9 @@ class ExamAttempt extends Model
         'teacher_remark',
         'teacher_remark_by',
         'teacher_remark_at',
+        'result_pdf_path',
+        'result_pdf_token',
+        'zoho_result_synced_at',
     ];
 
     protected function casts(): array
@@ -38,6 +41,7 @@ class ExamAttempt extends Model
             'percentage' => 'decimal:2',
             'is_passed' => 'boolean',
             'teacher_remark_at' => 'datetime',
+            'zoho_result_synced_at' => 'datetime',
         ];
     }
 

@@ -52,22 +52,6 @@
                             </span>
                             <i class="bi bi-chevron-right login-hero-role-arrow"></i>
                         </button>
-                        <button type="button" class="login-hero-role-btn" data-login-type-button="teacher" role="tab">
-                            <span class="login-hero-role-icon"><i class="bi bi-person-workspace"></i></span>
-                            <span class="login-hero-role-copy">
-                                <strong>Teacher</strong>
-                                <span>Review results &amp; add remarks</span>
-                            </span>
-                            <i class="bi bi-chevron-right login-hero-role-arrow"></i>
-                        </button>
-                        <button type="button" class="login-hero-role-btn" data-login-type-button="guardian" role="tab">
-                            <span class="login-hero-role-icon"><i class="bi bi-person-heart"></i></span>
-                            <span class="login-hero-role-copy">
-                                <strong>Guardian</strong>
-                                <span>Track your child's progress</span>
-                            </span>
-                            <i class="bi bi-chevron-right login-hero-role-arrow"></i>
-                        </button>
                     </div>
                 </div>
             </aside>
@@ -94,14 +78,6 @@
                     <i class="bi bi-mortarboard-fill"></i>
                     <span>Student</span>
                 </button>
-                <button type="button" class="login-type-option" data-login-type-button="teacher" role="tab">
-                    <i class="bi bi-person-workspace"></i>
-                    <span>Teacher</span>
-                </button>
-                <button type="button" class="login-type-option" data-login-type-button="guardian" role="tab">
-                    <i class="bi bi-person-heart"></i>
-                    <span>Guardian</span>
-                </button>
             </div>
 
             <div class="login-heading">
@@ -111,14 +87,14 @@
             </div>
 
             @if (session('login_error'))
-                <div class="alert alert-danger feedback-alert" role="alert">
+                <div class="alert alert-danger feedback-alert" role="alert" data-auto-dismiss>
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <span>{{ session('login_error') }}</span>
                 </div>
             @endif
 
             @if (session('login_success'))
-                <div class="alert alert-success feedback-alert success" role="alert">
+                <div class="alert alert-success feedback-alert success" role="alert" data-auto-dismiss>
                     <i class="bi bi-check-circle-fill"></i>
                     <span>{{ session('login_success') }}</span>
                 </div>
@@ -139,21 +115,14 @@
                     <label for="email" class="form-label" id="emailLabel">Email</label>
                     <div class="login-input-wrap">
                         <i class="bi bi-envelope-fill"></i>
-                        <input id="email" type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" required autofocus placeholder="Enter your email">
+                        <input id="email" type="email" name="email" value="{{ old('email', old('nrich_student_id')) }}" class="form-control @error('email') is-invalid @enderror @error('nrich_student_id') is-invalid @enderror" required autofocus placeholder="Enter your email">
                     </div>
                     @error('email')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
-                </div>
-
-                <div class="feedback-alert success mb-3 d-none" id="studentSuccess" role="status">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span></span>
-                </div>
-
-                <div class="alert alert-danger feedback-alert d-none" id="studentError" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span></span>
+                    @error('nrich_student_id')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="mb-3" id="passwordGroup">
@@ -170,64 +139,13 @@
                     @enderror
                 </div>
 
-                <div class="d-none" id="otpGroup">
-                    <div class="mb-3">
-                        <label for="studentOtp" class="form-label">6-Digit OTP</label>
-                        <div class="login-input-wrap">
-                            <i class="bi bi-123"></i>
-                            <input id="studentOtp" type="text" inputmode="numeric" autocomplete="one-time-code" class="form-control" maxlength="6" placeholder="Enter OTP">
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-soft w-100 mb-3" id="verifyOtpButton">
-                        <i class="bi bi-shield-check"></i>
-                        Verify OTP
-                    </button>
-                </div>
-
-                <div class="d-none" id="createPasswordGroup">
-                    <div class="mb-3">
-                        <label for="newStudentPassword" class="form-label">Create Password</label>
-                        <div class="password-field login-input-wrap">
-                            <i class="bi bi-key-fill"></i>
-                            <input id="newStudentPassword" type="password" class="form-control" minlength="8" placeholder="Create a secure password">
-                            <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false" data-password-toggle>
-                                <i class="bi bi-eye-fill"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="newStudentPasswordConfirmation" class="form-label">Confirm Password</label>
-                        <div class="password-field login-input-wrap">
-                            <i class="bi bi-key-fill"></i>
-                            <input id="newStudentPasswordConfirmation" type="password" class="form-control" minlength="8" placeholder="Confirm your password">
-                            <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false" data-password-toggle>
-                                <i class="bi bi-eye-fill"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-primary w-100 mb-3" id="createPasswordButton">
-                        <i class="bi bi-check-circle-fill"></i>
-                        Create Password & Login
-                    </button>
-                </div>
-
                 <div class="login-form-row">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                        <label class="form-check-label" for="remember">Remember me</label>
+                        <label class="form-check-label" for="remember" id="rememberLabel">Remember me</label>
                     </div>
                     <a href="{{ route('password.request', ['type' => $selectedType]) }}" class="auth-inline-link" id="forgotPasswordLink">Forgot password?</a>
                 </div>
-
-                <button type="button" class="btn btn-primary w-100 login-submit d-none" id="studentContinueButton">
-                    <i class="bi bi-arrow-right-circle-fill"></i>
-                    <span>Continue</span>
-                </button>
-
-                <button type="button" class="btn btn-primary w-100 login-submit d-none" id="sendOtpButton">
-                    <i class="bi bi-envelope-check-fill"></i>
-                    <span>Send OTP & Create Password</span>
-                </button>
 
                 <button type="submit" class="btn btn-primary w-100 login-submit" id="loginButton" data-loading="Logging in...">
                     <i class="bi bi-shield-lock-fill" id="loginButtonIcon"></i>
@@ -246,11 +164,16 @@
                 subtitle: 'Sign in to manage the Quiz Management System',
                 emailLabel: 'Email',
                 emailPlaceholder: 'superadmin@example.com',
+                identifierName: 'email',
+                identifierType: 'email',
                 passwordLabel: 'Password',
                 passwordPlaceholder: 'Enter your password',
+                requiresPassword: true,
                 button: 'Login as Super Admin',
                 icon: 'bi bi-shield-lock-fill',
                 forgot: true,
+                rememberLabel: 'Remember me',
+                rememberFieldName: 'remember',
             },
             branch: {
                 kicker: 'Branch Workspace',
@@ -258,60 +181,40 @@
                 subtitle: 'Sign in to manage your branch',
                 emailLabel: 'Branch Email',
                 emailPlaceholder: 'branch@example.com',
+                identifierName: 'email',
+                identifierType: 'email',
                 passwordLabel: 'Password',
                 passwordPlaceholder: 'Enter your branch password',
+                requiresPassword: true,
                 button: 'Login as Branch',
                 icon: 'bi bi-building-fill',
                 forgot: true,
+                rememberLabel: 'Remember me',
+                rememberFieldName: 'remember',
             },
             student: {
                 kicker: 'Student Portal',
                 title: 'Student Login',
-                subtitle: 'Enter your email first to continue securely',
-                emailLabel: 'Student Email',
-                emailPlaceholder: 'student@example.com',
-                passwordLabel: 'Password',
-                passwordPlaceholder: 'Enter your password',
-                button: 'Login as Student',
+                subtitle: 'Enter your NRICH Student ID to continue',
+                emailLabel: 'NRICH Student ID',
+                emailPlaceholder: 'e.g. NL1184',
+                identifierName: 'nrich_student_id',
+                identifierType: 'text',
+                passwordLabel: 'Teacher Override Password',
+                passwordPlaceholder: 'Enter the common Teacher Override password',
+                requiresPassword: false,
+                button: 'Send OTP',
+                buttonOverride: 'Login',
                 icon: 'bi bi-mortarboard-fill',
-                forgot: true,
-            },
-            teacher: {
-                kicker: 'Teacher Workspace',
-                title: 'Teacher Login',
-                subtitle: 'Sign in to review results and add remarks',
-                emailLabel: 'Teacher Email',
-                emailPlaceholder: 'teacher@example.com',
-                passwordLabel: 'Password',
-                passwordPlaceholder: 'Enter your password',
-                button: 'Login as Teacher',
-                icon: 'bi bi-person-workspace',
                 forgot: false,
-            },
-            guardian: {
-                kicker: 'Guardian Portal',
-                title: 'Guardian Login',
-                subtitle: 'Enter your guardian email first to continue securely',
-                emailLabel: 'Guardian Email',
-                emailPlaceholder: 'guardian@example.com',
-                passwordLabel: 'Password',
-                passwordPlaceholder: 'Enter your password',
-                button: 'Login as Guardian',
-                icon: 'bi bi-person-heart',
-                forgot: false,
+                rememberLabel: 'Teacher Override',
+                rememberFieldName: 'teacher_override',
             },
         };
 
-        // Student and Guardian both use the same "enter email first" two-step
-        // flow (check email -> password OR OTP-based password setup) driven
-        // by the shared UI groups below; every other type is a plain
-        // email+password form.
-        const TWO_STEP_TYPES = ['student', 'guardian'];
-        const isTwoStepType = (type) => TWO_STEP_TYPES.includes(type);
-
         const LOGIN_TYPE_KEY = 'quizcore.login.type';
         const savedLoginType = localStorage.getItem(LOGIN_TYPE_KEY);
-        const validTypes = ['super_admin', 'branch', 'student', 'teacher', 'guardian'];
+        const validTypes = ['super_admin', 'branch', 'student'];
         const initialType = validTypes.includes(savedLoginType) ? savedLoginType : 'super_admin';
 
         const typeInput = document.getElementById('loginType');
@@ -320,57 +223,42 @@
         const password = document.getElementById('password');
         const passwordGroup = document.getElementById('passwordGroup');
         const loginButton = document.getElementById('loginButton');
-        const studentContinueButton = document.getElementById('studentContinueButton');
-        const sendOtpButton = document.getElementById('sendOtpButton');
-        const otpGroup = document.getElementById('otpGroup');
-        const studentOtp = document.getElementById('studentOtp');
-        const verifyOtpButton = document.getElementById('verifyOtpButton');
-        const createPasswordGroup = document.getElementById('createPasswordGroup');
-        const newStudentPassword = document.getElementById('newStudentPassword');
-        const newStudentPasswordConfirmation = document.getElementById('newStudentPasswordConfirmation');
-        const createPasswordButton = document.getElementById('createPasswordButton');
-        const studentSuccess = document.getElementById('studentSuccess');
-        const studentError = document.getElementById('studentError');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        const remember = document.getElementById('remember');
         let isSubmitting = false;
-        const endpointsByType = {
-            student: {
-                checkEmail: @json(route('student-login.check-email')),
-                sendOtp: @json(route('student-login.send-otp')),
-                verifyOtp: @json(route('student-login.verify-otp')),
-                createPassword: @json(route('student-login.create-password')),
-            },
-            guardian: {
-                checkEmail: @json(route('guardian-login.check-email')),
-                sendOtp: @json(route('guardian-login.send-otp')),
-                verifyOtp: @json(route('guardian-login.verify-otp')),
-                createPassword: @json(route('guardian-login.create-password')),
-            },
-        };
-        const currentEndpoints = () => endpointsByType[typeInput.value] || endpointsByType.student;
 
-        function clearStudentMessages() {
-            studentSuccess.classList.add('d-none');
-            studentSuccess.querySelector('span').textContent = '';
-            studentError.classList.add('d-none');
-            studentError.querySelector('span').textContent = '';
-        }
+        // For every type except Student, the password field's visibility is
+        // fixed (config.requiresPassword). For Student, the same checkbox
+        // that is "Remember me" elsewhere becomes "Teacher Override", and
+        // checking it is what reveals the (otherwise hidden) password field
+        // for the common override password.
+        function applyPasswordVisibility(type) {
+            const config = loginConfigs[type] || loginConfigs.super_admin;
+            const show = type === 'student' ? remember.checked : config.requiresPassword;
 
-        function showStudentMessage(type, message) {
-            const target = type === 'success' ? studentSuccess : studentError;
-            const other = type === 'success' ? studentError : studentSuccess;
-
-            other.classList.add('d-none');
-            target.querySelector('span').textContent = message;
-            target.classList.remove('d-none');
-        }
-
-        function setLoading(button, loading, label) {
-            button.disabled = loading;
-            if (label) {
-                button.querySelector('span').textContent = loading ? 'Please wait...' : label;
+            passwordGroup.classList.toggle('d-none', !show);
+            password.required = show;
+            password.disabled = !show;
+            if (!show) {
+                password.value = '';
             }
+        }
+
+        // Student's submit button reads "Send OTP" normally, or "Login" once
+        // Teacher Override is checked (it skips the OTP step entirely).
+        // Every other type keeps its fixed label regardless of the checkbox.
+        function currentButtonText(type) {
+            const config = loginConfigs[type] || loginConfigs.super_admin;
+
+            if (type === 'student' && remember.checked) {
+                return config.buttonOverride || config.button;
+            }
+
+            return config.button;
+        }
+
+        function updateLoginButtonLabel(type) {
+            loginButton.querySelector('span').textContent = currentButtonText(type);
         }
 
         function setLoginButtonLoading(loading) {
@@ -378,7 +266,7 @@
             const spinner = document.getElementById('loginButtonSpinner');
             const label = loginButton.querySelector('span');
             const loadingText = loginButton.dataset.loading || 'Logging in...';
-            const normalText = (loginConfigs[typeInput.value] || loginConfigs.super_admin).button;
+            const normalText = currentButtonText(typeInput.value);
 
             loginButton.disabled = loading;
             icon.classList.toggle('d-none', loading);
@@ -391,132 +279,6 @@
             setLoginButtonLoading(false);
         }
 
-        function resetStudentFlow() {
-            clearStudentMessages();
-            passwordGroup.classList.add('d-none');
-            otpGroup.classList.add('d-none');
-            createPasswordGroup.classList.add('d-none');
-            sendOtpButton.classList.add('d-none');
-            loginButton.classList.add('d-none');
-            studentContinueButton.classList.remove('d-none');
-            password.required = false;
-            password.value = '';
-            password.disabled = true;
-            loginButton.disabled = true;
-        }
-
-        async function postJson(url, payload) {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json().catch(() => ({}));
-
-            if (!response.ok) {
-                const errors = data.errors || {};
-                const firstError = Object.values(errors).flat()[0] || data.message || 'Something went wrong. Please try again.';
-                throw new Error(firstError);
-            }
-
-            return data;
-        }
-
-        async function checkStudentEmail() {
-            clearStudentMessages();
-            setLoading(studentContinueButton, true, 'Continue');
-
-            try {
-                const data = await postJson(currentEndpoints().checkEmail, { email: email.value });
-                showStudentMessage('success', data.message);
-
-                studentContinueButton.classList.add('d-none');
-                otpGroup.classList.add('d-none');
-                createPasswordGroup.classList.add('d-none');
-
-                if (data.status === 'password_required') {
-                    passwordGroup.classList.remove('d-none');
-                    loginButton.classList.remove('d-none');
-                    sendOtpButton.classList.add('d-none');
-                    password.disabled = false;
-                    password.required = true;
-                    loginButton.disabled = password.value.trim() === '';
-                    password.focus();
-                } else {
-                    passwordGroup.classList.add('d-none');
-                    loginButton.classList.add('d-none');
-                    sendOtpButton.classList.remove('d-none');
-                    password.disabled = true;
-                    password.required = false;
-                }
-            } catch (error) {
-                resetStudentFlow();
-                showStudentMessage('error', error.message);
-            } finally {
-                setLoading(studentContinueButton, false, 'Continue');
-            }
-        }
-
-        async function sendStudentOtp() {
-            clearStudentMessages();
-            setLoading(sendOtpButton, true, 'Send OTP & Create Password');
-
-            try {
-                const data = await postJson(currentEndpoints().sendOtp, { email: email.value });
-                showStudentMessage('success', data.message);
-                sendOtpButton.classList.add('d-none');
-                otpGroup.classList.remove('d-none');
-                createPasswordGroup.classList.add('d-none');
-                studentOtp.focus();
-            } catch (error) {
-                showStudentMessage('error', error.message);
-            } finally {
-                setLoading(sendOtpButton, false, 'Send OTP & Create Password');
-            }
-        }
-
-        async function verifyStudentOtp() {
-            clearStudentMessages();
-            verifyOtpButton.disabled = true;
-
-            try {
-                const data = await postJson(currentEndpoints().verifyOtp, {
-                    email: email.value,
-                    otp: studentOtp.value,
-                });
-                showStudentMessage('success', data.message);
-                otpGroup.classList.add('d-none');
-                createPasswordGroup.classList.remove('d-none');
-                newStudentPassword.focus();
-            } catch (error) {
-                showStudentMessage('error', error.message);
-            } finally {
-                verifyOtpButton.disabled = false;
-            }
-        }
-
-        async function createStudentPassword() {
-            clearStudentMessages();
-            createPasswordButton.disabled = true;
-
-            try {
-                const data = await postJson(currentEndpoints().createPassword, {
-                    password: newStudentPassword.value,
-                    password_confirmation: newStudentPasswordConfirmation.value,
-                });
-                showStudentMessage('success', data.message);
-                window.location.href = data.redirect;
-            } catch (error) {
-                showStudentMessage('error', error.message);
-                createPasswordButton.disabled = false;
-            }
-        }
-
         function setLoginType(type) {
             const config = loginConfigs[type] || loginConfigs.super_admin;
 
@@ -527,13 +289,20 @@
             document.getElementById('loginSubtitle').textContent = config.subtitle;
             document.getElementById('emailLabel').textContent = config.emailLabel;
             document.getElementById('passwordLabel').textContent = config.passwordLabel;
+            document.getElementById('rememberLabel').textContent = config.rememberLabel;
             document.getElementById('loginButtonIcon').className = config.icon;
-            document.querySelector('#loginButton span').textContent = config.button;
+            email.name = config.identifierName;
+            email.type = config.identifierType;
             email.placeholder = config.emailPlaceholder;
             password.placeholder = config.passwordPlaceholder;
             forgotPasswordLink.classList.toggle('d-none', !config.forgot);
             const baseUrl = @json(route('password.request'));
             forgotPasswordLink.href = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'type=' + type;
+
+            remember.name = config.rememberFieldName;
+            remember.checked = false;
+            applyPasswordVisibility(type);
+            updateLoginButtonLabel(type);
 
             // Reset login button loading state when switching types
             const spinner = document.getElementById('loginButtonSpinner');
@@ -542,21 +311,6 @@
             loginButton.disabled = false;
             icon.classList.remove('d-none');
             spinner.classList.add('d-none');
-
-            if (isTwoStepType(type)) {
-                resetStudentFlow();
-            } else {
-                clearStudentMessages();
-                passwordGroup.classList.remove('d-none');
-                otpGroup.classList.add('d-none');
-                createPasswordGroup.classList.add('d-none');
-                studentContinueButton.classList.add('d-none');
-                sendOtpButton.classList.add('d-none');
-                loginButton.classList.remove('d-none');
-                loginButton.disabled = false;
-                password.disabled = false;
-                password.required = true;
-            }
 
             buttons.forEach((button) => {
                 const isActive = button.dataset.loginTypeButton === type;
@@ -569,24 +323,12 @@
             button.addEventListener('click', () => setLoginType(button.dataset.loginTypeButton));
         });
 
+        remember.addEventListener('change', () => {
+            applyPasswordVisibility(typeInput.value);
+            updateLoginButtonLabel(typeInput.value);
+        });
+
         setLoginType(initialType);
-
-        email.addEventListener('input', () => {
-            if (isTwoStepType(typeInput.value)) {
-                resetStudentFlow();
-            }
-        });
-
-        password.addEventListener('input', () => {
-            if (isTwoStepType(typeInput.value)) {
-                loginButton.disabled = password.value.trim() === '';
-            }
-        });
-
-        studentContinueButton.addEventListener('click', checkStudentEmail);
-        sendOtpButton.addEventListener('click', sendStudentOtp);
-        verifyOtpButton.addEventListener('click', verifyStudentOtp);
-        createPasswordButton.addEventListener('click', createStudentPassword);
 
         document.getElementById('loginForm').addEventListener('submit', (event) => {
             if (isSubmitting) {
@@ -594,34 +336,8 @@
                 return;
             }
 
-            if (isTwoStepType(typeInput.value) && passwordGroup.classList.contains('d-none')) {
-                event.preventDefault();
-                checkStudentEmail();
-                return;
-            }
-
             isSubmitting = true;
             setLoginButtonLoading(true);
-        });
-
-        forgotPasswordLink.addEventListener('click', (event) => {
-            if (typeInput.value !== 'student') {
-                return;
-            }
-
-            event.preventDefault();
-            if (!email.value.trim()) {
-                resetStudentFlow();
-                showStudentMessage('error', 'Please enter your student email address first.');
-                email.focus();
-                return;
-            }
-
-            passwordGroup.classList.add('d-none');
-            loginButton.classList.add('d-none');
-            studentContinueButton.classList.add('d-none');
-            sendOtpButton.classList.remove('d-none');
-            sendStudentOtp();
         });
 
         document.querySelectorAll('[data-password-toggle]').forEach((button) => {
@@ -637,12 +353,16 @@
             });
         });
 
-        if (isTwoStepType(typeInput.value) && email.value.trim()) {
-            checkStudentEmail();
-        }
-
         window.addEventListener('pageshow', () => {
             restoreLoginButton();
+        });
+
+        document.querySelectorAll('[data-auto-dismiss]').forEach((alertEl) => {
+            setTimeout(() => {
+                alertEl.style.transition = 'opacity 0.4s ease';
+                alertEl.style.opacity = '0';
+                setTimeout(() => alertEl.remove(), 400);
+            }, 6000);
         });
     </script>
 </body>

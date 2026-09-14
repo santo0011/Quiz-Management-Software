@@ -146,6 +146,47 @@
     <section class="content-panel settings-panel">
         <div class="panel-header">
             <div>
+                <h2><i class="bi bi-person-badge-fill me-2 text-primary"></i>Teacher Override Password</h2>
+                <p>One common password used by Teacher Override to sign a Student in without an OTP. The same password applies to every Student — it is never shown again after saving.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ route('admin.settings.update') }}" class="admin-form">
+            @csrf
+            @method('PUT')
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="common_student_password" class="form-label">Common Student / Teacher Override Password</label>
+                    <div class="password-field">
+                        <input id="common_student_password" type="password" name="common_student_password" class="form-control @error('common_student_password') is-invalid @enderror" autocomplete="new-password" placeholder="{{ $settings->hasCommonStudentPassword() ? 'Leave blank to keep current password' : 'Set a common password' }}">
+                        <button class="password-toggle" type="button" aria-label="Show password" data-password-toggle>
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                    </div>
+                    @error('common_student_password')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    <div class="form-text">
+                        @if ($settings->hasCommonStudentPassword())
+                            <i class="bi bi-check-circle-fill text-success"></i> A Teacher Override password is currently set.
+                        @else
+                            <i class="bi bi-exclamation-triangle-fill text-warning"></i> No Teacher Override password is set yet — Teacher Override cannot be used until one is saved.
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Save Teacher Override Password
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="content-panel settings-panel">
+        <div class="panel-header">
+            <div>
                 <h2><i class="bi bi-envelope-at-fill me-2 text-primary"></i>Super Admin Email</h2>
                 <p>Update the email address used to sign in and receive account notifications.</p>
             </div>

@@ -10,12 +10,6 @@
                 <h2>Students</h2>
                 <p>Manage students across all branches.</p>
             </div>
-            @if ($selectedSessionId)
-                <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addStudentDrawer" aria-controls="addStudentDrawer">
-                    <i class="bi bi-person-plus-fill"></i>
-                    Add Student
-                </button>
-            @endif
         </div>
 
         @if (! $selectedSessionId)
@@ -50,27 +44,6 @@
     </section>
 
     @if ($selectedSessionId)
-        <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="addStudentDrawer" aria-labelledby="addStudentDrawerLabel">
-            <div class="offcanvas-header student-drawer-header">
-                <div>
-                    <span class="page-kicker">Student Management</span>
-                    <h2 class="offcanvas-title" id="addStudentDrawerLabel">Add New Student</h2>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-            </div>
-            <div class="offcanvas-body">
-                @include('admin.students.partials.form', [
-                    'student' => $student,
-                    'branches' => $branches,
-                    'action' => route('admin.students.store'),
-                    'method' => 'POST',
-                    'button' => 'Save Student',
-                    'drawer' => true,
-                    'drawerId' => 'addStudentDrawer',
-                ])
-            </div>
-        </div>
-
         @foreach ($students as $studentRecord)
             <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editStudentDrawer{{ $studentRecord->id }}" aria-labelledby="editStudentDrawerLabel{{ $studentRecord->id }}">
                 <div class="offcanvas-header student-drawer-header">

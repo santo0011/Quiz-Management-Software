@@ -17,17 +17,25 @@ class Setting extends Model
         'mail_encryption',
         'mail_from_address',
         'mail_from_name',
+        'common_student_password',
     ];
 
     protected $hidden = [
         'mail_password',
+        'common_student_password',
     ];
 
     protected function casts(): array
     {
         return [
             'mail_password' => 'encrypted',
+            'common_student_password' => 'hashed',
         ];
+    }
+
+    public function hasCommonStudentPassword(): bool
+    {
+        return filled($this->common_student_password);
     }
 
     /**

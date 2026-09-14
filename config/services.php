@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'zoho' => [
+        'accounts_url' => env('ZOHO_ACCOUNTS_URL', 'https://accounts.zoho.com.au'),
+        'api_url' => env('ZOHO_API_URL', 'https://www.zohoapis.com.au'),
+        'client_id' => env('ZOHO_CLIENT_ID'),
+        'client_secret' => env('ZOHO_CLIENT_SECRET'),
+        'refresh_token' => env('ZOHO_REFRESH_TOKEN'),
+        'otp_validity_minutes' => (int) env('ZOHO_OTP_VALIDITY_MINUTES', 15),
+        'student_login_function' => env('ZOHO_STUDENT_LOGIN_FUNCTION', 'lms_portal_endpoint_1'),
+        'receive_results_function' => env('ZOHO_RECEIVE_RESULTS_FUNCTION', 'receive_results_data_from_portal'),
+    ],
+
 ];
