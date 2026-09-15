@@ -31,7 +31,6 @@
                             <th>Email</th>
                             <th>Status</th>
                             <th>Created</th>
-                            <th>Updated</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -46,8 +45,7 @@
                                         {{ $branch->is_active ? 'Active' : 'Inactive' }}
                                     </span>
                                 </td>
-                                <td>{{ $branch->created_at->format('d M Y, h:i A') }}</td>
-                                <td>{{ $branch->updated_at->format('d M Y, h:i A') }}</td>
+                                <td>{{ $branch->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">
                                         <a href="{{ route('admin.branches.show', $branch) }}" class="btn btn-sm btn-soft" title="View">

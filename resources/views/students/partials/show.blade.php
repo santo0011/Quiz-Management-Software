@@ -43,10 +43,6 @@
             </div>
             <div class="student-profile-info">
                 <h1 class="student-profile-name">{{ $student->student_name }}</h1>
-                <p class="student-profile-subtitle">
-                    <i class="bi bi-person-badge"></i>
-                    Student ID: #{{ str_pad($student->id, 4, '0', STR_PAD_LEFT) }}
-                </p>
             </div>
         </div>
     </div>
@@ -107,6 +103,15 @@
             <div>
                 <dt>Student Name</dt>
                 <dd>{{ $student->student_name }}</dd>
+            </div>
+        </div>
+        <div class="student-detail-item">
+            <div class="student-detail-icon">
+                <i class="bi bi-person-badge-fill"></i>
+            </div>
+            <div>
+                <dt>Student ID</dt>
+                <dd>{{ $student->zoho_student_id ?? '—' }}</dd>
             </div>
         </div>
         <div class="student-detail-item">
