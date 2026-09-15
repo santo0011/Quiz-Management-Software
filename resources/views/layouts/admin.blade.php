@@ -25,7 +25,6 @@
                 </div>
 
                 <div class="topbar-actions">
-                    @include('partials.academic-session-dropdown', ['prefix' => 'admin'])
                     <div class="admin-user">
                     <div class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
                     <div class="d-none d-sm-block">

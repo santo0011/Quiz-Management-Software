@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\AcademicSession;
 use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\ExamAnswer;
@@ -88,7 +87,6 @@ class QuestionCkeditorTest extends TestCase
         $this->makeStandaloneQuestion($exam, $category, '<p>What is <strong>H2O</strong>?</p>');
 
         $response = $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $exam->session_id])
             ->get(route('admin.questions.create', $exam));
 
         $response->assertOk();
@@ -176,7 +174,6 @@ class QuestionCkeditorTest extends TestCase
         $this->makeSummaryQuestion($exam, $group, $category, '<p>What is <strong>H2O</strong>?</p>');
 
         $response = $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $exam->session_id])
             ->get(route('admin.questions.create', $exam));
 
         $response->assertOk();
@@ -253,13 +250,6 @@ class QuestionCkeditorTest extends TestCase
         $subject = Subject::create(['name' => 'Science']);
         $category = QuestionCategory::create(['branch_id' => null, 'name' => 'General']);
 
-        $session = AcademicSession::create([
-            'name' => '2026-2027',
-            'start_date' => '2026-06-01',
-            'end_date' => '2027-05-31',
-            'is_active' => true,
-        ]);
-
         $exam = Exam::create([
             'branch_id' => null,
             'school_class_id' => $class->id,
@@ -268,7 +258,6 @@ class QuestionCkeditorTest extends TestCase
             'total_marks' => 0,
             'duration_minutes' => 30,
             'maximum_attempts' => 1,
-            'session_id' => $session->id,
             'status' => Exam::STATUS_DRAFT,
         ]);
 

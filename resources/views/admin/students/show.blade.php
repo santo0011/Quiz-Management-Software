@@ -10,24 +10,21 @@
         'selectedBranch' => $student->branch,
     ])
 
-    <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editStudentDrawer{{ $student->id }}" aria-labelledby="editStudentDrawerLabel{{ $student->id }}">
+    <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="manageSubjectsDrawer{{ $student->id }}" aria-labelledby="manageSubjectsDrawerLabel{{ $student->id }}">
         <div class="offcanvas-header student-drawer-header">
             <div>
                 <span class="page-kicker">Student Management</span>
-                <h2 class="offcanvas-title" id="editStudentDrawerLabel{{ $student->id }}">Edit Student</h2>
+                <h2 class="offcanvas-title" id="manageSubjectsDrawerLabel{{ $student->id }}">Manage Subjects</h2>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-            @include('admin.students.partials.form', [
+            @include('students.partials.manage-subjects-form', [
                 'student' => $student,
-                'selectedBranch' => $student->branch,
-                'classes' => $student->branch->classes()->orderBy('name')->get(),
-                'action' => route('admin.students.update', $student),
-                'method' => 'PUT',
-                'button' => 'Update Student',
+                'subjects' => \App\Models\Subject::orderBy('name')->get(),
+                'action' => route('admin.students.subjects.update', $student),
                 'drawer' => true,
-                'drawerId' => 'editStudentDrawer'.$student->id,
+                'drawerId' => 'manageSubjectsDrawer'.$student->id,
             ])
         </div>
     </div>

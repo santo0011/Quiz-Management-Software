@@ -20,7 +20,6 @@ class Exam extends Model
     protected $fillable = [
         'branch_id',
         'school_class_id',
-        'session_id',
         'subject_id',
         'question_category_id',
         'title',
@@ -72,11 +71,6 @@ class Exam extends Model
         return $this->belongsTo(Subject::class);
     }
 
-    public function session()
-    {
-        return $this->belongsTo(AcademicSession::class, 'session_id');
-    }
-
     public function questions()
     {
         return $this->hasMany(Question::class);
@@ -118,11 +112,6 @@ class Exam extends Model
      * them is enough). Branch scoping (own branch or a Super-Admin-created
      * global exam) is included since it's the same "does this Student
      * belong to this Exam" question.
-     *
-     * Students no longer carry an Academic Session (they're identified via
-     * Zoho instead of being created per session), so Session is not part of
-     * this match — an Exam's own `session_id` still exists for Admin/Branch
-     * to organize/filter exams by, it just no longer gates student access.
      *
      * This is the single source of truth for that rule — every place that
      * lists or authorizes Exams for a Student (dashboard, available,

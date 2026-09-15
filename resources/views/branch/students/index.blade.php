@@ -30,24 +30,21 @@
     </section>
 
     @foreach ($students as $studentRecord)
-            <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editStudentDrawer{{ $studentRecord->id }}" aria-labelledby="editStudentDrawerLabel{{ $studentRecord->id }}">
+            <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="manageSubjectsDrawer{{ $studentRecord->id }}" aria-labelledby="manageSubjectsDrawerLabel{{ $studentRecord->id }}">
                 <div class="offcanvas-header student-drawer-header">
                     <div>
                         <span class="page-kicker">Student Management</span>
-                        <h2 class="offcanvas-title" id="editStudentDrawerLabel{{ $studentRecord->id }}">Edit Student</h2>
+                        <h2 class="offcanvas-title" id="manageSubjectsDrawerLabel{{ $studentRecord->id }}">Manage Subjects — {{ $studentRecord->student_name }}</h2>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
                 <div class="offcanvas-body">
-                    @include('branch.students.partials.form', [
+                    @include('students.partials.manage-subjects-form', [
                         'student' => $studentRecord,
-                        'branch' => $branch,
-                        'classes' => $classes,
-                        'action' => route('branch.students.update', $studentRecord),
-                        'method' => 'PUT',
-                        'button' => 'Update Student',
+                        'subjects' => $subjects,
+                        'action' => route('branch.students.subjects.update', $studentRecord),
                         'drawer' => true,
-                        'drawerId' => 'editStudentDrawer'.$studentRecord->id,
+                        'drawerId' => 'manageSubjectsDrawer'.$studentRecord->id,
                     ])
                 </div>
             </div>

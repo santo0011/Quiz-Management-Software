@@ -37,20 +37,14 @@
                                 <a href="{{ route('branch.students.show', $student) }}" class="btn btn-sm btn-soft" title="View">
                                     <i class="bi bi-eye-fill"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-soft" title="Edit" data-bs-toggle="offcanvas" data-bs-target="#editStudentDrawer{{ $student->id }}" aria-controls="editStudentDrawer{{ $student->id }}">
-                                    <i class="bi bi-pencil-fill"></i>
+                                <button type="button" class="btn btn-sm btn-soft" title="Manage Subjects" data-bs-toggle="offcanvas" data-bs-target="#manageSubjectsDrawer{{ $student->id }}" aria-controls="manageSubjectsDrawer{{ $student->id }}">
+                                    <i class="bi bi-book-fill"></i>
+                                    Manage Subjects
                                 </button>
                                 <form method="POST" action="{{ route('branch.students.toggle-active', $student) }}" data-confirm-toggle>
                                     @csrf
                                     <button class="btn btn-sm {{ $student->is_active ? 'btn-danger-soft' : 'btn-soft' }}" type="submit" title="{{ $student->is_active ? 'Deactivate' : 'Activate' }}">
                                         <i class="bi {{ $student->is_active ? 'bi-pause-circle-fill' : 'bi-play-circle-fill' }}"></i>
-                                    </button>
-                                </form>
-                                <form method="POST" action="{{ route('branch.students.destroy', $student) }}" data-confirm-delete>
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-danger-soft" type="submit" title="Delete">
-                                        <i class="bi bi-trash-fill"></i>
                                     </button>
                                 </form>
                             </div>

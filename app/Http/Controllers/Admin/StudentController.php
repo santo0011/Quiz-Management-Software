@@ -11,7 +11,6 @@ use App\Models\Subject;
 use App\Services\GuardianResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class StudentController extends Controller
@@ -20,7 +19,7 @@ class StudentController extends Controller
     {
         $branchId = $request->integer('branch_id') ?: null;
 
-        $students = Student::with('branch')
+        $students = Student::with(['branch', 'subjects'])
             ->when($branchId, fn ($query) => $query->forBranch($branchId))
             ->search($request->string('search')->toString())
             ->when($request->filled('class'), fn ($query) => $query->where('class', $request->string('class')->toString()))
@@ -74,62 +73,22 @@ class StudentController extends Controller
         ]);
     }
 
-    public function edit(Student $student): View
-    {
-        return view('admin.students.edit', [
-            'student' => $student->load('subjects'),
-            'selectedBranch' => $student->branch,
-            'classes' => SchoolClass::visibleToBranch($student->branch_id)->orderBy('name')->get(),
-            'subjects' => Subject::orderBy('name')->get(),
-        ]);
-    }
-
-    public function update(StudentRequest $request, Student $student): RedirectResponse
-    {
-        $validated = $request->validated();
-        $subjectIds = $validated['subject_ids'] ?? [];
-        unset($validated['subject_ids']);
-        $branchId = $student->branch_id;
-        $schoolClass = $this->resolveSchoolClass($validated, $branchId);
-        $validated['branch_id'] = $branchId;
-        $validated['class_id'] = $schoolClass->id;
-        $validated['class'] = $schoolClass->name;
-
-        $student->update($validated);
-        $student->subjects()->sync($subjectIds);
-
-        return redirect()->route('admin.students.index')->with('success', 'Student updated successfully.');
-    }
-
-    public function updatePassword(Request $request, Student $student): RedirectResponse
+    /**
+     * Students are read-only local records — their core information (name,
+     * Grade, Zoho ID, etc.) comes from Zoho, so there is no "Edit Student"
+     * action anymore. Subject assignment is the one thing still managed
+     * locally, entirely independent of Zoho's data.
+     */
+    public function updateSubjects(Request $request, Student $student): RedirectResponse
     {
         $validated = $request->validate([
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
-        ], [
-            'password.required' => 'Please enter a new password.',
-            'password.min' => 'Password must be at least 6 characters.',
-            'password.confirmed' => 'Passwords do not match.',
+            'subject_ids' => ['nullable', 'array'],
+            'subject_ids.*' => ['integer', 'exists:subjects,id'],
         ]);
 
-        $student->update([
-            'password' => Hash::make($validated['password']),
-        ]);
+        $student->subjects()->sync($validated['subject_ids'] ?? []);
 
-        return redirect()->route('admin.students.index')->with('success', 'Student password updated successfully.');
-    }
-
-    public function destroy(Student $student): RedirectResponse
-    {
-        $hasAttempts = $student->attempts()->exists();
-
-        if ($hasAttempts) {
-            return redirect()->route('admin.students.index')
-                ->with('error', 'This student has exam history and cannot be permanently deleted. Please deactivate the student instead.');
-        }
-
-        $student->delete();
-
-        return redirect()->route('admin.students.index')->with('success', 'Student deleted successfully.');
+        return redirect()->route('admin.students.index')->with('success', 'Student subjects updated successfully.');
     }
 
     public function toggleActive(Student $student): RedirectResponse

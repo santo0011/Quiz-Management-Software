@@ -57,6 +57,47 @@ class CommonStudentPasswordSettingsTest extends TestCase
         $response->assertDontSee('override-secret');
     }
 
+    /**
+     * The Teacher Override Password is ONE global setting — the Settings
+     * page must not offer a branch selector anywhere near it. (A separate,
+     * unrelated "Default Branch for New Students" field does still exist
+     * further down the page for JIT student provisioning — this only
+     * pins down that the password field itself carries no branch element.)
+     */
+    public function test_settings_page_does_not_show_a_branch_selector_for_the_teacher_override_password(): void
+    {
+        $admin = $this->makeSuperAdmin();
+
+        $response = $this->actingAs($admin)->get(route('admin.settings.edit'));
+
+        $response->assertOk();
+        $response->assertSee('Teacher Override Password');
+
+        preg_match(
+            '/Teacher Override Password.*?<\/form>/s',
+            $response->getContent(),
+            $matches
+        );
+
+        $this->assertNotEmpty($matches, 'Could not locate the Teacher Override Password form on the settings page.');
+        $this->assertStringNotContainsString('Select Branch', $matches[0]);
+        $this->assertStringNotContainsString('default_teacher_override_branch_id', $matches[0]);
+    }
+
+    /**
+     * The Setting model stores the password as a single row with no
+     * branch_id at all, so it is not "the same value repeated per branch" —
+     * there is only ever one value, used for every branch's students.
+     */
+    public function test_common_student_password_has_no_branch_association(): void
+    {
+        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('settings', 'branch_id'));
+
+        Setting::current()->update(['common_student_password' => 'ABC123']);
+
+        $this->assertSame(1, Setting::query()->count());
+    }
+
     private function makeSuperAdmin(): User
     {
         return User::create([

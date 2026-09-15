@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SettingsRequest;
+use App\Models\Branch;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,7 @@ class SettingsController extends Controller
     {
         return view('admin.settings.edit', [
             'settings' => Setting::current(),
+            'branches' => Branch::orderBy('name')->get(),
         ]);
     }
 

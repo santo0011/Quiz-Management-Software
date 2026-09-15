@@ -371,39 +371,10 @@ body {
     color: var(--accent);
 }
 
-.session-selector .current-branch-pill {
-    cursor: pointer;
-}
-
 .metric-card-prompt {
     font-size: 0.95rem !important;
     color: var(--muted) !important;
     font-weight: 700 !important;
-}
-
-.session-dropdown-menu {
-    min-width: 240px;
-    max-width: 320px;
-    padding: 6px;
-    border-radius: 10px;
-}
-
-.session-dropdown-form {
-    margin: 0;
-}
-
-.session-dropdown-menu .dropdown-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: 6px;
-    padding: 8px 10px;
-}
-
-.session-dropdown-menu .dropdown-item.active {
-    background: #eef4ff;
-    color: var(--primary);
-    font-weight: 700;
 }
 
 .admin-user span {

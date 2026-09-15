@@ -31,9 +31,9 @@
                 @endforeach -->
             </div>
             <div class="student-profile-actions">
-                <button type="button" class="btn btn-light btn-student-action" data-bs-toggle="offcanvas" data-bs-target="#editStudentDrawer{{ $student->id }}">
-                    <i class="bi bi-pencil-fill"></i>
-                    Edit Student
+                <button type="button" class="btn btn-light btn-student-action" data-bs-toggle="offcanvas" data-bs-target="#manageSubjectsDrawer{{ $student->id }}">
+                    <i class="bi bi-book-fill"></i>
+                    Manage Subjects
                 </button>
             </div>
         </div>

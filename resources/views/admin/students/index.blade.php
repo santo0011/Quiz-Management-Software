@@ -36,29 +36,21 @@
     </section>
 
     @foreach ($students as $studentRecord)
-            <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editStudentDrawer{{ $studentRecord->id }}" aria-labelledby="editStudentDrawerLabel{{ $studentRecord->id }}">
+            <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="manageSubjectsDrawer{{ $studentRecord->id }}" aria-labelledby="manageSubjectsDrawerLabel{{ $studentRecord->id }}">
                 <div class="offcanvas-header student-drawer-header">
                     <div>
                         <span class="page-kicker">Student Management</span>
-                        <h2 class="offcanvas-title" id="editStudentDrawerLabel{{ $studentRecord->id }}">Edit Student</h2>
+                        <h2 class="offcanvas-title" id="manageSubjectsDrawerLabel{{ $studentRecord->id }}">Manage Subjects — {{ $studentRecord->student_name }}</h2>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
                 <div class="offcanvas-body">
-                @include('admin.students.partials.form', [
+                @include('students.partials.manage-subjects-form', [
                     'student' => $studentRecord,
-                    'selectedBranch' => $studentRecord->branch,
-                    'classes' => \App\Models\SchoolClass::visibleToBranch($studentRecord->branch_id)->orderBy('name')->get(),
-                    'action' => route('admin.students.update', $studentRecord),
-                    'method' => 'PUT',
-                    'button' => 'Update Student',
+                    'subjects' => $subjects,
+                    'action' => route('admin.students.subjects.update', $studentRecord),
                     'drawer' => true,
-                    'drawerId' => 'editStudentDrawer'.$studentRecord->id,
-                ])
-                @include('admin.partials.change-password-form', [
-                    'action' => route('admin.students.password.update', $studentRecord),
-                    'fieldSuffix' => '_student_'.$studentRecord->id,
-                    'drawerId' => 'editStudentDrawer'.$studentRecord->id,
+                    'drawerId' => 'manageSubjectsDrawer'.$studentRecord->id,
                 ])
                 </div>
             </div>

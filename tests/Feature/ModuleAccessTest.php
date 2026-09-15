@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\AcademicSession;
 use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -40,15 +39,11 @@ class ModuleAccessTest extends TestCase
     public function test_super_admin_can_open_branch_modules_after_selecting_branch(): void
     {
         $branch = Branch::create(['name' => 'Kolkata Branch', 'email' => 'kolkata@example.com']);
-        $session = $this->makeAcademicSession();
         $admin = $this->makeSuperAdmin();
 
         foreach (['admin.exams.index', 'admin.questions.index', 'admin.results.index'] as $route) {
             $this->actingAs($admin)
-                ->withSession([
-                    'admin_selected_branch_id' => $branch->id,
-                    'admin_selected_academic_session_id' => $session->id,
-                ])
+                ->withSession(['admin_selected_branch_id' => $branch->id])
                 ->get(route($route))
                 ->assertOk()
                 ->assertSee($branch->name);
@@ -80,13 +75,4 @@ class ModuleAccessTest extends TestCase
         ]);
     }
 
-    private function makeAcademicSession(): AcademicSession
-    {
-        return AcademicSession::create([
-            'name' => '2026-2027',
-            'start_date' => '2026-06-01',
-            'end_date' => '2027-05-31',
-            'is_active' => true,
-        ]);
-    }
 }

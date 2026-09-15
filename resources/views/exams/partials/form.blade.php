@@ -1,5 +1,4 @@
 @php($prefix = $prefix ?? 'admin')
-@php($examSession = $exam->exists ? $exam->session : ($selectedAcademicSession ?? null))
 
 @if ($exam->exists && $exam->hasBeenAttempted())
     <div class="feedback-alert info mb-4">
@@ -22,13 +21,6 @@
     <fieldset>
 
     <div class="exam-form-sections">
-        @if ($examSession)
-            <div class="feedback-alert info mb-3">
-                <i class="bi bi-calendar-range"></i>
-                <div><strong>Academic Session:</strong> {{ $examSession->name }} — this exam will only be available to students assigned to this session.</div>
-            </div>
-        @endif
-
         <section class="exam-form-section">
             <div class="exam-form-section-title">
                 <span>01</span>

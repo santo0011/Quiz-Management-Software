@@ -1,7 +1,7 @@
 # Deployment & Database Safety
 
 **Priority: code updates must never affect existing live data** — Students, Exams,
-Questions, Results, Academic Sessions, Grades, Subjects, Branches, everything.
+Questions, Results, Grades, Subjects, Branches, everything.
 This document exists so that priority survives contact with a terminal.
 
 ## Deploying an update (production)

@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\AcademicSessionController;
-use App\Http\Controllers\Admin\AcademicSessionSelectionController;
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\BranchSelectionController;
@@ -21,7 +19,6 @@ use App\Http\Controllers\Auth\GuardianPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LoginOtpController;
 use App\Http\Controllers\Auth\PasswordResetController;
-use App\Http\Controllers\Branch\AcademicSessionSelectionController as BranchAcademicSessionSelectionController;
 use App\Http\Controllers\Branch\DashboardController as BranchDashboardController;
 use App\Http\Controllers\Branch\ExamController as BranchExamController;
 use App\Http\Controllers\Branch\GuardianController as BranchGuardianController;
@@ -37,7 +34,6 @@ use App\Http\Controllers\Guardian\DashboardController as GuardianDashboardContro
 use App\Http\Controllers\Guardian\PasswordController as GuardianPasswordUpdateController;
 use App\Http\Controllers\Guardian\ProfileController as GuardianProfileController;
 use App\Http\Controllers\Guardian\StudentController as GuardianStudentController;
-use App\Http\Controllers\Teacher\AcademicSessionSelectionController as TeacherAcademicSessionSelectionController;
 use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
 use App\Http\Controllers\Teacher\PasswordController as TeacherPasswordUpdateController;
 use App\Http\Controllers\Teacher\ProfileController as TeacherProfileController;
@@ -85,10 +81,6 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/branch-selection', [BranchSelectionController::class, 'index'])->name('branch-selection.index');
     Route::post('/branch-selection', [BranchSelectionController::class, 'store'])->name('branch-selection.store');
     Route::delete('/branch-selection', [BranchSelectionController::class, 'clear'])->name('branch-selection.clear');
-    Route::post('/academic-session-selection', [AcademicSessionSelectionController::class, 'store'])->name('academic-session-selection.store');
-    Route::delete('/academic-session-selection', [AcademicSessionSelectionController::class, 'clear'])->name('academic-session-selection.clear');
-    Route::resource('academic-sessions', AcademicSessionController::class);
-    Route::post('/academic-sessions/{academic_session}/toggle-active', [AcademicSessionController::class, 'toggleActive'])->name('academic-sessions.toggle-active');
     Route::resource('branches', BranchController::class);
     Route::post('/branches/{branch}/toggle-active', [BranchController::class, 'toggleActive'])->name('branches.toggle-active');
     Route::put('/branches/{branch}/password', [BranchController::class, 'updatePassword'])->name('branches.password.update');
@@ -97,13 +89,12 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/guardians/search', [AdminGuardianController::class, 'search'])->name('guardians.search');
     Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
     Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
-    Route::resource('students', AdminStudentController::class)->except(['create', 'store']);
+    Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
+    Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');
     Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
-    Route::put('/students/{student}/password', [AdminStudentController::class, 'updatePassword'])->name('students.password.update');
+    Route::put('/students/{student}/subjects', [AdminStudentController::class, 'updateSubjects'])->name('students.subjects.update');
     Route::resource('question-categories', QuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::middleware('require_academic_session:admin.exams.index')->group(function () {
-        Route::post('/exams', [AdminExamController::class, 'store'])->name('exams.store');
-    });
+    Route::post('/exams', [AdminExamController::class, 'store'])->name('exams.store');
     Route::resource('exams', AdminExamController::class)->except(['store']);
     Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [AdminExamController::class, 'unpublish'])->name('exams.unpublish');
@@ -132,23 +123,21 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     Route::get('/dashboard', BranchDashboardController::class)->name('dashboard');
     Route::get('/password', [BranchPasswordController::class, 'edit'])->name('password.edit');
     Route::put('/password', [BranchPasswordController::class, 'update'])->name('password.update');
-    Route::post('/academic-session-selection', [BranchAcademicSessionSelectionController::class, 'store'])->name('academic-session-selection.store');
-    Route::delete('/academic-session-selection', [BranchAcademicSessionSelectionController::class, 'clear'])->name('academic-session-selection.clear');
     Route::resource('classes', BranchSchoolClassController::class)->parameters(['classes' => 'class']);
     Route::get('/guardians/search', [BranchGuardianController::class, 'search'])->name('guardians.search');
     Route::get('/students/create', [BranchStudentController::class, 'create'])->name('students.create');
     Route::post('/students', [BranchStudentController::class, 'store'])->name('students.store');
-    Route::resource('students', BranchStudentController::class)->except(['create', 'store']);
+    Route::get('/students', [BranchStudentController::class, 'index'])->name('students.index');
+    Route::get('/students/{student}', [BranchStudentController::class, 'show'])->name('students.show');
     Route::post('/students/{student}/toggle-active', [BranchStudentController::class, 'toggleActive'])->name('students.toggle-active');
+    Route::put('/students/{student}/subjects', [BranchStudentController::class, 'updateSubjects'])->name('students.subjects.update');
     Route::get('/teachers', [BranchTeacherController::class, 'index'])->name('teachers.index');
     Route::post('/teachers', [BranchTeacherController::class, 'store'])->name('teachers.store');
     Route::put('/teachers/{teacher}', [BranchTeacherController::class, 'update'])->name('teachers.update');
     Route::delete('/teachers/{teacher}', [BranchTeacherController::class, 'destroy'])->name('teachers.destroy');
     Route::put('/teachers/{teacher}/password', [BranchTeacherController::class, 'updatePassword'])->name('teachers.password.update');
     Route::resource('question-categories', BranchQuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::middleware('require_academic_session:branch.exams.index')->group(function () {
-        Route::post('/exams', [BranchExamController::class, 'store'])->name('exams.store');
-    });
+    Route::post('/exams', [BranchExamController::class, 'store'])->name('exams.store');
     Route::resource('exams', BranchExamController::class)->except(['store']);
     Route::post('/exams/{exam}/publish', [BranchExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [BranchExamController::class, 'unpublish'])->name('exams.unpublish');
@@ -199,8 +188,6 @@ Route::middleware(['auth:guardian', 'single_session'])->prefix('guardian')->name
 
 Route::middleware(['auth:teacher', 'single_session'])->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/dashboard', TeacherDashboardController::class)->name('dashboard');
-    Route::post('/academic-session-selection', [TeacherAcademicSessionSelectionController::class, 'store'])->name('academic-session-selection.store');
-    Route::delete('/academic-session-selection', [TeacherAcademicSessionSelectionController::class, 'clear'])->name('academic-session-selection.clear');
     Route::get('/profile', [TeacherProfileController::class, 'show'])->name('profile');
     Route::get('/password', [TeacherPasswordUpdateController::class, 'edit'])->name('password.edit');
     Route::put('/password', [TeacherPasswordUpdateController::class, 'update'])->name('password.update');

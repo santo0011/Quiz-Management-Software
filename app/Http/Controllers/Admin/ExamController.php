@@ -9,7 +9,6 @@ use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\SchoolClass;
 use App\Models\Subject;
-use App\Services\AcademicSessionResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,24 +18,18 @@ class ExamController extends Controller
     public function index(Request $request): View
     {
         $branchId = $request->integer('branch_id') ?: null;
-        $selectedSessionId = AcademicSessionResolver::selectedId($request);
 
-        $exams = $selectedSessionId
-            ? Exam::with(['schoolClass', 'subject', 'questions'])
-                ->where('session_id', $selectedSessionId)
-                ->when($branchId, fn ($query) => $query->visibleToBranch($branchId))
-                ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
-                ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
-                ->latest()
-                ->paginate(20)
-                ->withQueryString()
-            : null;
+        $exams = Exam::with(['schoolClass', 'subject', 'questions'])
+            ->when($branchId, fn ($query) => $query->visibleToBranch($branchId))
+            ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
 
         return view('admin.exams.index', [
             'branches' => Branch::orderBy('name')->get(),
             'selectedBranchId' => $branchId,
-            'selectedSessionId' => $selectedSessionId,
-            'selectedAcademicSession' => AcademicSessionResolver::selected($request),
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
             // Super Admin exams have no branch selection, so the Add Exam
@@ -49,9 +42,6 @@ class ExamController extends Controller
 
     public function store(ExamRequest $request): RedirectResponse
     {
-        $selectedSessionId = AcademicSessionResolver::selectedId($request);
-        abort_if(! $selectedSessionId, 403, 'Please select an academic session first.');
-
         // Super Admin exams have no branch selection: they are global and
         // automatically available to every branch (Exam::isGlobal()).
         $validated = $request->validated();
@@ -61,7 +51,6 @@ class ExamController extends Controller
             'branch_id' => null,
             'status' => Exam::STATUS_DRAFT,
             'marks_per_question' => 1,
-            'session_id' => $selectedSessionId,
         ]);
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam created successfully.');
@@ -69,8 +58,6 @@ class ExamController extends Controller
 
     public function show(Request $request, Exam $exam): View
     {
-        $this->authorizeSessionScope($request, $exam);
-
         return view('admin.exams.show', [
             'selectedBranch' => $exam->branch,
             'exam' => $exam->load(['schoolClass', 'subject', 'questions.options']),
@@ -79,8 +66,6 @@ class ExamController extends Controller
 
     public function edit(Request $request, Exam $exam): View
     {
-        $this->authorizeSessionScope($request, $exam);
-
         return view('admin.exams.edit', [
             'selectedBranch' => $exam->branch,
             'exam' => $exam,
@@ -93,8 +78,6 @@ class ExamController extends Controller
 
     public function update(ExamRequest $request, Exam $exam): RedirectResponse
     {
-        $this->authorizeSessionScope($request, $exam);
-
         $exam->update($request->validated());
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam updated successfully.');
@@ -180,8 +163,6 @@ class ExamController extends Controller
 
     public function destroy(Request $request, Exam $exam): RedirectResponse
     {
-        $this->authorizeSessionScope($request, $exam);
-
         if ($exam->hasBeenAttempted()) {
             return redirect()->route('admin.exams.index')
                 ->with('error', Exam::DELETE_LOCK_MESSAGE);
@@ -238,21 +219,5 @@ class ExamController extends Controller
         }
 
         return redirect()->route('admin.exams.show', $exam)->with('success', 'Exam unpublished successfully.');
-    }
-
-    /**
-     * Block reaching an Exam that belongs to a different Academic Session
-     * than the one currently selected. Legacy rows (either side null)
-     * fall through as allowed.
-     */
-    private function authorizeSessionScope(Request $request, Exam $exam): void
-    {
-        $selectedSessionId = AcademicSessionResolver::selectedId($request);
-
-        abort_if(
-            $exam->session_id !== null && $selectedSessionId !== null && $exam->session_id !== $selectedSessionId,
-            403,
-            'This exam does not belong to the currently selected academic session.'
-        );
     }
 }

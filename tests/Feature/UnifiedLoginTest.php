@@ -338,6 +338,61 @@ class UnifiedLoginTest extends TestCase
         Http::assertSentCount(2); // 1 token request + 1 Zoho identify call, no OTP round trip.
     }
 
+    /**
+     * The Teacher Override / Common Password is ONE global Setting (a
+     * singleton row — see Setting::current()), never tied to a branch_id.
+     * The same configured password must work for a Student from any branch.
+     */
+    public function test_teacher_override_common_password_works_the_same_across_different_branches(): void
+    {
+        Setting::current()->update(['common_student_password' => 'ABC123']);
+
+        $branchA = Branch::create(['name' => 'Branch A', 'email' => 'branch-a@example.com']);
+        $branchB = Branch::create(['name' => 'Branch B', 'email' => 'branch-b@example.com']);
+
+        $studentA = Student::create([
+            'branch_id' => $branchA->id,
+            'student_name' => 'Student A',
+            'guardian_name' => 'Guardian A',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'student-a@example.com',
+            'zoho_student_id' => 'NL-A1',
+        ]);
+
+        $studentB = Student::create([
+            'branch_id' => $branchB->id,
+            'student_name' => 'Student B',
+            'guardian_name' => 'Guardian B',
+            'class' => 'Class 10',
+            'phone_number' => '9876543211',
+            'email' => 'student-b@example.com',
+            'zoho_student_id' => 'NL-B1',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'success', 'error' => []], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL-A1',
+            'teacher_override' => '1',
+            'password' => 'ABC123',
+        ])->assertRedirect(route('student.dashboard'));
+        $this->assertAuthenticatedAs($studentA, 'student');
+        $this->post(route('logout'));
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL-B1',
+            'teacher_override' => '1',
+            'password' => 'ABC123',
+        ])->assertRedirect(route('student.dashboard'));
+        $this->assertAuthenticatedAs($studentB, 'student');
+    }
+
     public function test_teacher_override_rejects_an_incorrect_common_password(): void
     {
         Setting::current()->update(['common_student_password' => 'override-secret']);
@@ -388,6 +443,153 @@ class UnifiedLoginTest extends TestCase
             'nrich_student_id' => 'NL1184',
             'teacher_override' => '1',
             'password' => 'anything',
+        ])->assertSessionHas('login_error', 'Incorrect Teacher Override password.');
+
+        $this->assertGuest('student');
+        Http::assertNothingSent();
+    }
+
+    /**
+     * The core fix under test: Teacher Override must verify the Student ID
+     * through Zoho — unconditionally, with no local lookup first — and, if
+     * Zoho confirms an ID with no local Student record yet, actually log
+     * the Student in by creating one from real Zoho data (never a blocking
+     * "no matching account" error, since Laravel's session auth needs a
+     * real row but that row must come from genuine Zoho fields, not
+     * fabricated placeholders).
+     */
+    public function test_teacher_override_auto_provisions_and_logs_in_a_student_with_no_local_record(): void
+    {
+        $branch = Branch::create(['name' => 'Default Override Branch', 'email' => 'override-branch@example.com']);
+        Setting::current()->update([
+            'common_student_password' => 'override-secret',
+            'default_teacher_override_branch_id' => $branch->id,
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response([
+                'status' => 'success',
+                'error' => [],
+                'Student' => ['name' => 'avsbera', 'id' => '96867000007369018'],
+                'Parent' => ['name' => 'Laravel Portal', 'id' => '96867000007369006'],
+                'Enrolment' => [
+                    'classes' => [
+                        ['name' => 'Science | Grade 2 (Group) | Ringwood (Head Office)', 'id' => '96867000000927309'],
+                    ],
+                    'Grade' => 'Grade 2',
+                ],
+                'otp_sent_on_to_mail_address' => 'nl1405-guardian@example.com',
+            ], 200),
+        ]);
+
+        $this->assertDatabaseMissing('students', ['zoho_student_id' => 'NL1405']);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1405',
+            'teacher_override' => '1',
+            'password' => 'override-secret',
+        ])->assertRedirect(route('student.dashboard'));
+
+        $student = Student::where('zoho_student_id', 'NL1405')->first();
+
+        $this->assertNotNull($student);
+        $this->assertAuthenticatedAs($student, 'student');
+        $this->assertSame($branch->id, $student->branch_id);
+        $this->assertSame('avsbera', $student->student_name);
+        $this->assertSame('Laravel Portal', $student->guardian_name);
+        $this->assertSame('nl1405-guardian@example.com', $student->guardian_email);
+        $this->assertSame('nl1405-guardian@example.com', $student->email);
+        $this->assertSame('Grade 2', $student->class);
+        $this->assertSame('96867000000927309', $student->zoho_class_id);
+        $this->assertSame('Science | Grade 2 (Group) | Ringwood (Head Office)', $student->zoho_class_name);
+        $this->assertSame('Grade 2', $student->zoho_grade);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'lms_portal_endpoint_1')
+                && $request['send_otp'] === 'false';
+        });
+    }
+
+    public function test_teacher_override_fails_clearly_when_no_default_branch_is_configured(): void
+    {
+        Setting::current()->update(['common_student_password' => 'override-secret']);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'success', 'error' => []], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1405',
+            'teacher_override' => '1',
+            'password' => 'override-secret',
+        ])->assertSessionHas(
+            'login_error',
+            'This Student has no account in this system yet, and no default branch is configured for Teacher Override to create one. Please ask your Super Admin to set one in Settings.'
+        );
+
+        $this->assertGuest('student');
+        $this->assertDatabaseMissing('students', ['zoho_student_id' => 'NL1405']);
+    }
+
+    public function test_teacher_override_fails_without_creating_a_duplicate_when_zohos_email_is_already_used(): void
+    {
+        $branch = Branch::create(['name' => 'Default Override Branch', 'email' => 'override-branch-2@example.com']);
+        Setting::current()->update([
+            'common_student_password' => 'override-secret',
+            'default_teacher_override_branch_id' => $branch->id,
+        ]);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Existing Sibling',
+            'guardian_name' => 'Shared Guardian',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'shared-guardian@example.com',
+            'zoho_student_id' => 'NL9999',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response([
+                'status' => 'success',
+                'error' => [],
+                'Student' => ['name' => 'New Sibling'],
+                'Parent' => ['name' => 'Shared Guardian'],
+                'otp_sent_on_to_mail_address' => 'shared-guardian@example.com',
+            ], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1405',
+            'teacher_override' => '1',
+            'password' => 'override-secret',
+        ])->assertSessionHas(
+            'login_error',
+            'This Student\'s registered email is already used by a different account in this system. Please ask your administrator to resolve this before continuing.'
+        );
+
+        $this->assertGuest('student');
+        $this->assertSame(1, Student::where('email', 'shared-guardian@example.com')->count());
+        $this->assertDatabaseMissing('students', ['zoho_student_id' => 'NL1405']);
+    }
+
+    public function test_teacher_override_checks_the_common_password_before_ever_calling_zoho(): void
+    {
+        Setting::current()->update(['common_student_password' => 'override-secret']);
+
+        Http::fake();
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1405',
+            'teacher_override' => '1',
+            'password' => 'wrong-password',
         ])->assertSessionHas('login_error', 'Incorrect Teacher Override password.');
 
         $this->assertGuest('student');

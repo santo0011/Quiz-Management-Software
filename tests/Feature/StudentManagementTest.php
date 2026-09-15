@@ -51,9 +51,7 @@ class StudentManagementTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($branchUser)
-            ->put(route('branch.students.update', $otherStudent), $this->studentPayload([
-                'email' => 'updated@example.com',
-            ]))
+            ->put(route('branch.students.subjects.update', $otherStudent), ['subject_ids' => []])
             ->assertForbidden();
     }
 

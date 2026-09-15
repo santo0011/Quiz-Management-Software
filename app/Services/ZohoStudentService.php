@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\ZohoApiException;
+use App\Models\SchoolClass;
 use App\Models\Student;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -41,25 +42,35 @@ class ZohoStudentService
     }
 
     /**
-     * Identify a student by NRICH ID and (optionally) trigger Zoho's OTP
-     * email. Used both for the initial login attempt (send_otp: true) and
-     * for the "resend code" action.
+     * Normal login flow, step 1: verify the Student ID and have Zoho send
+     * the OTP to the registered email in the SAME request. Also used for
+     * "resend code" (identical shape).
+     *
+     * Confirmed by isolating each field against the live Zoho function: it
+     * only sends the email when a non-empty `verification_code` key is ALSO
+     * present on a `send_otp:"true"` call — omitting it (the previous
+     * behavior here) makes Zoho return `status: success`/`error: []` but
+     * `Email_status: "not_sent"`, silently. The field's actual value is
+     * irrelevant to Zoho's decision to send (two different arbitrary values
+     * both worked; Zoho generates and emails its own real OTP regardless),
+     * so a fresh random value is sent purely to satisfy that requirement —
+     * it is never the code the student/parent actually receives, and is
+     * unrelated to `verifyOtp()`'s verification_code, which IS checked
+     * against Zoho's real stored code.
      */
-    public function identify(string $nrichStudentId, bool $sendOtp): array
+    public function sendOtp(string $nrichStudentId): array
     {
         return $this->call([
             'nrich_student_id' => $nrichStudentId,
-            'send_otp' => $sendOtp ? 'true' : 'false',
+            'send_otp' => 'true',
             'otp_validity' => config('services.zoho.otp_validity_minutes'),
-            'verification_code' => '',
-            // Reserved for the Teacher Override feature (defined later) —
-            // not wired to anything yet, always sent as false.
+            'verification_code' => (string) random_int(100000, 999999),
             'login_through_teacher_master_code' => 'false',
-        ]);
+        ], expectingOtpSend: true);
     }
 
     /**
-     * Verify the code the student entered.
+     * Normal login flow, step 2: verify the code the student entered.
      */
     public function verifyOtp(string $nrichStudentId, string $code): array
     {
@@ -73,24 +84,91 @@ class ZohoStudentService
     }
 
     /**
+     * Teacher Override: verify the Student ID only — no OTP is sent or
+     * expected (`send_otp: "false"`). `login_through_teacher_master_code`
+     * is `"true"` here — the one thing that actually distinguishes this
+     * from a normal identify call to Zoho. `otp_validity`/`verification_code`
+     * are included to exactly match the confirmed-working request shape for
+     * this action; with `send_otp` false neither field triggers any email
+     * or code-verification logic on Zoho's side (confirmed live), so
+     * `verification_code` is a fixed placeholder rather than a real code.
+     */
+    public function verifyForTeacherOverride(string $nrichStudentId): array
+    {
+        return $this->call([
+            'nrich_student_id' => $nrichStudentId,
+            'send_otp' => 'false',
+            'otp_validity' => config('services.zoho.otp_validity_minutes'),
+            'verification_code' => '145263',
+            'login_through_teacher_master_code' => 'true',
+        ]);
+    }
+
+    /**
      * Persist the Student/Parent/Enrolment data Zoho returned onto the local
      * Student record, so ZohoResultService can later read the active class
      * without calling Zoho again.
+     *
+     * Also re-resolves the Student's LOCAL Grade (`class_id`/`class`) from
+     * Zoho's `Enrolment.Grade` on every login — this is what
+     * Exam::scopeEligibleForStudent() actually matches on, so it must stay
+     * current with Zoho rather than only being set once at creation time.
      */
     public function syncStudentFromZoho(Student $student, array $data): void
     {
         $class = $this->extractActiveClass($data);
+        $zohoGrade = $this->extractGrade($data);
 
-        $student->forceFill([
+        $attributes = [
             'zoho_payload' => $data,
             'zoho_synced_at' => now(),
             'zoho_class_id' => $class['id'],
             'zoho_class_name' => $class['name'],
-            'zoho_grade' => $this->extractGrade($data),
-        ])->save();
+            'zoho_grade' => $zohoGrade,
+        ];
+
+        if ($localGrade = $this->resolveLocalGrade($student->branch_id, $zohoGrade)) {
+            $attributes['class_id'] = $localGrade->id;
+            $attributes['class'] = $localGrade->name;
+        }
+
+        $student->forceFill($attributes)->save();
     }
 
-    private function call(array $payload): array
+    /**
+     * Resolve Zoho's raw Grade string (e.g. "Grade 2") to an existing local
+     * Grade (SchoolClass) record — matched by name (case/whitespace
+     * insensitive), scoped to the Student's own branch or a Super-Admin-
+     * created global Grade, exactly like Exam's own branch visibility rule;
+     * a branch-specific match is preferred over a same-named global one.
+     *
+     * Deliberately never creates a new Grade record: Grades are managed
+     * exclusively by Super Admin ("avoid creating duplicate Grade values
+     * from Zoho"), so a Zoho Grade string with no matching local Grade
+     * simply leaves the Student's Grade unresolved — they won't be eligible
+     * for any Grade-scoped exam until Super Admin adds a matching Grade —
+     * rather than silently spawning a duplicate/inconsistent record.
+     */
+    private function resolveLocalGrade(?int $branchId, ?string $zohoGrade): ?SchoolClass
+    {
+        if (! $branchId || ! filled($zohoGrade)) {
+            return null;
+        }
+
+        return SchoolClass::visibleToBranch($branchId)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($zohoGrade))])
+            ->orderByRaw('branch_id IS NULL')
+            ->first();
+    }
+
+    /**
+     * @param  bool  $expectingOtpSend  True only for the "send OTP" call —
+     *                                  gates the extra `Email_status` check
+     *                                  below, which is meaningless for a
+     *                                  verify/teacher-override call that
+     *                                  never asked Zoho to send anything.
+     */
+    private function call(array $payload, bool $expectingOtpSend = false): array
     {
         try {
             $token = $this->auth->getAccessToken();
@@ -109,6 +187,7 @@ class ZohoStudentService
         } catch (\Throwable $e) {
             Log::error('Zoho student verification request failed.', [
                 'nrich_student_id' => $payload['nrich_student_id'] ?? null,
+                'sent_payload' => $payload,
                 'exception' => $e->getMessage(),
             ]);
 
@@ -116,9 +195,11 @@ class ZohoStudentService
         }
 
         $data = $this->extractBusinessPayload($response->json() ?? []);
+
         $errors = $this->normalizeErrors($data['error'] ?? $data['errors'] ?? []);
         $status = $data['status'] ?? $data['Status'] ?? null;
         $normalizedStatus = is_string($status) ? strtolower(trim($status)) : $status;
+        $emailStatus = $data['Email_status'] ?? $data['email_status'] ?? null;
 
         // The spec is explicit that the `error` array is the source of truth
         // ("do not allow login if the error array contains an error") — a
@@ -128,17 +209,34 @@ class ZohoStudentService
         // array and no `status` field at all should still count as OK.
         $statusIndicatesFailure = in_array($normalizedStatus, ['error', 'failed', 'failure', false, 0, '0'], true);
 
-        if (! $response->successful() || $statusIndicatesFailure || ! empty($errors)) {
+        // When we explicitly asked Zoho to send the OTP, an Email_status
+        // that positively says it wasn't sent is a real failure even if
+        // `error` came back empty — the whole point of this call was the
+        // email, so silently treating this as success would leave the
+        // Student stuck on an OTP screen for a code that never arrives.
+        $emailSendFailed = $expectingOtpSend
+            && is_string($emailStatus)
+            && strtolower(trim($emailStatus)) === 'not_sent';
+
+        if (! $response->successful() || $statusIndicatesFailure || ! empty($errors) || $emailSendFailed) {
             Log::error('Zoho student verification returned an error.', [
                 'nrich_student_id' => $payload['nrich_student_id'] ?? null,
+                'sent_payload' => $payload,
                 'http_status' => $response->status(),
                 'zoho_status' => $normalizedStatus,
+                'email_status' => $emailStatus,
                 'errors' => $errors,
             ]);
 
+            $message = match (true) {
+                (bool) $errors => $this->mapErrorMessage($errors),
+                $emailSendFailed => 'We could not send the verification code email. Please try again shortly.',
+                default => self::GENERIC_ERROR,
+            };
+
             return [
                 'ok' => false,
-                'message' => $errors ? $this->mapErrorMessage($errors) : self::GENERIC_ERROR,
+                'message' => $message,
                 'data' => $data,
                 'otp_validity' => (int) ($data['otp_validity'] ?? config('services.zoho.otp_validity_minutes')),
             ];
@@ -192,14 +290,17 @@ class ZohoStudentService
     }
 
     /**
-     * Confirmed against a real Zoho response: a "not found" error is NOT a
-     * human-readable string — it's a structured object like
-     * `{"student_record": "not_found", "search_parameter": "NL..."}`. There
-     * is no free-text `message` key to match against at all. Flatten the
-     * whole object to a lowercase string and pattern-match on it, so this
-     * still works whether Zoho sends `student_record`, `parent_link`,
-     * `enrolment`, etc. — none of which are free text, and only one of
-     * which (student_record: not_found) has actually been observed live.
+     * Confirmed against the real Zoho function's documented error shapes —
+     * each is a structured `{field: reason}` object, never a human-readable
+     * string:
+     *   {"student_record": "not_found"}
+     *   {"parent_record": "no_linking_record_found"}
+     *   {"enrolment_record": "not_found"}
+     *   {"parent_record": "email_address_not_found"}
+     *   {"email": "not_sent"}
+     * Flatten the object to a lowercase string and pattern-match on it
+     * rather than requiring an exact shape, so close variants still map
+     * correctly.
      */
     private function mapErrorMessage(array $errors): string
     {
@@ -214,7 +315,7 @@ class ZohoStudentService
                 }
             }
 
-            return self::GENERIC_ERROR;
+            return $this->genericErrorWithDebugDetail($first);
         }
 
         // A free-text `message` field, if Zoho ever includes one alongside
@@ -233,14 +334,29 @@ class ZohoStudentService
 
         return match (true) {
             str_contains($haystack, 'student') && str_contains($haystack, 'not_found') => 'No student account found with this Student ID.',
-            str_contains($haystack, 'parent') && str_contains($haystack, 'link') && str_contains($haystack, 'not_found') => 'This student is not linked to a parent record. Please contact your administrator.',
+            str_contains($haystack, 'parent') && (str_contains($haystack, 'linking') || str_contains($haystack, 'link')) => 'This student is not linked to a parent record. Please contact your administrator.',
             str_contains($haystack, 'enrol') && str_contains($haystack, 'not_found') => 'No active enrolment was found for this student. Please contact your administrator.',
-            str_contains($haystack, 'parent') && str_contains($haystack, 'email') && str_contains($haystack, 'not_found') => 'No parent email is on file for this student. Please contact your administrator.',
+            str_contains($haystack, 'parent') && str_contains($haystack, 'email') => 'No parent email is on file for this student. Please contact your administrator.',
+            str_contains($haystack, 'email') && str_contains($haystack, 'not_sent') => 'We could not send the verification code email. Please try again shortly.',
             str_contains($haystack, 'otp') && (str_contains($haystack, 'not_sent') || str_contains($haystack, 'fail')) => 'We could not send the verification code email. Please try again shortly.',
             str_contains($haystack, 'otp') && str_contains($haystack, 'expired') => 'This code has expired. Please request a new one.',
             str_contains($haystack, 'otp') && (str_contains($haystack, 'invalid') || str_contains($haystack, 'incorrect') || str_contains($haystack, 'mismatch')) => 'The verification code you entered is incorrect. Please try again.',
-            default => self::GENERIC_ERROR,
+            default => $this->genericErrorWithDebugDetail($first),
         };
+    }
+
+    /**
+     * Never hide an unrecognized Zoho error behind the generic message
+     * while debugging — append the raw (non-sensitive; this is business
+     * status data, never a credential) error detail when app.debug is on.
+     */
+    private function genericErrorWithDebugDetail(mixed $rawError): string
+    {
+        if (! config('app.debug')) {
+            return self::GENERIC_ERROR;
+        }
+
+        return self::GENERIC_ERROR.' [Zoho error: '.(is_string($rawError) ? $rawError : json_encode($rawError)).']';
     }
 
     private function extractActiveClass(array $data): array
@@ -297,5 +413,26 @@ class ZohoStudentService
             ?? $data['Parent']['email']
             ?? $data['Parent_Email']
             ?? null;
+    }
+
+    /**
+     * Everything needed to create a local Student record purely from real
+     * Zoho data (Teacher Override's JIT provisioning, when Zoho confirms an
+     * ID that has no local record yet) — no field here is invented; each is
+     * either a genuine Zoho value or null when Zoho didn't provide one.
+     *
+     * @return array{student_name: ?string, guardian_name: ?string, guardian_email: ?string, class_name: ?string, grade: ?string}
+     */
+    public function extractProvisioningData(array $data): array
+    {
+        $class = $this->extractActiveClass($data);
+
+        return [
+            'student_name' => $data['Student']['name'] ?? $data['Student']['Name'] ?? null,
+            'guardian_name' => $data['Parent']['name'] ?? $data['Parent']['Name'] ?? null,
+            'guardian_email' => $this->extractParentEmail($data),
+            'class_name' => $class['name'] ?: null,
+            'grade' => $this->extractGrade($data),
+        ];
     }
 }

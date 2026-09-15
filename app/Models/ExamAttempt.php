@@ -11,7 +11,6 @@ class ExamAttempt extends Model
         'student_id',
         'branch_id',
         'school_class_id',
-        'session_id',
         'attempt_number',
         'started_at',
         'expires_at',
@@ -63,11 +62,6 @@ class ExamAttempt extends Model
     public function schoolClass()
     {
         return $this->belongsTo(SchoolClass::class);
-    }
-
-    public function session()
-    {
-        return $this->belongsTo(AcademicSession::class, 'session_id');
     }
 
     public function answers()

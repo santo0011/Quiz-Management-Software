@@ -2,9 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\AcademicSession;
 use App\Models\Branch;
-use App\Models\Exam;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
@@ -18,10 +16,9 @@ class ExamCreationValidationTest extends TestCase
 
     public function test_missing_grade_and_subject_show_friendly_messages_and_reopen_the_drawer(): void
     {
-        [$admin, , , $session] = $this->makeFixtures();
+        [$admin] = $this->makeFixtures();
 
         $response = $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->post(route('admin.exams.store'), [
                 '_drawer' => 'addExamDrawer',
                 'title' => 'Incomplete Exam',
@@ -45,10 +42,9 @@ class ExamCreationValidationTest extends TestCase
 
     public function test_no_generic_technical_field_names_leak_into_validation_messages(): void
     {
-        [$admin, , , $session] = $this->makeFixtures();
+        [$admin] = $this->makeFixtures();
 
-        $response = $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
+        $this->actingAs($admin)
             ->post(route('admin.exams.store'), []);
 
         $errors = session('errors')->getBag('default')->getMessages();
@@ -67,10 +63,9 @@ class ExamCreationValidationTest extends TestCase
 
     public function test_end_date_before_start_date_shows_a_clear_message(): void
     {
-        [$admin, $class, $subject, $session] = $this->makeFixtures();
+        [$admin, $class, $subject] = $this->makeFixtures();
 
         $response = $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->post(route('admin.exams.store'), [
                 'title' => 'Backwards Dates',
                 'school_class_id' => $class->id,
@@ -88,10 +83,9 @@ class ExamCreationValidationTest extends TestCase
 
     public function test_valid_submission_creates_the_exam_and_does_not_reopen_the_drawer(): void
     {
-        [$admin, $class, $subject, $session] = $this->makeFixtures();
+        [$admin, $class, $subject] = $this->makeFixtures();
 
         $response = $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->post(route('admin.exams.store'), [
                 'title' => 'Valid Exam',
                 'school_class_id' => $class->id,
@@ -120,15 +114,8 @@ class ExamCreationValidationTest extends TestCase
             'branch_id' => $branch->id,
             'password' => Hash::make('secret123'),
         ]);
-        $session = AcademicSession::create([
-            'name' => 'Session '.uniqid(),
-            'start_date' => now()->subMonth(),
-            'end_date' => now()->addMonths(6),
-            'is_active' => true,
-        ]);
 
         $response = $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.exams.store'), [
                 '_drawer' => 'addExamDrawer',
                 'title' => 'Incomplete Branch Exam',
@@ -159,13 +146,6 @@ class ExamCreationValidationTest extends TestCase
         $class = SchoolClass::create(['branch_id' => null, 'name' => 'Class 10']);
         $subject = Subject::create(['name' => 'Science']);
 
-        $session = AcademicSession::create([
-            'name' => 'Session '.uniqid(),
-            'start_date' => now()->subMonth(),
-            'end_date' => now()->addMonths(6),
-            'is_active' => true,
-        ]);
-
-        return [$admin, $class, $subject, $session];
+        return [$admin, $class, $subject];
     }
 }

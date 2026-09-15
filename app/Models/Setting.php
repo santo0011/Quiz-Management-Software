@@ -18,6 +18,7 @@ class Setting extends Model
         'mail_from_address',
         'mail_from_name',
         'common_student_password',
+        'default_teacher_override_branch_id',
     ];
 
     protected $hidden = [
@@ -36,6 +37,11 @@ class Setting extends Model
     public function hasCommonStudentPassword(): bool
     {
         return filled($this->common_student_password);
+    }
+
+    public function defaultTeacherOverrideBranch()
+    {
+        return $this->belongsTo(Branch::class, 'default_teacher_override_branch_id');
     }
 
     /**
