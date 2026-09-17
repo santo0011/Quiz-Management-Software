@@ -35,7 +35,7 @@
                         <h3>{{ $exam->title }}</h3>
                         <p>{{ $exam->description ?: 'This exam will be available at the scheduled start time.' }}</p>
                         <dl>
-                            <div><dt>Start</dt><dd>{{ $exam->starts_at?->format('d M Y, h:i A') }}</dd></div>
+                            <div><dt>Start</dt><dd>{{ $exam->starts_at?->format('d M Y') }}</dd></div>
                             <div><dt>Duration</dt><dd>{{ $exam->duration_minutes }} min</dd></div>
                             <div><dt>Total Marks</dt><dd>{{ $exam->total_marks }}</dd></div>
                             <div><dt>Questions</dt><dd>{{ $exam->questions_count }}</dd></div>

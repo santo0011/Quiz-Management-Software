@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\BranchOtpMail;
-use App\Mail\StudentOtpMail;
 use App\Mail\SuperAdminOtpMail;
 use App\Models\Branch;
-use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +26,6 @@ class PasswordResetController extends Controller
     {
         return match ($type) {
             'branch' => 'branch',
-            'student' => 'student',
             default => 'super_admin',
         };
     }
@@ -36,11 +33,10 @@ class PasswordResetController extends Controller
     /**
      * Get the type-specific account lookup closure.
      */
-    protected function findAccountForType(string $type, string $email): User|Student|null
+    protected function findAccountForType(string $type, string $email): ?User
     {
         return match ($type) {
             'branch' => User::where('email', $email)->where('role', 'Branch')->first(),
-            'student' => Student::where('email', $email)->first(),
             default => User::where('email', $email)->where('role', 'Super Admin')->first(),
         };
     }
@@ -52,7 +48,6 @@ class PasswordResetController extends Controller
     {
         return match ($type) {
             'branch' => 'No Branch account found with this email address.',
-            'student' => 'No Student account found with this email address.',
             default => 'No Super Admin account found with this email address.',
         };
     }
@@ -60,7 +55,7 @@ class PasswordResetController extends Controller
     public function request(Request $request): View
     {
         $type = $request->query('type', 'super_admin');
-        $type = in_array($type, ['super_admin', 'branch', 'student']) ? $type : 'super_admin';
+        $type = in_array($type, ['super_admin', 'branch']) ? $type : 'super_admin';
 
         $configs = [
             'super_admin' => [
@@ -77,13 +72,6 @@ class PasswordResetController extends Controller
                 'label' => 'Branch Email',
                 'placeholder' => 'branch@example.com',
             ],
-            'student' => [
-                'title' => 'Forgot Password',
-                'heading' => 'Reset Student password',
-                'copy' => 'Enter the Student email address. A secure 6-digit code will be sent if the account exists.',
-                'label' => 'Student Email',
-                'placeholder' => 'student@example.com',
-            ],
         ];
 
         $config = $configs[$type];
@@ -97,7 +85,7 @@ class PasswordResetController extends Controller
     public function sendOtp(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'type' => ['required', Rule::in(['super_admin', 'branch', 'student'])],
+            'type' => ['required', Rule::in(['super_admin', 'branch'])],
             'email' => ['required', 'email'],
         ], [
             'type.required' => 'Please select a login type.',
@@ -147,8 +135,6 @@ class PasswordResetController extends Controller
                 $branch = Branch::where('email', $email)->first()
                     ?? new Branch(['name' => 'Branch', 'email' => $email]);
                 Mail::to($email)->send(new BranchOtpMail($branch, $otp));
-            } elseif ($type === 'student') {
-                Mail::to($email)->send(new StudentOtpMail($otp, $account instanceof Student ? $account : null));
             } else {
                 Mail::to($email)->send(new SuperAdminOtpMail($otp));
             }
@@ -174,7 +160,7 @@ class PasswordResetController extends Controller
     public function otp(Request $request): View
     {
         $type = $request->query('type', session('password_reset_type', 'super_admin'));
-        $type = in_array($type, ['super_admin', 'branch', 'student']) ? $type : 'super_admin';
+        $type = in_array($type, ['super_admin', 'branch']) ? $type : 'super_admin';
 
         $configs = [
             'super_admin' => [
@@ -189,12 +175,6 @@ class PasswordResetController extends Controller
                 'copy' => 'Enter the 6-digit code sent to the Branch email address.',
                 'label' => 'Branch Email',
             ],
-            'student' => [
-                'title' => 'Verify Reset Code',
-                'heading' => 'Verify reset code',
-                'copy' => 'Enter the 6-digit code sent to the Student email address.',
-                'label' => 'Student Email',
-            ],
         ];
 
         $config = $configs[$type];
@@ -208,7 +188,7 @@ class PasswordResetController extends Controller
     public function verifyOtp(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'type' => ['required', Rule::in(['super_admin', 'branch', 'student'])],
+            'type' => ['required', Rule::in(['super_admin', 'branch'])],
             'email' => ['required', 'email'],
             'otp' => ['required', 'digits:6'],
         ], [
@@ -249,7 +229,7 @@ class PasswordResetController extends Controller
         abort_unless(session('password_reset_verified_otp_id'), 403);
 
         $type = $request->query('type', session('password_reset_type', 'super_admin'));
-        $type = in_array($type, ['super_admin', 'branch', 'student']) ? $type : 'super_admin';
+        $type = in_array($type, ['super_admin', 'branch']) ? $type : 'super_admin';
 
         $configs = [
             'super_admin' => [
@@ -261,11 +241,6 @@ class PasswordResetController extends Controller
                 'title' => 'Set New Password',
                 'heading' => 'Set a new password',
                 'copy' => 'Choose a strong new password for the Branch account.',
-            ],
-            'student' => [
-                'title' => 'Set New Password',
-                'heading' => 'Set a new password',
-                'copy' => 'Choose a strong new password for the Student account.',
             ],
         ];
 
@@ -293,17 +268,9 @@ class PasswordResetController extends Controller
         $type = session('password_reset_type', 'super_admin');
         $otpId = session('password_reset_verified_otp_id');
 
-        if ($type === 'student') {
-            $student = Student::where('email', $email)->firstOrFail();
-            $student->update([
-                'password' => Hash::make($validated['password']),
-                'login_code_hash' => null,
-            ]);
-        } else {
-            $role = $type === 'branch' ? 'Branch' : 'Super Admin';
-            $user = User::where('email', $email)->where('role', $role)->firstOrFail();
-            $user->update(['password' => Hash::make($validated['password'])]);
-        }
+        $role = $type === 'branch' ? 'Branch' : 'Super Admin';
+        $user = User::where('email', $email)->where('role', $role)->firstOrFail();
+        $user->update(['password' => Hash::make($validated['password'])]);
 
         DB::table('password_reset_otps')->where('id', $otpId)->update([
             'used_at' => now(),

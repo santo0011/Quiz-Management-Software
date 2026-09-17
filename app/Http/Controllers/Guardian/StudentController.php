@@ -14,7 +14,7 @@ class StudentController extends Controller
     {
         $this->authorizeGuardianStudent($request, $student);
 
-        $student->load(['branch', 'schoolClass', 'session', 'subjects']);
+        $student->load(['branch', 'schoolClass', 'subjects']);
 
         $attempts = $student->attempts()
             ->with('exam')

@@ -14,7 +14,7 @@ class DashboardController extends Controller
         $guardian = $request->user('guardian');
 
         $students = Student::where('guardian_email', $guardian->email)
-            ->with(['branch', 'schoolClass', 'session'])
+            ->with(['branch', 'schoolClass'])
             ->withCount(['attempts as submitted_exams_count' => fn ($query) => $query->where('status', 'submitted')])
             ->orderBy('student_name')
             ->get();

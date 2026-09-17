@@ -106,7 +106,7 @@
                 </div>
                 <div>
                     <dt>Submitted On</dt>
-                    <dd>{{ $attempt->submitted_at?->format('d M Y, h:i A') ?? '—' }}</dd>
+                    <dd>{{ $attempt->submitted_at?->format('d M Y') ?? '—' }}</dd>
                 </div>
             </div>
             <div class="student-detail-item">

@@ -29,7 +29,7 @@
                             <h4>{{ $attempt->exam?->title }}</h4>
                             <span class="exam-history-date">
                                 <i class="bi bi-calendar3"></i>
-                                {{ $attempt->submitted_at?->format('d M Y, h:i A') }}
+                                {{ $attempt->submitted_at?->format('d M Y') }}
                             </span>
                         </div>
                         <div class="exam-history-score">

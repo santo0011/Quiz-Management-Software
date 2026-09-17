@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\AcademicSession;
 use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\SchoolClass;
@@ -18,10 +17,9 @@ class ExamMarksAndDurationTest extends TestCase
 
     public function test_super_admin_sets_total_marks_pass_marks_and_duration_at_creation(): void
     {
-        [$admin, $class, $subject, $session] = $this->makeAdminFixture();
+        [$admin, $class, $subject] = $this->makeAdminFixture();
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->post(route('admin.exams.store'), [
                 'title' => 'Math Test',
                 'school_class_id' => $class->id,
@@ -45,10 +43,9 @@ class ExamMarksAndDurationTest extends TestCase
 
     public function test_branch_sets_total_marks_pass_marks_and_duration_at_creation(): void
     {
-        [$branch, $branchUser, $class, $subject, $session] = $this->makeBranchFixture();
+        [$branch, $branchUser, $class, $subject] = $this->makeBranchFixture();
 
         $this->actingAs($branchUser)
-            ->withSession(['branch_selected_academic_session_id' => $session->id])
             ->post(route('branch.exams.store'), [
                 'title' => 'Branch Science Test',
                 'school_class_id' => $class->id,
@@ -73,10 +70,9 @@ class ExamMarksAndDurationTest extends TestCase
 
     public function test_duration_is_required_when_creating_an_exam(): void
     {
-        [$admin, $class, $subject, $session] = $this->makeAdminFixture();
+        [$admin, $class, $subject] = $this->makeAdminFixture();
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->post(route('admin.exams.store'), [
                 'title' => 'No Duration Test',
                 'school_class_id' => $class->id,
@@ -90,10 +86,9 @@ class ExamMarksAndDurationTest extends TestCase
 
     public function test_total_marks_defaults_to_zero_when_left_blank_on_creation(): void
     {
-        [$admin, $class, $subject, $session] = $this->makeAdminFixture();
+        [$admin, $class, $subject] = $this->makeAdminFixture();
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->post(route('admin.exams.store'), [
                 'title' => 'Blank Marks Test',
                 'school_class_id' => $class->id,
@@ -113,7 +108,7 @@ class ExamMarksAndDurationTest extends TestCase
 
     public function test_total_marks_recalculates_automatically_once_questions_are_added(): void
     {
-        [$admin, $class, $subject, $session] = $this->makeAdminFixture();
+        [$admin, $class, $subject] = $this->makeAdminFixture();
 
         $exam = Exam::create([
             'branch_id' => null,
@@ -124,7 +119,6 @@ class ExamMarksAndDurationTest extends TestCase
             'passing_marks' => 5,
             'duration_minutes' => 30,
             'maximum_attempts' => 1,
-            'session_id' => $session->id,
             'status' => Exam::STATUS_DRAFT,
         ]);
 
@@ -157,7 +151,7 @@ class ExamMarksAndDurationTest extends TestCase
 
     public function test_total_marks_field_stays_editable_even_when_exam_has_questions(): void
     {
-        [$admin, $class, $subject, $session] = $this->makeAdminFixture();
+        [$admin, $class, $subject] = $this->makeAdminFixture();
 
         $exam = Exam::create([
             'branch_id' => null,
@@ -167,7 +161,6 @@ class ExamMarksAndDurationTest extends TestCase
             'total_marks' => 10,
             'duration_minutes' => 30,
             'maximum_attempts' => 1,
-            'session_id' => $session->id,
             'status' => Exam::STATUS_DRAFT,
         ]);
 
@@ -179,7 +172,6 @@ class ExamMarksAndDurationTest extends TestCase
         $exam->recalculateTotalMarks();
 
         $response = $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->get(route('admin.exams.edit', $exam));
 
         $response->assertOk();
@@ -189,7 +181,7 @@ class ExamMarksAndDurationTest extends TestCase
 
     public function test_total_marks_can_be_changed_manually_even_when_exam_has_questions(): void
     {
-        [$admin, $class, $subject, $session] = $this->makeAdminFixture();
+        [$admin, $class, $subject] = $this->makeAdminFixture();
 
         $exam = Exam::create([
             'branch_id' => null,
@@ -201,7 +193,6 @@ class ExamMarksAndDurationTest extends TestCase
             'maximum_attempts' => 1,
             'starts_at' => now()->addDay(),
             'ends_at' => now()->addDays(2),
-            'session_id' => $session->id,
             'status' => Exam::STATUS_DRAFT,
         ]);
 
@@ -213,7 +204,6 @@ class ExamMarksAndDurationTest extends TestCase
         $exam->recalculateTotalMarks();
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->put(route('admin.exams.update', $exam), [
                 'school_class_id' => $class->id,
                 'subject_id' => $subject->id,
@@ -232,7 +222,7 @@ class ExamMarksAndDurationTest extends TestCase
 
     public function test_question_management_page_no_longer_shows_settings_modal(): void
     {
-        [$admin, $class, $subject, $session] = $this->makeAdminFixture();
+        [$admin, $class, $subject] = $this->makeAdminFixture();
 
         $exam = Exam::create([
             'branch_id' => null,
@@ -242,14 +232,12 @@ class ExamMarksAndDurationTest extends TestCase
             'total_marks' => 0,
             'duration_minutes' => 30,
             'maximum_attempts' => 1,
-            'session_id' => $session->id,
             'status' => Exam::STATUS_DRAFT,
         ]);
 
         \App\Models\QuestionCategory::create(['branch_id' => null, 'name' => 'General']);
 
         $response = $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->get(route('admin.questions.create', $exam));
 
         $response->assertOk();
@@ -269,14 +257,7 @@ class ExamMarksAndDurationTest extends TestCase
         $class = SchoolClass::create(['branch_id' => null, 'name' => 'Class 10']);
         $subject = Subject::create(['name' => 'Science']);
 
-        $session = AcademicSession::create([
-            'name' => '2026-2027',
-            'start_date' => '2026-06-01',
-            'end_date' => '2027-05-31',
-            'is_active' => true,
-        ]);
-
-        return [$admin, $class, $subject, $session];
+        return [$admin, $class, $subject];
     }
 
     private function makeBranchFixture(): array
@@ -293,13 +274,6 @@ class ExamMarksAndDurationTest extends TestCase
         $class = SchoolClass::create(['branch_id' => $branch->id, 'name' => 'Class 8']);
         $subject = Subject::create(['name' => 'English']);
 
-        $session = AcademicSession::create([
-            'name' => '2026-2027',
-            'start_date' => '2026-06-01',
-            'end_date' => '2027-05-31',
-            'is_active' => true,
-        ]);
-
-        return [$branch, $branchUser, $class, $subject, $session];
+        return [$branch, $branchUser, $class, $subject];
     }
 }

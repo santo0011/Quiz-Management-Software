@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\AcademicSession;
 use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\SchoolClass;
@@ -19,14 +18,13 @@ class ExamEligibilityTest extends TestCase
 {
     use RefreshDatabase;
 
-    // --- Creation requires Session, Grade, and Subject ---
+    // --- Creation requires Grade and Subject ---
 
     public function test_exam_creation_requires_grade_and_subject(): void
     {
-        [$admin, , , $session] = $this->makeBaseFixtures();
+        [$admin] = $this->makeBaseFixtures();
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_academic_session_id' => $session->id])
             ->post(route('admin.exams.store'), [
                 'title' => 'Missing Grade And Subject',
                 'starts_at' => now()->addDay()->format('Y-m-d H:i:s'),
@@ -37,39 +35,13 @@ class ExamEligibilityTest extends TestCase
             ->assertSessionHasErrors(['school_class_id', 'subject_id']);
     }
 
-    public function test_exam_creation_requires_a_selected_academic_session(): void
+    // --- Visibility: Grade and Subject must match ---
+
+    public function test_student_sees_exam_only_when_grade_and_subject_match(): void
     {
-        $admin = User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin-'.uniqid().'@example.com',
-            'role' => 'Super Admin',
-            'password' => Hash::make('123456'),
-        ]);
-        $class = SchoolClass::create(['branch_id' => null, 'name' => 'Class 10']);
-        $subject = Subject::create(['name' => 'Science']);
-
-        $this->actingAs($admin)
-            ->post(route('admin.exams.store'), [
-                'title' => 'No Session Selected',
-                'school_class_id' => $class->id,
-                'subject_id' => $subject->id,
-                'starts_at' => now()->addDay()->format('Y-m-d H:i:s'),
-                'ends_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
-                'duration_minutes' => 30,
-                'maximum_attempts' => 1,
-            ])
-            ->assertRedirect(route('admin.exams.index'));
-
-        $this->assertDatabaseMissing('exams', ['title' => 'No Session Selected']);
-    }
-
-    // --- Visibility: all three (Session, Grade, Subject) must match ---
-
-    public function test_student_sees_exam_only_when_session_grade_and_subject_all_match(): void
-    {
-        [, $class, $subject, $session] = $this->makeBaseFixtures();
-        $student = $this->makeStudent($class, $session, [$subject]);
-        $exam = $this->makePublishedExam($class, $subject, $session, 'Matching Exam');
+        [, $class, $subject] = $this->makeBaseFixtures();
+        $student = $this->makeStudent($class, [$subject]);
+        $exam = $this->makePublishedExam($class, $subject, 'Matching Exam');
 
         $response = $this->actingAs($student, 'student')->get(route('student.exams.available'));
 
@@ -79,10 +51,10 @@ class ExamEligibilityTest extends TestCase
 
     public function test_exam_is_hidden_when_grade_does_not_match(): void
     {
-        [, $class, $subject, $session] = $this->makeBaseFixtures();
+        [, $class, $subject] = $this->makeBaseFixtures();
         $otherClass = SchoolClass::create(['branch_id' => null, 'name' => 'Class 9']);
-        $student = $this->makeStudent($class, $session, [$subject]);
-        $this->makePublishedExam($otherClass, $subject, $session, 'Wrong Grade Exam');
+        $student = $this->makeStudent($class, [$subject]);
+        $this->makePublishedExam($otherClass, $subject, 'Wrong Grade Exam');
 
         $this->actingAs($student, 'student')
             ->get(route('student.exams.available'))
@@ -90,30 +62,12 @@ class ExamEligibilityTest extends TestCase
             ->assertDontSee('Wrong Grade Exam');
     }
 
-    public function test_exam_is_hidden_when_session_does_not_match(): void
-    {
-        [, $class, $subject, $session] = $this->makeBaseFixtures();
-        $otherSession = AcademicSession::create([
-            'name' => 'Other Session',
-            'start_date' => now()->subYears(2),
-            'end_date' => now()->subYear(),
-            'is_active' => false,
-        ]);
-        $student = $this->makeStudent($class, $session, [$subject]);
-        $this->makePublishedExam($class, $subject, $otherSession, 'Wrong Session Exam');
-
-        $this->actingAs($student, 'student')
-            ->get(route('student.exams.available'))
-            ->assertOk()
-            ->assertDontSee('Wrong Session Exam');
-    }
-
     public function test_exam_is_hidden_when_subject_is_not_assigned_to_the_student(): void
     {
-        [, $class, $subject, $session] = $this->makeBaseFixtures();
+        [, $class, $subject] = $this->makeBaseFixtures();
         $otherSubject = Subject::create(['name' => 'Mathematics']);
-        $student = $this->makeStudent($class, $session, [$subject]);
-        $this->makePublishedExam($class, $otherSubject, $session, 'Unassigned Subject Exam');
+        $student = $this->makeStudent($class, [$subject]);
+        $this->makePublishedExam($class, $otherSubject, 'Unassigned Subject Exam');
 
         $this->actingAs($student, 'student')
             ->get(route('student.exams.available'))
@@ -123,15 +77,15 @@ class ExamEligibilityTest extends TestCase
 
     public function test_student_with_multiple_subjects_sees_exams_for_either_assigned_subject_but_not_a_third(): void
     {
-        [, $class, $subjectA, $session] = $this->makeBaseFixtures();
+        [, $class, $subjectA] = $this->makeBaseFixtures();
         $subjectB = Subject::create(['name' => 'Mathematics']);
         $subjectC = Subject::create(['name' => 'History']);
 
-        $student = $this->makeStudent($class, $session, [$subjectA, $subjectB]);
+        $student = $this->makeStudent($class, [$subjectA, $subjectB]);
 
-        $this->makePublishedExam($class, $subjectA, $session, 'Subject A Exam');
-        $this->makePublishedExam($class, $subjectB, $session, 'Subject B Exam');
-        $this->makePublishedExam($class, $subjectC, $session, 'Subject C Exam');
+        $this->makePublishedExam($class, $subjectA, 'Subject A Exam');
+        $this->makePublishedExam($class, $subjectB, 'Subject B Exam');
+        $this->makePublishedExam($class, $subjectC, 'Subject C Exam');
 
         $response = $this->actingAs($student, 'student')->get(route('student.exams.available'));
 
@@ -143,15 +97,14 @@ class ExamEligibilityTest extends TestCase
 
     public function test_ineligible_exam_also_hidden_from_dashboard_and_upcoming_lists(): void
     {
-        [, $class, $subject, $session] = $this->makeBaseFixtures();
+        [, $class, $subject] = $this->makeBaseFixtures();
         $otherSubject = Subject::create(['name' => 'Mathematics']);
-        $student = $this->makeStudent($class, $session, [$subject]);
+        $student = $this->makeStudent($class, [$subject]);
 
         Exam::create([
             'branch_id' => null,
             'school_class_id' => $class->id,
             'subject_id' => $otherSubject->id,
-            'session_id' => $session->id,
             'title' => 'Upcoming Mismatch Exam',
             'total_marks' => 10,
             'duration_minutes' => 30,
@@ -176,10 +129,10 @@ class ExamEligibilityTest extends TestCase
 
     public function test_student_cannot_open_an_ineligible_exam_directly_by_url(): void
     {
-        [, $class, $subject, $session] = $this->makeBaseFixtures();
+        [, $class, $subject] = $this->makeBaseFixtures();
         $otherClass = SchoolClass::create(['branch_id' => null, 'name' => 'Class 9']);
-        $student = $this->makeStudent($class, $session, [$subject]);
-        $exam = $this->makePublishedExam($otherClass, $subject, $session, 'Wrong Grade Exam');
+        $student = $this->makeStudent($class, [$subject]);
+        $exam = $this->makePublishedExam($otherClass, $subject, 'Wrong Grade Exam');
 
         $this->actingAs($student, 'student')
             ->get(route('student.exams.show', $exam))
@@ -188,10 +141,10 @@ class ExamEligibilityTest extends TestCase
 
     public function test_student_cannot_start_an_attempt_for_an_ineligible_exam(): void
     {
-        [, $class, $subject, $session] = $this->makeBaseFixtures();
+        [, $class, $subject] = $this->makeBaseFixtures();
         $otherSubject = Subject::create(['name' => 'Mathematics']);
-        $student = $this->makeStudent($class, $session, [$subject]);
-        $exam = $this->makePublishedExam($class, $otherSubject, $session, 'Wrong Subject Exam');
+        $student = $this->makeStudent($class, [$subject]);
+        $exam = $this->makePublishedExam($class, $otherSubject, 'Wrong Subject Exam');
         $exam->questions()->create(['question_text' => 'Q1', 'question_type' => 'mcq', 'marks' => 10]);
 
         $this->expectException(ValidationException::class);
@@ -201,9 +154,9 @@ class ExamEligibilityTest extends TestCase
 
     public function test_student_can_start_an_attempt_for_an_eligible_exam(): void
     {
-        [, $class, $subject, $session] = $this->makeBaseFixtures();
-        $student = $this->makeStudent($class, $session, [$subject]);
-        $exam = $this->makePublishedExam($class, $subject, $session, 'Eligible Exam');
+        [, $class, $subject] = $this->makeBaseFixtures();
+        $student = $this->makeStudent($class, [$subject]);
+        $exam = $this->makePublishedExam($class, $subject, 'Eligible Exam');
         $exam->questions()->create(['question_text' => 'Q1', 'question_type' => 'mcq', 'marks' => 10]);
 
         $attempt = app(ExamAttemptService::class)->start($exam, $student);
@@ -219,17 +172,10 @@ class ExamEligibilityTest extends TestCase
         $branch = Branch::create(['name' => 'Branch X', 'email' => 'branch-x-'.uniqid().'@example.com', 'is_active' => true]);
         $class = SchoolClass::create(['branch_id' => $branch->id, 'name' => 'Class 10']);
         $subject = Subject::create(['name' => 'Science']);
-        $session = AcademicSession::create([
-            'name' => 'Branch Session',
-            'start_date' => now()->subMonth(),
-            'end_date' => now()->addMonths(6),
-            'is_active' => true,
-        ]);
 
         $student = Student::create([
             'branch_id' => $branch->id,
             'class_id' => $class->id,
-            'session_id' => $session->id,
             'student_name' => 'Branch Student',
             'guardian_name' => 'Guardian',
             'class' => $class->name,
@@ -243,7 +189,6 @@ class ExamEligibilityTest extends TestCase
             'branch_id' => $branch->id,
             'school_class_id' => $class->id,
             'subject_id' => $subject->id,
-            'session_id' => $session->id,
             'title' => 'Branch Matching Exam',
             'total_marks' => 10,
             'duration_minutes' => 30,
@@ -258,7 +203,6 @@ class ExamEligibilityTest extends TestCase
             'branch_id' => $branch->id,
             'school_class_id' => $class->id,
             'subject_id' => $mismatchSubject->id,
-            'session_id' => $session->id,
             'title' => 'Branch Mismatch Exam',
             'total_marks' => 10,
             'duration_minutes' => 30,
@@ -287,24 +231,16 @@ class ExamEligibilityTest extends TestCase
         $class = SchoolClass::create(['branch_id' => null, 'name' => 'Class 10']);
         $subject = Subject::create(['name' => 'Science']);
 
-        $session = AcademicSession::create([
-            'name' => 'Session '.uniqid(),
-            'start_date' => now()->subMonth(),
-            'end_date' => now()->addMonths(6),
-            'is_active' => true,
-        ]);
-
-        return [$admin, $class, $subject, $session];
+        return [$admin, $class, $subject];
     }
 
-    private function makeStudent(SchoolClass $class, AcademicSession $session, array $subjects): Student
+    private function makeStudent(SchoolClass $class, array $subjects): Student
     {
         $branch = Branch::create(['name' => 'Branch '.uniqid(), 'email' => 'branch-'.uniqid().'@example.com', 'is_active' => true]);
 
         $student = Student::create([
             'branch_id' => $branch->id,
             'class_id' => $class->id,
-            'session_id' => $session->id,
             'student_name' => 'Eligibility Student',
             'guardian_name' => 'Guardian',
             'class' => $class->name,
@@ -318,13 +254,12 @@ class ExamEligibilityTest extends TestCase
         return $student;
     }
 
-    private function makePublishedExam(SchoolClass $class, Subject $subject, AcademicSession $session, string $title): Exam
+    private function makePublishedExam(SchoolClass $class, Subject $subject, string $title): Exam
     {
         return Exam::create([
             'branch_id' => null,
             'school_class_id' => $class->id,
             'subject_id' => $subject->id,
-            'session_id' => $session->id,
             'title' => $title,
             'total_marks' => 10,
             'duration_minutes' => 30,

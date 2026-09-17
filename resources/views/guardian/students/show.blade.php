@@ -36,15 +36,6 @@
             </div>
             <div class="student-detail-item">
                 <div class="student-detail-icon">
-                    <i class="bi bi-calendar-range"></i>
-                </div>
-                <div>
-                    <dt>Academic Session</dt>
-                    <dd>{{ $student->session?->name ?? '—' }}</dd>
-                </div>
-            </div>
-            <div class="student-detail-item">
-                <div class="student-detail-icon">
                     <i class="bi bi-building"></i>
                 </div>
                 <div>
@@ -118,7 +109,7 @@
                                 <h4>{{ $attempt->exam?->title }}</h4>
                                 <span class="performance-date {{ $attempt->is_passed ? 'passed' : 'failed' }}">
                                     <i class="bi bi-calendar-check"></i>
-                                    {{ $attempt->submitted_at?->format('d M Y, h:i A') }}
+                                    {{ $attempt->submitted_at?->format('d M Y') }}
                                 </span>
                             </div>
                         </div>

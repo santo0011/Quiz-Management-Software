@@ -11,6 +11,7 @@
         <table class="table align-middle admin-table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Exam</th>
                     <th>Grade</th>
                     <th>Subject</th>
@@ -24,12 +25,9 @@
                 @foreach ($exams as $exam)
                     @php($canManage = $prefix === 'admin' || $exam->branch_id !== null)
                     <tr>
+                        <td>{{ $exams->firstItem() + $loop->index }}</td>
                         <td>
-                            <strong>{{ $exam->title }}</strong>
-                            @if (! $exam->branch_id)
-                                <span class="badge text-bg-light border ms-1"><i class="bi bi-globe2"></i> All branches</span>
-                            @endif
-                            <span class="table-subtext">{{ $exam->duration_minutes }} minutes</span>
+                            <strong>{{ $exam->title }} ({{ $exam->duration_minutes }} minutes)</strong>
                         </td>
                         <td>{{ $exam->schoolClass?->name }}</td>
                         <td>{{ $exam->subject?->name ?? '—' }}</td>

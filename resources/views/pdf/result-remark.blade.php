@@ -126,7 +126,7 @@
         </tr>
         <tr>
             <td class="label">Submitted On</td>
-            <td>{{ $attempt->submitted_at?->format('d M Y, h:i A') ?? '—' }}</td>
+            <td>{{ $attempt->submitted_at?->format('d M Y') ?? '—' }}</td>
         </tr>
     </table>
 
@@ -167,7 +167,7 @@
         </tr>
         <tr>
             <td class="label">Remark Date</td>
-            <td>{{ $attempt->teacher_remark_at?->format('d M Y, h:i A') ?? '—' }}</td>
+            <td>{{ $attempt->teacher_remark_at?->format('d M Y') ?? '—' }}</td>
         </tr>
     </table>
 

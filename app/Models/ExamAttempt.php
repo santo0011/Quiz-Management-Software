@@ -11,7 +11,6 @@ class ExamAttempt extends Model
         'student_id',
         'branch_id',
         'school_class_id',
-        'session_id',
         'attempt_number',
         'started_at',
         'expires_at',
@@ -26,6 +25,15 @@ class ExamAttempt extends Model
         'teacher_remark',
         'teacher_remark_by',
         'teacher_remark_at',
+        'result_pdf_path',
+        'result_pdf_token',
+        'zoho_result_synced_at',
+        'branch_result_pdf_path',
+        'result_email_sent_at',
+        'result_email_sent_by',
+        'branch_review',
+        'branch_review_by',
+        'branch_review_at',
     ];
 
     protected function casts(): array
@@ -38,6 +46,9 @@ class ExamAttempt extends Model
             'percentage' => 'decimal:2',
             'is_passed' => 'boolean',
             'teacher_remark_at' => 'datetime',
+            'zoho_result_synced_at' => 'datetime',
+            'result_email_sent_at' => 'datetime',
+            'branch_review_at' => 'datetime',
         ];
     }
 
@@ -61,11 +72,6 @@ class ExamAttempt extends Model
         return $this->belongsTo(SchoolClass::class);
     }
 
-    public function session()
-    {
-        return $this->belongsTo(AcademicSession::class, 'session_id');
-    }
-
     public function answers()
     {
         return $this->hasMany(ExamAnswer::class);
@@ -74,5 +80,15 @@ class ExamAttempt extends Model
     public function teacherRemarkBy()
     {
         return $this->belongsTo(Teacher::class, 'teacher_remark_by');
+    }
+
+    public function resultEmailSentBy()
+    {
+        return $this->belongsTo(User::class, 'result_email_sent_by');
+    }
+
+    public function branchReviewBy()
+    {
+        return $this->belongsTo(User::class, 'branch_review_by');
     }
 }

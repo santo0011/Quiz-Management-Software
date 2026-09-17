@@ -35,6 +35,7 @@
                 <table class="table align-middle admin-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Grade Name</th>
                             <th>Created</th>
                             <th class="text-end">Actions</th>
@@ -43,8 +44,9 @@
                     <tbody>
                         @foreach ($classes as $schoolClass)
                             <tr>
+                                <td>{{ $classes->firstItem() + $loop->index }}</td>
                                 <td><strong>{{ $schoolClass->name }}</strong></td>
-                                <td>{{ $schoolClass->created_at->format('d M Y, h:i A') }}</td>
+                                <td>{{ $schoolClass->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">
                                         <a href="{{ route('branch.classes.show', $schoolClass) }}" class="btn btn-sm btn-soft" title="View">

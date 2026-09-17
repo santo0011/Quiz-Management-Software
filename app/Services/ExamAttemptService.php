@@ -8,7 +8,11 @@ use App\Models\ExamAttempt;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\Student;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ExamAttemptService
@@ -62,7 +66,6 @@ class ExamAttemptService
                 'student_id' => $student->id,
                 'branch_id' => $student->branch_id,
                 'school_class_id' => $student->class_id,
-                'session_id' => $student->session_id,
                 'attempt_number' => $attemptNumber,
                 'started_at' => now(),
                 'expires_at' => $expiresAt,
@@ -105,7 +108,9 @@ class ExamAttemptService
             return $attempt;
         }
 
-        return DB::transaction(function () use ($attempt): ExamAttempt {
+        $justSubmitted = false;
+
+        $attempt = DB::transaction(function () use ($attempt, &$justSubmitted): ExamAttempt {
             $attempt->refresh();
             if ($attempt->status === 'submitted') {
                 return $attempt;
@@ -165,8 +170,50 @@ class ExamAttemptService
                 'status' => 'submitted',
             ]);
 
+            $justSubmitted = true;
+
             return $attempt->refresh();
         });
+
+        if ($justSubmitted) {
+            $this->generateAndSyncResultPdf($attempt);
+        }
+
+        return $attempt;
+    }
+
+    /**
+     * Finalize a just-submitted attempt: generate its result PDF, store it
+     * publicly, and forward it to Zoho. Wrapped so that any failure here
+     * (PDF rendering, storage, or Zoho being down) is logged and swallowed —
+     * the student must still be able to view their locally computed result
+     * regardless of what happens in this step.
+     */
+    private function generateAndSyncResultPdf(ExamAttempt $attempt): void
+    {
+        try {
+            $attempt->loadMissing(['student', 'exam', 'schoolClass', 'teacherRemarkBy']);
+
+            $token = $attempt->result_pdf_token ?: Str::random(48);
+            $path = "results/{$token}.pdf";
+
+            $pdf = Pdf::loadView('pdf.result-remark', ['attempt' => $attempt])->output();
+            Storage::disk('public')->put($path, $pdf);
+
+            $attempt->update([
+                'result_pdf_path' => $path,
+                'result_pdf_token' => $token,
+            ]);
+
+            $url = Storage::disk('public')->url($path);
+
+            app(ZohoResultService::class)->sendResult($attempt, $url);
+        } catch (\Throwable $e) {
+            Log::error('Failed to generate/sync the result PDF for an exam attempt.', [
+                'attempt_id' => $attempt->id,
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function ensureStudentCanAttempt(Exam $exam, Student $student): void
@@ -192,10 +239,6 @@ class ExamAttemptService
 
         if ($exam->subject_id !== null && ! $student->subjects()->where('subjects.id', $exam->subject_id)->exists()) {
             throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your subject.']);
-        }
-
-        if ($exam->session_id !== null && $exam->session_id !== $student->session_id) {
-            throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your academic session.']);
         }
 
         if (! $exam->isOpen()) {

@@ -13,8 +13,7 @@ class DashboardController extends Controller
     {
         $student = auth('student')->user()->load(['branch', 'schoolClass']);
 
-        $baseExamQuery = Exam::visibleToBranch($student->branch_id)
-            ->where('school_class_id', $student->class_id)
+        $baseExamQuery = Exam::eligibleForStudent($student)
             ->where('status', Exam::STATUS_PUBLISHED);
 
         $publishedExams = (clone $baseExamQuery)

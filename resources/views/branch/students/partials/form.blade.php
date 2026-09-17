@@ -27,6 +27,14 @@
                 @error('student_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
             @endif
         </div>
+        <div class="col-md-6">
+            <label for="zoho_student_id" class="form-label">NRICH Student ID <span class="required-mark">*</span></label>
+            <input id="zoho_student_id" type="text" name="zoho_student_id" value="{{ $useOldInput ? old('zoho_student_id', $student->zoho_student_id) : $student->zoho_student_id }}" class="form-control{{ $useOldInput && $errors->has('zoho_student_id') ? ' is-invalid' : '' }}" required maxlength="255">
+            @if ($useOldInput)
+                @error('zoho_student_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            @endif
+            <div class="form-text">Used to sign in and to verify identity with Zoho.</div>
+        </div>
         @if ($student->exists)
             <div class="col-md-6">
                 <label for="guardian_name" class="form-label">Guardian Name <span class="required-mark">*</span></label>
@@ -73,7 +81,7 @@
             @if ($useOldInput)
                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
             @endif
-            <div class="form-text">Student login password remains empty for now; email-based login codes can be added later.</div>
+            <div class="form-text">Students sign in with their NRICH Student ID, not this email.</div>
         </div>
         <div class="col-12">
             <label class="form-label">Subjects</label>

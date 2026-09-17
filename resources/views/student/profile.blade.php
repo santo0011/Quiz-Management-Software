@@ -34,6 +34,15 @@
             </div>
             <div class="student-detail-item">
                 <div class="student-detail-icon">
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+                <div>
+                    <dt>Student ID</dt>
+                    <dd>{{ $student->zoho_student_id ?? '—' }}</dd>
+                </div>
+            </div>
+            <div class="student-detail-item">
+                <div class="student-detail-icon">
                     <i class="bi bi-person-heart"></i>
                 </div>
                 <div>

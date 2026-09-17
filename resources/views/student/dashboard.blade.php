@@ -76,7 +76,7 @@
                     <a href="{{ route('student.results.show', $attempt) }}" class="result-row">
                         <div>
                             <strong>{{ $attempt->exam?->title }}</strong>
-                            <span>{{ $attempt->submitted_at?->format('d M Y, h:i A') }}</span>
+                            <span>{{ $attempt->submitted_at?->format('d M Y') }}</span>
                         </div>
                         <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">{{ $attempt->percentage }}%</span>
                     </a>

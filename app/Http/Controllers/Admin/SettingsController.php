@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SettingsRequest;
+use App\Models\Branch;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,7 @@ class SettingsController extends Controller
     {
         return view('admin.settings.edit', [
             'settings' => Setting::current(),
+            'branches' => Branch::orderBy('name')->get(),
         ]);
     }
 
@@ -27,6 +29,10 @@ class SettingsController extends Controller
 
         if (! $request->filled('mail_password')) {
             unset($validated['mail_password']);
+        }
+
+        if (! $request->filled('common_student_password')) {
+            unset($validated['common_student_password']);
         }
 
         if ($request->hasFile('logo')) {

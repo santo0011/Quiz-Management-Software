@@ -40,7 +40,7 @@
                             <div><dt>Total Marks</dt><dd>{{ $exam->total_marks }}</dd></div>
                             <div><dt>Duration</dt><dd>{{ $exam->duration_minutes }} min</dd></div>
                             <div><dt>Questions</dt><dd>{{ $exam->questions_count }}</dd></div>
-                            <div><dt>Ends</dt><dd>{{ $exam->ends_at?->format('d M Y, h:i A') ?? 'Open' }}</dd></div>
+                            <div><dt>Ends</dt><dd>{{ $exam->ends_at?->format('d M Y') ?? 'Open' }}</dd></div>
                             <div><dt>Attempts Left</dt><dd>{{ $remainingAttempts }}</dd></div>
                         </dl>
                         @if ($dynamicStatus === 'upcoming')

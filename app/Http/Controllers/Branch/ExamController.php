@@ -8,7 +8,6 @@ use App\Http\Requests\ExamRequest;
 use App\Models\Exam;
 use App\Models\SchoolClass;
 use App\Models\Subject;
-use App\Services\AcademicSessionResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -20,23 +19,16 @@ class ExamController extends Controller
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
-        $selectedSessionId = AcademicSessionResolver::selectedId($request);
-
-        $exams = $selectedSessionId
-            ? Exam::with(['schoolClass', 'subject', 'questions'])
-                ->visibleToBranch($branch->id)
-                ->where('session_id', $selectedSessionId)
-                ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
-                ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
-                ->latest()
-                ->paginate(20)
-                ->withQueryString()
-            : null;
+        $exams = Exam::with(['schoolClass', 'subject', 'questions'])
+            ->visibleToBranch($branch->id)
+            ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
 
         return view('branch.exams.index', [
             'branch' => $branch,
-            'selectedSessionId' => $selectedSessionId,
-            'selectedAcademicSession' => AcademicSessionResolver::selected($request),
             'exam' => new Exam(['status' => Exam::STATUS_DRAFT, 'maximum_attempts' => 1, 'marks_per_question' => 1]),
             'exams' => $exams,
             'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
@@ -50,14 +42,10 @@ class ExamController extends Controller
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
-        $selectedSessionId = AcademicSessionResolver::selectedId($request);
-        abort_if(! $selectedSessionId, 403, 'Please select an academic session first.');
-
         Exam::create($request->validated() + [
             'branch_id' => $branch->id,
             'status' => Exam::STATUS_DRAFT,
             'marks_per_question' => 1,
-            'session_id' => $selectedSessionId,
         ]);
 
         return redirect()->route('branch.exams.index')->with('success', 'Exam created successfully.');
@@ -66,7 +54,6 @@ class ExamController extends Controller
     public function show(Request $request, Exam $exam): View
     {
         $this->authorizeExamVisibility($request, $exam);
-        $this->authorizeSessionScope($request, $exam);
 
         return view('branch.exams.show', [
             'branch' => $request->user()->branch,
@@ -77,7 +64,6 @@ class ExamController extends Controller
     public function edit(Request $request, Exam $exam): View
     {
         $this->authorizeExam($request, $exam);
-        $this->authorizeSessionScope($request, $exam);
 
         return view('branch.exams.edit', [
             'branch' => $request->user()->branch,
@@ -90,7 +76,6 @@ class ExamController extends Controller
     public function update(ExamRequest $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
-        $this->authorizeSessionScope($request, $exam);
 
         $exam->update($request->validated());
 
@@ -180,7 +165,6 @@ class ExamController extends Controller
     public function destroy(Request $request, Exam $exam): RedirectResponse
     {
         $this->authorizeExam($request, $exam);
-        $this->authorizeSessionScope($request, $exam);
 
         if ($exam->hasBeenAttempted()) {
             return redirect()->route('branch.exams.index')
@@ -265,22 +249,6 @@ class ExamController extends Controller
             ! $request->user()->branch_id || ($exam->branch_id !== null && $exam->branch_id !== $request->user()->branch_id),
             403,
             'This exam does not belong to your branch.'
-        );
-    }
-
-    /**
-     * Block reaching an Exam that belongs to a different Academic Session
-     * than the one currently selected. Legacy rows (either side null)
-     * fall through as allowed.
-     */
-    private function authorizeSessionScope(Request $request, Exam $exam): void
-    {
-        $selectedSessionId = AcademicSessionResolver::selectedId($request);
-
-        abort_if(
-            $exam->session_id !== null && $selectedSessionId !== null && $exam->session_id !== $selectedSessionId,
-            403,
-            'This exam does not belong to the currently selected academic session.'
         );
     }
 }

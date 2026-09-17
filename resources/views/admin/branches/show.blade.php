@@ -34,11 +34,7 @@
             </div>
             <div>
                 <dt>Created At</dt>
-                <dd>{{ $branch->created_at->format('d M Y, h:i A') }}</dd>
-            </div>
-            <div>
-                <dt>Last Updated</dt>
-                <dd>{{ $branch->updated_at->format('d M Y, h:i A') }}</dd>
+                <dd>{{ $branch->created_at->format('d M Y') }}</dd>
             </div>
         </dl>
     </section>

@@ -3,13 +3,13 @@
 namespace Tests\Feature;
 
 use App\Mail\BranchLoginOtpMail;
-use App\Mail\StudentLoginOtpMail;
 use App\Mail\SuperAdminLoginOtpMail;
 use App\Models\Branch;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -21,8 +21,6 @@ class SingleActiveSessionTest extends TestCase
 
     public function test_student_login_stores_a_session_token_on_the_account(): void
     {
-        Mail::fake();
-
         $branch = Branch::create(['name' => 'Pune Branch', 'email' => 'pune@example.com']);
 
         $student = Student::create([
@@ -32,25 +30,22 @@ class SingleActiveSessionTest extends TestCase
             'class' => 'Class 10',
             'phone_number' => '9876543210',
             'email' => 'student@example.com',
-            'login_code_hash' => Hash::make('654321'),
+            'zoho_student_id' => 'NL1184',
         ]);
 
         $this->assertNull($student->current_session_id);
 
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'success', 'error' => []], 200),
+        ]);
+
         $this->post(route('login.store'), [
             'login_type' => 'student',
-            'email' => 'student@example.com',
-            'password' => '654321',
+            'nrich_student_id' => 'NL1184',
         ])->assertRedirect(route('login.otp'));
 
-        $otp = null;
-        Mail::assertSent(StudentLoginOtpMail::class, function (StudentLoginOtpMail $mail) use (&$otp): bool {
-            $otp = $mail->otp;
-
-            return true;
-        });
-
-        $this->post(route('login.otp.verify'), ['otp' => $otp])
+        $this->post(route('login.otp.verify'), ['otp' => '145263'])
             ->assertRedirect(route('student.dashboard'));
 
         $this->assertNotNull($student->fresh()->current_session_id);

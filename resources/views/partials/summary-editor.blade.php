@@ -17,6 +17,7 @@
                 <span>Insert Math Equation</span>
                 <button type="button" class="btn-close btn-close-sm" data-math-close aria-label="Close"></button>
             </div>
+            <p class="math-toolbar-hint">Type or build the expression here — a word you just typed right before the cursor (e.g. "x") is pulled in automatically, so clicking x² gives "x^2" merged together.</p>
             <div class="ckeditor-math-staging">
                 <input type="text" class="form-control form-control-sm" data-math-staging placeholder="e.g. \frac{1}{2} + x^2" autocomplete="off">
             </div>
@@ -133,6 +134,42 @@
                         return text;
                     };
 
+                    // When nothing is selected, a plain click into "Insert Math" right
+                    // after typing e.g. "x" would otherwise build the equation in total
+                    // isolation from that "x" — inserting a disconnected "\(^{2}\)" next
+                    // to it (an empty-based superscript) instead of a merged "x²". Pull
+                    // in the run of letters/digits immediately before the cursor (the
+                    // word being typed) the same way an explicit selection is carried
+                    // over, so it becomes the base the template buttons build onto.
+                    var wordBeforeCollapsedCursor = function (selection) {
+                        var position = selection.getFirstPosition();
+                        var block = position.parent;
+
+                        if (! block || typeof block.getChildren !== 'function') {
+                            return null;
+                        }
+
+                        var textBefore = '';
+                        var range = editor.model.createRange(editor.model.createPositionAt(block, 0), position);
+                        for (var item of range.getItems()) {
+                            if (typeof item.data === 'string') {
+                                textBefore += item.data;
+                            }
+                        }
+
+                        var match = /[A-Za-z0-9]+$/.exec(textBefore);
+                        if (! match) {
+                            return null;
+                        }
+
+                        var startOffset = position.offset - match[0].length;
+
+                        return {
+                            text: match[0],
+                            range: editor.model.createRange(editor.model.createPositionAt(block, startOffset), position),
+                        };
+                    };
+
                     toggleBtn.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -143,20 +180,35 @@
                         toolbar.hidden = !willOpen;
 
                         if (willOpen) {
-                            // Carry over whatever the user already selected directly in the
-                            // CKEditor content (e.g. typed "x2", selected the "2") so the
-                            // template buttons below have something to wrap instead of
-                            // inserting an empty {} placeholder.
                             var selection = editor.model.document.selection;
+
                             if (! selection.isCollapsed) {
+                                // Carry over whatever the user already selected directly in
+                                // the CKEditor content (e.g. typed "x2", selected the "2")
+                                // so the template buttons below have something to wrap
+                                // instead of inserting an empty {} placeholder.
                                 capturedRange = selection.getFirstRange();
                                 stagingInput.value = selectedEditorText(selection);
+                                stagingInput.focus();
+                                stagingInput.select();
                             } else {
-                                capturedRange = null;
-                                stagingInput.value = '';
+                                var preceding = wordBeforeCollapsedCursor(selection);
+
+                                if (preceding) {
+                                    capturedRange = preceding.range;
+                                    stagingInput.value = preceding.text;
+                                } else {
+                                    capturedRange = null;
+                                    stagingInput.value = '';
+                                }
+
+                                stagingInput.focus();
+                                // Cursor at the END, not selected — a captured word like "x"
+                                // should stay put as the base; clicking a template button
+                                // (e.g. Superscript) should append "^{}" right after it, not
+                                // wrap "x" inside the placeholder.
+                                stagingInput.selectionStart = stagingInput.selectionEnd = stagingInput.value.length;
                             }
-                            stagingInput.focus();
-                            stagingInput.select();
                         }
                     });
 
@@ -180,6 +232,7 @@
                             var selectionEnd = stagingInput.selectionEnd ?? stagingInput.value.length;
                             var value = stagingInput.value;
                             var selected = value.slice(selectionStart, selectionEnd);
+                            var placeholderIndex = snippet.indexOf('{}');
 
                             // Where the snippet gets inserted, and what (if anything) it
                             // replaces in the input's current value.
@@ -187,8 +240,11 @@
                             var replaceTo = selectionEnd;
                             var insertText = snippet;
 
+                            // Cursor position after inserting, as an offset into insertText —
+                            // defaults to the end (right after the whole snippet).
+                            var cursorOffset = insertText.length;
+
                             if (selected !== '') {
-                                var placeholderIndex = snippet.indexOf('{}');
                                 if (placeholderIndex !== -1) {
                                     // A template button (^{}, _{}, \sqrt{}, \frac{}{}, ...) has an
                                     // empty {} placeholder. The user selected text first (e.g.
@@ -196,16 +252,27 @@
                                     // that selection inside the first placeholder ("^{2}") instead
                                     // of blindly inserting the bare template and deleting it.
                                     insertText = snippet.slice(0, placeholderIndex + 1) + selected + snippet.slice(placeholderIndex + 1);
+                                    cursorOffset = insertText.length;
                                 } else {
                                     // A plain symbol (\pi, \times, ...) has nothing to wrap into —
                                     // keep the selection and insert the symbol right after it
                                     // instead of overwriting it.
                                     replaceFrom = replaceTo = selectionEnd;
+                                    cursorOffset = insertText.length;
                                 }
+                            } else if (placeholderIndex !== -1) {
+                                // Nothing was selected and this is a template with an empty {}
+                                // placeholder (e.g. clicking Superscript with no prior selection
+                                // produces bare "^{}") — land the cursor INSIDE that first pair of
+                                // braces so the user can type the exponent/argument immediately,
+                                // instead of after the closing brace where a repeat click of the
+                                // same button would just append another empty "^{}" right next to
+                                // it with no visible difference.
+                                cursorOffset = placeholderIndex + 1;
                             }
 
                             stagingInput.value = value.slice(0, replaceFrom) + insertText + value.slice(replaceTo);
-                            stagingInput.selectionStart = stagingInput.selectionEnd = replaceFrom + insertText.length;
+                            stagingInput.selectionStart = stagingInput.selectionEnd = replaceFrom + cursorOffset;
                             stagingInput.focus();
                         });
                     });

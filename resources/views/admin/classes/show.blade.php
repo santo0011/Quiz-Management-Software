@@ -34,7 +34,7 @@
             </div>
             <div>
                 <dt>Created At</dt>
-                <dd>{{ $class->created_at->format('d M Y, h:i A') }}</dd>
+                <dd>{{ $class->created_at->format('d M Y') }}</dd>
             </div>
         </dl>
     </section>

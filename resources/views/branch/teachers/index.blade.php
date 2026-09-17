@@ -27,6 +27,7 @@
                 <table class="table align-middle admin-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone</th>
@@ -37,10 +38,11 @@
                     <tbody>
                         @foreach ($teachers as $teacher)
                             <tr>
+                                <td>{{ $teachers->firstItem() + $loop->index }}</td>
                                 <td><strong>{{ $teacher->name }}</strong></td>
                                 <td>{{ $teacher->email }}</td>
                                 <td>{{ $teacher->phone_number ?? '—' }}</td>
-                                <td>{{ $teacher->created_at->format('d M Y, h:i A') }}</td>
+                                <td>{{ $teacher->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">
                                         <button type="button" class="btn btn-sm btn-soft" title="Edit" data-bs-toggle="offcanvas" data-bs-target="#editTeacherDrawer{{ $teacher->id }}" aria-controls="editTeacherDrawer{{ $teacher->id }}">

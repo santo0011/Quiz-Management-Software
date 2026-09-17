@@ -30,12 +30,6 @@
                     </span>
                 @endforeach -->
             </div>
-            <div class="student-profile-actions">
-                <button type="button" class="btn btn-light btn-student-action" data-bs-toggle="offcanvas" data-bs-target="#editStudentDrawer{{ $student->id }}">
-                    <i class="bi bi-pencil-fill"></i>
-                    Edit Student
-                </button>
-            </div>
         </div>
         <div class="student-profile-main">
             <div class="student-profile-avatar">
@@ -43,16 +37,12 @@
             </div>
             <div class="student-profile-info">
                 <h1 class="student-profile-name">{{ $student->student_name }}</h1>
-                <p class="student-profile-subtitle">
-                    <i class="bi bi-person-badge"></i>
-                    Student ID: #{{ str_pad($student->id, 4, '0', STR_PAD_LEFT) }}
-                </p>
             </div>
         </div>
     </div>
 </section>
 
-<section class="student-stats-grid">
+<!-- <section class="student-stats-grid">
     <div class="student-stat-card">
         <div class="student-stat-icon primary">
             <i class="bi bi-person-fill"></i>
@@ -72,15 +62,6 @@
         </div>
     </div>
     <div class="student-stat-card">
-        <div class="student-stat-icon success">
-            <i class="bi bi-telephone-fill"></i>
-        </div>
-        <div class="student-stat-body">
-            <span>Phone</span>
-            <strong>{{ $student->phone_number ?? '—' }}</strong>
-        </div>
-    </div>
-    <div class="student-stat-card">
         <div class="student-stat-icon info">
             <i class="bi bi-envelope-fill"></i>
         </div>
@@ -89,7 +70,7 @@
             <strong>{{ $student->email ?? '—' }}</strong>
         </div>
     </div>
-</section>
+</section> -->
 
 <section class="content-panel student-details-panel">
     <div class="panel-header">
@@ -107,6 +88,15 @@
             <div>
                 <dt>Student Name</dt>
                 <dd>{{ $student->student_name }}</dd>
+            </div>
+        </div>
+        <div class="student-detail-item">
+            <div class="student-detail-icon">
+                <i class="bi bi-person-badge-fill"></i>
+            </div>
+            <div>
+                <dt>Student ID</dt>
+                <dd>{{ $student->zoho_student_id ?? '—' }}</dd>
             </div>
         </div>
         <div class="student-detail-item">
@@ -153,15 +143,6 @@
         </div>
         <div class="student-detail-item">
             <div class="student-detail-icon">
-                <i class="bi bi-telephone-fill"></i>
-            </div>
-            <div>
-                <dt>Phone Number</dt>
-                <dd>{{ $student->phone_number ?? '—' }}</dd>
-            </div>
-        </div>
-        <div class="student-detail-item">
-            <div class="student-detail-icon">
                 <i class="bi bi-envelope-fill"></i>
             </div>
             <div>
@@ -184,7 +165,7 @@
             </div>
             <div>
                 <dt>Created At</dt>
-                <dd>{{ $student->created_at?->format('d M Y, h:i A') }}</dd>
+                <dd>{{ $student->created_at?->format('d M Y') }}</dd>
             </div>
         </div>
     </div>

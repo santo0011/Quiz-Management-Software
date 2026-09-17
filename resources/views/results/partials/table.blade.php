@@ -11,7 +11,11 @@
         <table class="table align-middle admin-table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Student</th>
+                    @if ($prefix === 'branch')
+                        <th>Branch</th>
+                    @endif
                     <th>Grade</th>
                     <th>Exam</th>
                     <th>Marks</th>
@@ -24,16 +28,20 @@
             <tbody>
                 @foreach ($attempts as $attempt)
                     <tr>
+                        <td>{{ $attempts->firstItem() + $loop->index }}</td>
                         <td>
                             <strong>{{ $attempt->student?->student_name }}</strong>
                             <span class="table-subtext">{{ $attempt->student?->email }}</span>
                         </td>
+                        @if ($prefix === 'branch')
+                            <td>{{ $attempt->branch?->name ?? 'Global' }}</td>
+                        @endif
                         <td>{{ $attempt->schoolClass?->name }}</td>
                         <td>{{ $attempt->exam?->title }}</td>
                         <td>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</td>
                         <td>{{ $attempt->percentage }}%</td>
                         <td><span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">{{ $attempt->is_passed ? 'Passed' : 'Failed' }}</span></td>
-                        <td>{{ $attempt->submitted_at?->format('d M Y, h:i A') }}</td>
+                        <td>{{ $attempt->submitted_at?->format('d M Y') }}</td>
                         <td class="text-end">
                             <a href="{{ route($prefix.'.results.show', $attempt) }}" class="btn btn-sm btn-soft"><i class="bi bi-eye-fill"></i></a>
                         </td>

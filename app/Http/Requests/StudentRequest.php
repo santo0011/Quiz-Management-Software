@@ -35,6 +35,7 @@ class StudentRequest extends FormRequest
 
         return [
             'student_name' => ['required', 'string', 'max:255'],
+            'zoho_student_id' => ['required', 'string', 'max:255', Rule::unique('students', 'zoho_student_id')->ignore($studentId)],
             'guardian_type' => $isCreate ? ['required', Rule::in(['new', 'existing'])] : ['nullable'],
             'guardian_id' => [
                 'nullable',
@@ -102,6 +103,8 @@ class StudentRequest extends FormRequest
     {
         return [
             'student_name.required' => 'Please enter the student name.',
+            'zoho_student_id.required' => 'Please enter the student\'s NRICH Student ID.',
+            'zoho_student_id.unique' => 'A student with this NRICH Student ID already exists.',
             'guardian_type.required' => 'Please choose whether this is a new or existing guardian.',
             'guardian_id.required' => 'Please search and select an existing guardian.',
             'guardian_id.exists' => 'Please select a valid guardian from the list.',

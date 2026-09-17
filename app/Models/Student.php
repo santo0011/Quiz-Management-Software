@@ -10,7 +10,6 @@ class Student extends Authenticatable
     protected $fillable = [
         'branch_id',
         'class_id',
-        'session_id',
         'student_name',
         'guardian_name',
         'guardian_email',
@@ -23,6 +22,9 @@ class Student extends Authenticatable
         'zoho_student_id',
         'zoho_payload',
         'zoho_synced_at',
+        'zoho_class_id',
+        'zoho_class_name',
+        'zoho_grade',
         'is_active',
     ];
 
@@ -71,11 +73,6 @@ class Student extends Authenticatable
     public function subjects()
     {
         return $this->belongsToMany(Subject::class);
-    }
-
-    public function session()
-    {
-        return $this->belongsTo(AcademicSession::class, 'session_id');
     }
 
     public function scopeForBranch(Builder $query, int $branchId): Builder

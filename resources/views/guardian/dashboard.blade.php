@@ -35,12 +35,6 @@
                             <span><i class="bi bi-people-fill"></i> {{ $student->schoolClass?->name ?? $student->class }}</span>
                             <span><i class="bi bi-building"></i> {{ $student->branch?->name ?? '—' }}</span>
                         </div>
-                        @if ($student->session)
-                            <span class="status-badge status-published mt-2">
-                                <i class="bi bi-calendar-range"></i>
-                                {{ $student->session->name }}
-                            </span>
-                        @endif
                         <div class="guardian-student-card-stats">
                             <div>
                                 <strong>{{ $student->submitted_exams_count }}</strong>

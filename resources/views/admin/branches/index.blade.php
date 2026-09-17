@@ -27,17 +27,18 @@
                 <table class="table align-middle admin-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Status</th>
                             <th>Created</th>
-                            <th>Updated</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($branches as $branch)
                             <tr>
+                                <td>{{ $branches->firstItem() + $loop->index }}</td>
                                 <td><strong>{{ $branch->name }}</strong></td>
                                 <td>{{ $branch->email }}</td>
                                 <td>
@@ -46,8 +47,7 @@
                                         {{ $branch->is_active ? 'Active' : 'Inactive' }}
                                     </span>
                                 </td>
-                                <td>{{ $branch->created_at->format('d M Y, h:i A') }}</td>
-                                <td>{{ $branch->updated_at->format('d M Y, h:i A') }}</td>
+                                <td>{{ $branch->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">
                                         <a href="{{ route('admin.branches.show', $branch) }}" class="btn btn-sm btn-soft" title="View">

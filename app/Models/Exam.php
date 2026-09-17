@@ -20,7 +20,6 @@ class Exam extends Model
     protected $fillable = [
         'branch_id',
         'school_class_id',
-        'session_id',
         'subject_id',
         'question_category_id',
         'title',
@@ -72,11 +71,6 @@ class Exam extends Model
         return $this->belongsTo(Subject::class);
     }
 
-    public function session()
-    {
-        return $this->belongsTo(AcademicSession::class, 'session_id');
-    }
-
     public function questions()
     {
         return $this->hasMany(Question::class);
@@ -113,11 +107,11 @@ class Exam extends Model
 
     /**
      * The exam-eligibility rule: an Exam is only usable by a Student when
-     * its Session, Grade, and Subject all match the Student's own Session,
-     * Grade, and assigned Subjects (a Student may have several Subjects —
-     * matching any one of them is enough). Branch scoping (own branch or a
-     * Super-Admin-created global exam) is included since it's the same
-     * "does this Student belong to this Exam" question.
+     * its Grade and Subject match the Student's own Grade and assigned
+     * Subjects (a Student may have several Subjects — matching any one of
+     * them is enough). Branch scoping (own branch or a Super-Admin-created
+     * global exam) is included since it's the same "does this Student
+     * belong to this Exam" question.
      *
      * This is the single source of truth for that rule — every place that
      * lists or authorizes Exams for a Student (dashboard, available,
@@ -128,12 +122,7 @@ class Exam extends Model
     {
         return $query->where(fn (Builder $q) => $q->where('branch_id', $student->branch_id)->orWhereNull('branch_id'))
             ->where('school_class_id', $student->class_id)
-            ->where(fn (Builder $q) => $q->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')))
-            ->where(function (Builder $query) use ($student): void {
-                $student->session_id
-                    ? $query->whereNull('session_id')->orWhere('session_id', $student->session_id)
-                    : $query->whereNull('session_id');
-            });
+            ->where(fn (Builder $q) => $q->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')));
     }
 
     /**
