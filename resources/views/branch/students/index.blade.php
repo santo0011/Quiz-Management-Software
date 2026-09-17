@@ -28,25 +28,4 @@
 
         @include('branch.students.partials.table', ['students' => $students])
     </section>
-
-    @foreach ($students as $studentRecord)
-            <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="manageSubjectsDrawer{{ $studentRecord->id }}" aria-labelledby="manageSubjectsDrawerLabel{{ $studentRecord->id }}">
-                <div class="offcanvas-header student-drawer-header">
-                    <div>
-                        <span class="page-kicker">Student Management</span>
-                        <h2 class="offcanvas-title" id="manageSubjectsDrawerLabel{{ $studentRecord->id }}">Manage Subjects — {{ $studentRecord->student_name }}</h2>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                </div>
-                <div class="offcanvas-body">
-                    @include('students.partials.manage-subjects-form', [
-                        'student' => $studentRecord,
-                        'subjects' => $subjects,
-                        'action' => route('branch.students.subjects.update', $studentRecord),
-                        'drawer' => true,
-                        'drawerId' => 'manageSubjectsDrawer'.$studentRecord->id,
-                    ])
-                </div>
-            </div>
-        @endforeach
 @endsection

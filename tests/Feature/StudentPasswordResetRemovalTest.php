@@ -38,7 +38,6 @@ class StudentPasswordResetRemovalTest extends TestCase
         $response->assertDontSee('Reset Password');
         $response->assertDontSee('Edit Student');
         $response->assertDontSee('>Delete<', false);
-        $response->assertSee('Manage Subjects');
     }
 
     public function test_admin_students_show_page_has_no_reset_password_action(): void

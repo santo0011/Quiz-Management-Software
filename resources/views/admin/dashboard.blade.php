@@ -53,6 +53,7 @@
                 <table class="table align-middle admin-table" data-mobile-direct-details>
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Name</th>
                             <th>Created</th>
                             <th class="text-end">Action</th>
@@ -61,6 +62,7 @@
                     <tbody>
                         @foreach ($recentBranches as $branch)
                             <tr>
+                                <td>{{ $loop->iteration }}</td>
                                 <td>{{ $branch->name }}</td>
                                 <td>{{ $branch->created_at->format('d M Y') }}</td>
                                 <td class="text-end">

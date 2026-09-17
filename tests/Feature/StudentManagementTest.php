@@ -14,7 +14,12 @@ class StudentManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_branch_user_only_sees_own_students(): void
+    /**
+     * Explicit, temporary product decision: the Branch Panel's Student List
+     * shows the same complete list as Super Admin — every student from
+     * every branch, not just the authenticated Branch user's own.
+     */
+    public function test_branch_user_sees_the_complete_student_list_from_every_branch(): void
     {
         [$branch, $otherBranch, $branchUser] = $this->makeBranchUser();
 
@@ -24,7 +29,7 @@ class StudentManagementTest extends TestCase
             'email' => 'own@example.com',
         ]));
 
-        Student::create($this->studentPayload([
+        $otherStudent = Student::create($this->studentPayload([
             'branch_id' => $otherBranch->id,
             'student_name' => 'Other Student',
             'email' => 'other@example.com',
@@ -34,10 +39,16 @@ class StudentManagementTest extends TestCase
 
         $response->assertOk();
         $response->assertSee($ownStudent->student_name);
-        $response->assertDontSee('Other Student');
+        $response->assertSee($otherStudent->student_name);
     }
 
-    public function test_branch_user_cannot_access_another_branch_student_by_id(): void
+    /**
+     * Same temporary "complete Student List" decision as the index test
+     * above: a Branch user can open and toggle any branch's student, and
+     * the page shows that STUDENT's own branch — not the viewing Branch
+     * user's own branch.
+     */
+    public function test_branch_user_can_view_and_toggle_another_branch_student_by_id(): void
     {
         [, $otherBranch, $branchUser] = $this->makeBranchUser();
 
@@ -48,11 +59,14 @@ class StudentManagementTest extends TestCase
 
         $this->actingAs($branchUser)
             ->get(route('branch.students.show', $otherStudent))
-            ->assertForbidden();
+            ->assertOk()
+            ->assertSee($otherBranch->name);
 
         $this->actingAs($branchUser)
-            ->put(route('branch.students.subjects.update', $otherStudent), ['subject_ids' => []])
-            ->assertForbidden();
+            ->post(route('branch.students.toggle-active', $otherStudent))
+            ->assertRedirect(route('branch.students.index'));
+
+        $this->assertFalse($otherStudent->fresh()->is_active);
     }
 
     public function test_branch_created_student_is_forced_to_authenticated_branch(): void

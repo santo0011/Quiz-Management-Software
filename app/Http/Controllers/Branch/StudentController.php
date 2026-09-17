@@ -14,13 +14,20 @@ use Illuminate\View\View;
 
 class StudentController extends Controller
 {
+    /**
+     * Temporary, explicit product decision: every Branch Panel currently
+     * sees the same complete Student List as Super Admin — not just its own
+     * branch's students. The `forBranch()` scope below is deliberately left
+     * commented (rather than deleted) so restoring branch-wise filtering
+     * later is a one-line change.
+     */
     public function index(Request $request): View
     {
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
         $students = Student::with(['branch', 'subjects'])
-            ->forBranch($branch->id)
+            // ->forBranch($branch->id)
             ->search($request->string('search')->toString())
             ->when($request->filled('class'), fn ($query) => $query->where('class', $request->string('class')->toString()))
             ->latest()
@@ -31,7 +38,6 @@ class StudentController extends Controller
             'branch' => $branch,
             'students' => $students,
             'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
-            'subjects' => Subject::orderBy('name')->get(),
             'filters' => $request->only(['search', 'class']),
         ]);
     }
@@ -68,39 +74,26 @@ class StudentController extends Controller
         return redirect()->route('branch.students.index')->with('success', 'Student added successfully.');
     }
 
+    /**
+     * Same temporary "complete Student List" decision as index() above: a
+     * Branch user can open any student's details, not only their own
+     * branch's — `authorizeBranchStudent()` below is deliberately left
+     * in place (just uncalled) so restoring the branch check later is a
+     * one-line change.
+     */
     public function show(Request $request, Student $student): View
     {
-        $this->authorizeBranchStudent($request, $student);
+        // $this->authorizeBranchStudent($request, $student);
 
         return view('branch.students.show', [
             'branch' => $request->user()->branch,
-            'student' => $student->load('subjects'),
+            'student' => $student->load(['branch', 'subjects']),
         ]);
-    }
-
-    /**
-     * Students are read-only local records — their core information (name,
-     * Grade, Zoho ID, etc.) comes from Zoho, so there is no "Edit Student"
-     * action anymore. Subject assignment is the one thing still managed
-     * locally, entirely independent of Zoho's data.
-     */
-    public function updateSubjects(Request $request, Student $student): RedirectResponse
-    {
-        $this->authorizeBranchStudent($request, $student);
-
-        $validated = $request->validate([
-            'subject_ids' => ['nullable', 'array'],
-            'subject_ids.*' => ['integer', 'exists:subjects,id'],
-        ]);
-
-        $student->subjects()->sync($validated['subject_ids'] ?? []);
-
-        return redirect()->route('branch.students.index')->with('success', 'Student subjects updated successfully.');
     }
 
     public function toggleActive(Request $request, Student $student): RedirectResponse
     {
-        $this->authorizeBranchStudent($request, $student);
+        // $this->authorizeBranchStudent($request, $student);
 
         $student->update(['is_active' => ! $student->is_active]);
 

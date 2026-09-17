@@ -27,6 +27,7 @@
                 <table class="table align-middle admin-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Status</th>
@@ -37,6 +38,7 @@
                     <tbody>
                         @foreach ($branches as $branch)
                             <tr>
+                                <td>{{ $branches->firstItem() + $loop->index }}</td>
                                 <td><strong>{{ $branch->name }}</strong></td>
                                 <td>{{ $branch->email }}</td>
                                 <td>

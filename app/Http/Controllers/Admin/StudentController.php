@@ -33,7 +33,6 @@ class StudentController extends Controller
             'student' => new Student,
             'students' => $students,
             'classes' => SchoolClass::when($branchId, fn ($query) => $query->visibleToBranch($branchId))->orderBy('name')->get(),
-            'subjects' => Subject::orderBy('name')->get(),
             'filters' => $request->only(['search', 'class', 'branch_id']),
         ]);
     }
@@ -71,24 +70,6 @@ class StudentController extends Controller
             'student' => $student->load(['branch', 'subjects']),
             'selectedBranch' => $student->branch,
         ]);
-    }
-
-    /**
-     * Students are read-only local records — their core information (name,
-     * Grade, Zoho ID, etc.) comes from Zoho, so there is no "Edit Student"
-     * action anymore. Subject assignment is the one thing still managed
-     * locally, entirely independent of Zoho's data.
-     */
-    public function updateSubjects(Request $request, Student $student): RedirectResponse
-    {
-        $validated = $request->validate([
-            'subject_ids' => ['nullable', 'array'],
-            'subject_ids.*' => ['integer', 'exists:subjects,id'],
-        ]);
-
-        $student->subjects()->sync($validated['subject_ids'] ?? []);
-
-        return redirect()->route('admin.students.index')->with('success', 'Student subjects updated successfully.');
     }
 
     public function toggleActive(Student $student): RedirectResponse

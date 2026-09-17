@@ -109,7 +109,7 @@
                                 <h4>{{ $attempt->exam?->title }}</h4>
                                 <span class="performance-date {{ $attempt->is_passed ? 'passed' : 'failed' }}">
                                     <i class="bi bi-calendar-check"></i>
-                                    {{ $attempt->submitted_at?->format('d M Y, h:i A') }}
+                                    {{ $attempt->submitted_at?->format('d M Y') }}
                                 </span>
                             </div>
                         </div>

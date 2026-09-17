@@ -138,7 +138,7 @@
             </div>
             <div>
                 <dt>Start</dt>
-                <dd>{{ $exam->starts_at?->format('d M Y, h:i A') ?? 'Any time' }}</dd>
+                <dd>{{ $exam->starts_at?->format('d M Y') ?? 'Any time' }}</dd>
             </div>
         </div>
         <div class="exam-detail-item">
@@ -147,7 +147,7 @@
             </div>
             <div>
                 <dt>End</dt>
-                <dd>{{ $exam->ends_at?->format('d M Y, h:i A') ?? 'No end time' }}</dd>
+                <dd>{{ $exam->ends_at?->format('d M Y') ?? 'No end time' }}</dd>
             </div>
         </div>
         <div class="exam-detail-item">

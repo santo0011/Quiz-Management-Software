@@ -9,10 +9,10 @@
         <table class="table align-middle admin-table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Student</th>
                     <th>Guardian</th>
                     <th>Grade</th>
-                    <th>Phone</th>
                     <th>Email</th>
                     <th>Status</th>
                     <th class="text-end">Actions</th>
@@ -21,10 +21,10 @@
             <tbody>
                 @foreach ($students as $student)
                     <tr>
+                        <td>{{ $students->firstItem() + $loop->index }}</td>
                         <td><strong>{{ $student->student_name }}</strong></td>
                         <td>{{ $student->guardian_name }}</td>
                         <td>{{ $student->class }}</td>
-                        <td>{{ $student->phone_number }}</td>
                         <td>{{ $student->email }}</td>
                         <td>
                             <span class="status-badge {{ $student->is_active ? 'status-published' : 'status-closed' }}">
@@ -37,10 +37,6 @@
                                 <a href="{{ route('admin.students.show', $student) }}" class="btn btn-sm btn-soft" title="View">
                                     <i class="bi bi-eye-fill"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-soft" title="Manage Subjects" data-bs-toggle="offcanvas" data-bs-target="#manageSubjectsDrawer{{ $student->id }}" aria-controls="manageSubjectsDrawer{{ $student->id }}">
-                                    <i class="bi bi-book-fill"></i>
-                                    Manage Subjects
-                                </button>
                                 <form method="POST" action="{{ route('admin.students.toggle-active', $student) }}" data-confirm-toggle>
                                     @csrf
                                     <button class="btn btn-sm {{ $student->is_active ? 'btn-danger-soft' : 'btn-soft' }}" type="submit" title="{{ $student->is_active ? 'Deactivate' : 'Activate' }}">

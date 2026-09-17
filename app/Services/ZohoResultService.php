@@ -59,6 +59,16 @@ class ZohoResultService
         $url = rtrim(config('services.zoho.api_url'), '/')
             .'/crm/v7/functions/'.config('services.zoho.receive_results_function').'/actions/execute?auth_type=oauth';
 
+        // Full request trace (the access token is a header, never part of
+        // $payload, so nothing here needs masking) — logged unconditionally
+        // so a rejected/failed submission can be diagnosed from the log
+        // alone, without having to reproduce it live against Zoho again.
+        Log::debug('Zoho result submission request.', [
+            'attempt_id' => $attempt->id,
+            'url' => $url,
+            'payload' => $payload,
+        ]);
+
         try {
             $response = Http::withHeaders([
                 'Authorization' => 'Zoho-oauthtoken '.$token,
@@ -75,6 +85,14 @@ class ZohoResultService
 
         $data = $this->extractBusinessPayload($response->json() ?? []);
         $success = $response->successful() && $this->isTruthy($data['success'] ?? null);
+
+        Log::debug('Zoho result submission response.', [
+            'attempt_id' => $attempt->id,
+            'http_status' => $response->status(),
+            'response_body' => $data,
+            'success_field' => $data['success'] ?? null,
+            'error_field' => $data['error'] ?? null,
+        ]);
 
         if (! $success) {
             Log::error('Zoho rejected the result submission.', [

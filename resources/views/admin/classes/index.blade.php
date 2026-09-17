@@ -35,6 +35,7 @@
                 <table class="table align-middle admin-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Grade Name</th>
                             <th>Branch</th>
                             <th>Created</th>
@@ -44,6 +45,7 @@
                     <tbody>
                         @foreach ($classes as $schoolClass)
                             <tr>
+                                <td>{{ $classes->firstItem() + $loop->index }}</td>
                                 <td><strong>{{ $schoolClass->name }}</strong></td>
                                 <td>
                                     @if ($schoolClass->isGlobal())

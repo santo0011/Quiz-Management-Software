@@ -25,6 +25,6 @@
     </div>
     <div>
         <dt>Created At</dt>
-        <dd>{{ $student->created_at->format('d M Y, h:i A') }}</dd>
+        <dd>{{ $student->created_at->format('d M Y') }}</dd>
     </div>
 </dl>

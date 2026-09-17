@@ -44,6 +44,52 @@ class StudentGradeSyncTest extends TestCase
         $this->assertSame('Grade 2', $student->zoho_grade);
     }
 
+    /**
+     * Regression test for a real bug: `extractActiveClass()` used to read
+     * `id`/`name` flat on each `Enrolment.classes[]` entry, but the real
+     * Zoho payload nests those under a `Class` object instead
+     * (`class['Class']['id']`/`['name']`) — the same shape confirmed for
+     * `Subject`. That mismatch meant `zoho_class_id`/`zoho_class_name`
+     * always resolved to empty strings for every real student, which in
+     * turn made ZohoResultService silently skip sending the result to Zoho
+     * ("no Zoho class on file for student") even though Zoho's response
+     * genuinely contained one.
+     */
+    public function test_sync_extracts_class_id_and_name_from_the_nested_class_object(): void
+    {
+        $branch = Branch::create(['name' => 'Branch A', 'email' => 'branch-a@example.com']);
+        $student = Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Test Student',
+            'guardian_name' => 'Guardian',
+            'class' => 'Unassigned',
+            'phone_number' => '123',
+            'email' => 'student-'.uniqid().'@example.com',
+            'zoho_student_id' => 'NL1184',
+            'is_active' => true,
+        ]);
+
+        app(ZohoStudentService::class)->syncStudentFromZoho($student, [
+            'Enrolment' => [
+                'Grade' => 'Grade 1',
+                'classes' => [
+                    [
+                        'Class' => ['name' => 'English | Grade 1 ( 1 on 1 ) | Clyde North', 'id' => '96867000000904800'],
+                        'Subject' => ['name' => 'English', 'id' => '96867000000516052'],
+                    ],
+                    [
+                        'Class' => ['name' => 'Mathematics | Grade 1 (Group) | Clyde North', 'id' => '96867000000911312'],
+                        'Subject' => ['name' => 'Mathematics', 'id' => '96867000000516051'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $student->refresh();
+        $this->assertSame('96867000000904800', $student->zoho_class_id);
+        $this->assertSame('English | Grade 1 ( 1 on 1 ) | Clyde North', $student->zoho_class_name);
+    }
+
     public function test_sync_matches_grade_name_case_and_whitespace_insensitively(): void
     {
         $branch = Branch::create(['name' => 'Branch A', 'email' => 'branch-a@example.com']);
@@ -142,10 +188,18 @@ class StudentGradeSyncTest extends TestCase
             'zoho_student_id' => 'NL5',
             'is_active' => true,
         ]);
-        $student->subjects()->attach($subject->id);
-
+        // Subjects are now Zoho-driven too (StudentSubjectSyncTest), so the
+        // payload must report the same Subject via Enrolment.classes[] for
+        // it to remain attached after this sync — a bare manual attach()
+        // would otherwise be detached by the Subject sync's replace-on-login
+        // behavior.
         app(ZohoStudentService::class)->syncStudentFromZoho($student, [
-            'Enrolment' => ['Grade' => 'Grade 2'],
+            'Enrolment' => [
+                'Grade' => 'Grade 2',
+                'classes' => [
+                    ['Class' => ['name' => 'Class 10', 'id' => 1], 'Subject' => ['name' => $subject->name, 'id' => 111]],
+                ],
+            ],
         ]);
 
         $matchingExam = Exam::create([

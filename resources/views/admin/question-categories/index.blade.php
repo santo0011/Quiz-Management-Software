@@ -35,6 +35,7 @@
                 <table class="table align-middle admin-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Category Name</th>
                             <th>Created</th>
                             <th class="text-end">Actions</th>
@@ -43,6 +44,7 @@
                     <tbody>
                         @foreach ($categories as $categoryRow)
                             <tr>
+                                <td>{{ $categories->firstItem() + $loop->index }}</td>
                                 <td><strong>{{ $categoryRow->name }}</strong></td>
  
                                 <td>{{ $categoryRow->created_at->format('d M Y') }}</td>

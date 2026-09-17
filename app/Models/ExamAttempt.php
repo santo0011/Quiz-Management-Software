@@ -28,6 +28,12 @@ class ExamAttempt extends Model
         'result_pdf_path',
         'result_pdf_token',
         'zoho_result_synced_at',
+        'branch_result_pdf_path',
+        'result_email_sent_at',
+        'result_email_sent_by',
+        'branch_review',
+        'branch_review_by',
+        'branch_review_at',
     ];
 
     protected function casts(): array
@@ -41,6 +47,8 @@ class ExamAttempt extends Model
             'is_passed' => 'boolean',
             'teacher_remark_at' => 'datetime',
             'zoho_result_synced_at' => 'datetime',
+            'result_email_sent_at' => 'datetime',
+            'branch_review_at' => 'datetime',
         ];
     }
 
@@ -72,5 +80,15 @@ class ExamAttempt extends Model
     public function teacherRemarkBy()
     {
         return $this->belongsTo(Teacher::class, 'teacher_remark_by');
+    }
+
+    public function resultEmailSentBy()
+    {
+        return $this->belongsTo(User::class, 'result_email_sent_by');
+    }
+
+    public function branchReviewBy()
+    {
+        return $this->belongsTo(User::class, 'branch_review_by');
     }
 }

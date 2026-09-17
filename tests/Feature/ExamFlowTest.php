@@ -52,7 +52,14 @@ class ExamFlowTest extends TestCase
         $this->assertTrue($attempt->expires_at->lessThanOrEqualTo($exam->ends_at));
     }
 
-    public function test_branch_result_search_stays_scoped_to_authenticated_branch(): void
+    /**
+     * Explicit, temporary product decision: the Branch Panel's Results page
+     * shows submitted results from every branch, not just the authenticated
+     * Branch user's own — unlike every other Branch module. The search
+     * filter itself must still work correctly (matching by keyword), it
+     * just no longer also implies branch isolation.
+     */
+    public function test_branch_results_index_shows_results_from_every_branch_and_search_filters_by_keyword(): void
     {
         [$branch, $class, $student, $exam] = $this->makeExamFixture(['title' => 'Algebra Basics']);
         [$otherBranch, $otherClass, $otherStudent, $otherExam] = $this->makeExamFixture([
@@ -61,11 +68,12 @@ class ExamFlowTest extends TestCase
             'branch_name' => 'Other Branch',
             'branch_email' => 'other@example.com',
             'class_name' => 'Class 9',
+            'student_name' => 'Other Branch Student',
             'student_email' => 'other-student@example.com',
         ]);
 
         $ownAttempt = $this->makeSubmittedAttempt($exam, $student, $branch, $class);
-        $this->makeSubmittedAttempt($otherExam, $otherStudent, $otherBranch, $otherClass);
+        $otherAttempt = $this->makeSubmittedAttempt($otherExam, $otherStudent, $otherBranch, $otherClass);
 
         $branchUser = User::create([
             'name' => 'Branch User',
@@ -75,11 +83,19 @@ class ExamFlowTest extends TestCase
             'password' => Hash::make('123456'),
         ]);
 
+        // No search: both branches' results are visible.
+        $this->actingAs($branchUser)->get(route('branch.results.index'))
+            ->assertOk()
+            ->assertSee($ownAttempt->student->student_name)
+            ->assertSee($otherAttempt->student->student_name);
+
+        // Searching for the other branch's exam title returns it too, since
+        // visibility is no longer limited to the authenticated branch.
         $response = $this->actingAs($branchUser)->get(route('branch.results.index', ['search' => 'Secret']));
 
         $response->assertOk();
-        $response->assertDontSee($otherStudent->student_name);
-        $response->assertDontSee($otherExam->title);
+        $response->assertSee($otherStudent->student_name);
+        $response->assertSee($otherExam->title);
         $response->assertDontSee($ownAttempt->student->student_name);
     }
 

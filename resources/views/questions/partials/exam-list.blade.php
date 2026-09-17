@@ -9,6 +9,7 @@
         <table class="table align-middle admin-table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Exam</th>
                     <th>Grade</th>
                     <th>Questions</th>
@@ -19,6 +20,7 @@
             <tbody>
                 @foreach ($exams as $exam)
                     <tr>
+                        <td>{{ $exams->firstItem() + $loop->index }}</td>
                         <td><strong>{{ $exam->title }}</strong></td>
                         <td>{{ $exam->schoolClass?->name }}</td>
                         <td>{{ $exam->questions_count }}</td>

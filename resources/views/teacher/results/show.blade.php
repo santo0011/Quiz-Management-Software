@@ -20,7 +20,7 @@
             </div>
             <p class="text-muted small mb-3">
                 Last updated by {{ $attempt->teacherRemarkBy?->name ?? 'a teacher' }}
-                on {{ $attempt->teacher_remark_at?->format('d M Y, h:i A') }}
+                on {{ $attempt->teacher_remark_at?->format('d M Y') }}
             </p>
         @endif
 

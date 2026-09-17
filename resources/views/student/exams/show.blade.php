@@ -89,7 +89,7 @@
                 </div>
                 <span>Starts</span>
                 <strong>
-                    {{ $exam->starts_at?->format('d M, h:i A') ?? 'Open' }}
+                    {{ $exam->starts_at?->format('d M Y') ?? 'Open' }}
                 </strong>
             </div>
 
@@ -101,7 +101,7 @@
                 </div>
                 <span>Ends</span>
                 <strong>
-                    {{ $exam->ends_at?->format('d M, h:i A') ?? 'Open' }}
+                    {{ $exam->ends_at?->format('d M Y') ?? 'Open' }}
                 </strong>
             </div>
 

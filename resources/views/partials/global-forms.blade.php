@@ -6,7 +6,7 @@
             const form = event.target;
 
             // Skip forms with confirmation modals (they submit on modal confirm)
-            if (form.hasAttribute('data-confirm-delete') || form.hasAttribute('data-confirm-toggle') || form.hasAttribute('data-publish-exam') || form.hasAttribute('data-logout-form') || form.hasAttribute('data-confirm-remark')) {
+            if (form.hasAttribute('data-confirm-delete') || form.hasAttribute('data-confirm-toggle') || form.hasAttribute('data-publish-exam') || form.hasAttribute('data-logout-form') || form.hasAttribute('data-confirm-remark') || form.hasAttribute('data-confirm-send-result')) {
                 return;
             }
 

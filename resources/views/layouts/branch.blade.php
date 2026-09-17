@@ -75,6 +75,17 @@
                 </div>
             </div>
         @endif
+        @if (session('warning'))
+            <div class="toast admin-toast text-bg-warning border-0" role="status" aria-live="polite" aria-atomic="true" data-bs-delay="5500">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-envelope-exclamation-fill"></i>
+                        {{ session('warning') }}
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
@@ -173,6 +184,30 @@
                     <button type="button" class="btn btn-warning" id="confirmUnpublishButton">
                         <i class="bi bi-arrow-counterclockwise"></i>
                         Unpublish Exam
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="sendResultConfirmModal" tabindex="-1" aria-labelledby="sendResultConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content confirm-modal">
+                <div class="modal-header">
+                    <div>
+                        <span class="page-kicker">Result</span>
+                        <h2 class="modal-title fs-5" id="sendResultConfirmModalLabel">Confirm Send Result</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="sendResultConfirmMessage">
+                    Are you sure you want to send this result?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmSendResultButton">
+                        <i class="bi bi-send-check-fill"></i>
+                        Confirm & Send
                     </button>
                 </div>
             </div>
@@ -410,6 +445,33 @@
                 button.innerHTML = originalHtml;
                 alert(error.message || 'Failed to unpublish exam. Please try again.');
             });
+        });
+
+        const sendResultModalEl = document.getElementById('sendResultConfirmModal');
+        const sendResultConfirmMessage = document.getElementById('sendResultConfirmMessage');
+        const defaultSendResultMessage = sendResultConfirmMessage?.textContent.trim();
+        const confirmSendResultButton = document.getElementById('confirmSendResultButton');
+        let pendingSendResultForm = null;
+
+        document.querySelectorAll('[data-confirm-send-result]').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                pendingSendResultForm = form;
+                if (sendResultConfirmMessage) {
+                    sendResultConfirmMessage.textContent = form.dataset.confirmMessage || defaultSendResultMessage;
+                }
+                bootstrap.Modal.getOrCreateInstance(sendResultModalEl).show();
+            });
+        });
+
+        confirmSendResultButton?.addEventListener('click', () => {
+            if (! pendingSendResultForm) {
+                return;
+            }
+
+            confirmSendResultButton.disabled = true;
+            confirmSendResultButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Sending...';
+            pendingSendResultForm.submit();
         });
 
         const logoutModalEl = document.getElementById('logoutConfirmModal');

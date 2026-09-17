@@ -92,7 +92,6 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
     Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');
     Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
-    Route::put('/students/{student}/subjects', [AdminStudentController::class, 'updateSubjects'])->name('students.subjects.update');
     Route::resource('question-categories', QuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('/exams', [AdminExamController::class, 'store'])->name('exams.store');
     Route::resource('exams', AdminExamController::class)->except(['store']);
@@ -130,7 +129,6 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     Route::get('/students', [BranchStudentController::class, 'index'])->name('students.index');
     Route::get('/students/{student}', [BranchStudentController::class, 'show'])->name('students.show');
     Route::post('/students/{student}/toggle-active', [BranchStudentController::class, 'toggleActive'])->name('students.toggle-active');
-    Route::put('/students/{student}/subjects', [BranchStudentController::class, 'updateSubjects'])->name('students.subjects.update');
     Route::get('/teachers', [BranchTeacherController::class, 'index'])->name('teachers.index');
     Route::post('/teachers', [BranchTeacherController::class, 'store'])->name('teachers.store');
     Route::put('/teachers/{teacher}', [BranchTeacherController::class, 'update'])->name('teachers.update');
@@ -158,6 +156,7 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     Route::post('/exams/{exam}/reorder', [BranchExamController::class, 'reorderItems'])->name('exams.reorder');
     Route::get('/results', [BranchResultController::class, 'index'])->name('results.index');
     Route::get('/results/{attempt}', [BranchResultController::class, 'show'])->name('results.show');
+    Route::post('/results/{attempt}/send', [BranchResultController::class, 'send'])->name('results.send');
 });
 
 Route::middleware(['auth:student', 'active', 'single_session'])->prefix('student')->name('student.')->group(function () {

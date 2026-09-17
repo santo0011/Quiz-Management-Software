@@ -30,12 +30,6 @@
                     </span>
                 @endforeach -->
             </div>
-            <div class="student-profile-actions">
-                <button type="button" class="btn btn-light btn-student-action" data-bs-toggle="offcanvas" data-bs-target="#manageSubjectsDrawer{{ $student->id }}">
-                    <i class="bi bi-book-fill"></i>
-                    Manage Subjects
-                </button>
-            </div>
         </div>
         <div class="student-profile-main">
             <div class="student-profile-avatar">
@@ -48,7 +42,7 @@
     </div>
 </section>
 
-<section class="student-stats-grid">
+<!-- <section class="student-stats-grid">
     <div class="student-stat-card">
         <div class="student-stat-icon primary">
             <i class="bi bi-person-fill"></i>
@@ -68,15 +62,6 @@
         </div>
     </div>
     <div class="student-stat-card">
-        <div class="student-stat-icon success">
-            <i class="bi bi-telephone-fill"></i>
-        </div>
-        <div class="student-stat-body">
-            <span>Phone</span>
-            <strong>{{ $student->phone_number ?? '—' }}</strong>
-        </div>
-    </div>
-    <div class="student-stat-card">
         <div class="student-stat-icon info">
             <i class="bi bi-envelope-fill"></i>
         </div>
@@ -85,7 +70,7 @@
             <strong>{{ $student->email ?? '—' }}</strong>
         </div>
     </div>
-</section>
+</section> -->
 
 <section class="content-panel student-details-panel">
     <div class="panel-header">
@@ -158,15 +143,6 @@
         </div>
         <div class="student-detail-item">
             <div class="student-detail-icon">
-                <i class="bi bi-telephone-fill"></i>
-            </div>
-            <div>
-                <dt>Phone Number</dt>
-                <dd>{{ $student->phone_number ?? '—' }}</dd>
-            </div>
-        </div>
-        <div class="student-detail-item">
-            <div class="student-detail-icon">
                 <i class="bi bi-envelope-fill"></i>
             </div>
             <div>
@@ -189,7 +165,7 @@
             </div>
             <div>
                 <dt>Created At</dt>
-                <dd>{{ $student->created_at?->format('d M Y, h:i A') }}</dd>
+                <dd>{{ $student->created_at?->format('d M Y') }}</dd>
             </div>
         </div>
     </div>

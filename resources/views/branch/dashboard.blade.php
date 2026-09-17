@@ -66,6 +66,7 @@
                 <table class="table align-middle admin-table" data-mobile-direct-details>
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Student</th>
                             <th>Grade</th>
                             <th>Email</th>
@@ -75,6 +76,7 @@
                     <tbody>
                         @foreach ($recentStudents as $student)
                             <tr>
+                                <td>{{ $loop->iteration }}</td>
                                 <td><strong>{{ $student->student_name }}</strong></td>
                                 <td>{{ $student->class }}</td>
                                 <td>{{ $student->email }}</td>

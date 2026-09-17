@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\ZohoApiException;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\Subject;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -109,15 +110,29 @@ class ZohoStudentService
      * Student record, so ZohoResultService can later read the active class
      * without calling Zoho again.
      *
-     * Also re-resolves the Student's LOCAL Grade (`class_id`/`class`) from
-     * Zoho's `Enrolment.Grade` on every login — this is what
-     * Exam::scopeEligibleForStudent() actually matches on, so it must stay
-     * current with Zoho rather than only being set once at creation time.
+     * Also re-resolves, on every login:
+     * - The Student's LOCAL Grade (`class_id`/`class`) from Zoho's
+     *   `Enrolment.Grade` — this is what Exam::scopeEligibleForStudent()
+     *   actually matches on, so it must stay current with Zoho rather than
+     *   only being set once at creation time.
+     * - The Student's Subject assignments from
+     *   `Enrolment.classes[].Subject` — Subjects are no longer manually
+     *   managed from the Student list at all; Zoho is the sole source of
+     *   truth, re-synced (added AND removed) on every successful login.
+     * - The Student's `guardian_email` from Zoho's own OTP-destination
+     *   address (`extractParentEmail()`) — this is the exact address Zoho
+     *   emailed the OTP to for this login, so any feature that needs to
+     *   reach the Student "the same way the OTP did" (e.g. the Branch
+     *   Panel's result email) can simply read `guardian_email` and stay
+     *   correct even if it was never set, or was set to something else, at
+     *   Student creation time. Only overwritten when Zoho actually reports
+     *   one this login — never blanked out on a response that omits it.
      */
     public function syncStudentFromZoho(Student $student, array $data): void
     {
         $class = $this->extractActiveClass($data);
         $zohoGrade = $this->extractGrade($data);
+        $otpEmail = $this->extractParentEmail($data);
 
         $attributes = [
             'zoho_payload' => $data,
@@ -132,7 +147,90 @@ class ZohoStudentService
             $attributes['class'] = $localGrade->name;
         }
 
+        if (filled($otpEmail)) {
+            $attributes['guardian_email'] = $otpEmail;
+        }
+
         $student->forceFill($attributes)->save();
+
+        // Subjects are now driven entirely by Zoho (Enrolment.classes[].Subject)
+        // rather than manually assigned from the Student list — sync() here
+        // replaces whatever was there before with exactly what Zoho reports on
+        // this login, matching the same "resolve to existing local records
+        // only, never auto-create" rule already used for Grade above.
+        $student->subjects()->sync($this->resolveLocalSubjectIds($this->extractSubjectNames($data)));
+    }
+
+    /**
+     * Every distinct Subject name Zoho reports for this Student, read from
+     * `Enrolment.classes[].Subject` — a Student can have multiple classes
+     * (and therefore multiple Subjects), so every class entry is inspected,
+     * not just the active one `extractActiveClass()` picks for the
+     * Grade/class-name fields.
+     *
+     * Each class entry pairs exactly ONE `Class` object with ONE `Subject`
+     * object (`{name, id}`) — Zoho does NOT nest multiple Subjects under a
+     * single class. Only `name` is ever used for matching/display; `id` is
+     * Zoho's own identifier and is never matched against or shown.
+     */
+    private function extractSubjectNames(array $data): array
+    {
+        $enrolment = $data['Enrolment'] ?? $data['enrolment'] ?? [];
+        $classes = $enrolment['classes'] ?? $enrolment['Classes'] ?? [];
+
+        // A single class entry can arrive as one object instead of a list.
+        if (is_array($classes) && (isset($classes['Subject']) || isset($classes['subject']) || isset($classes['Class']) || isset($classes['id']))) {
+            $classes = [$classes];
+        }
+
+        if (! is_array($classes)) {
+            return [];
+        }
+
+        $names = [];
+
+        foreach ($classes as $class) {
+            if (! is_array($class)) {
+                continue;
+            }
+
+            $subject = $class['Subject'] ?? $class['subject'] ?? null;
+
+            if (! is_array($subject)) {
+                continue;
+            }
+
+            $name = $subject['name'] ?? $subject['Name'] ?? null;
+
+            if (is_string($name) && filled(trim($name))) {
+                $names[] = trim($name);
+            }
+        }
+
+        return array_values(array_unique($names));
+    }
+
+    /**
+     * Resolve Zoho Subject names to existing local Subject records (matched
+     * by name, case/whitespace insensitive) — deliberately never creates a
+     * new Subject: Subjects are managed exclusively by Super Admin ("use the
+     * existing Subject records/module... do not create duplicate Subject
+     * records"), so a Zoho Subject name with no matching local record is
+     * simply left unassigned rather than spawning a duplicate.
+     */
+    private function resolveLocalSubjectIds(array $subjectNames): array
+    {
+        if (empty($subjectNames)) {
+            return [];
+        }
+
+        $normalized = array_map(fn (string $name) => strtolower(trim($name)), $subjectNames);
+
+        return Subject::query()
+            ->get(['id', 'name'])
+            ->filter(fn (Subject $subject) => in_array(strtolower(trim($subject->name)), $normalized, true))
+            ->pluck('id')
+            ->all();
     }
 
     /**
@@ -359,34 +457,67 @@ class ZohoStudentService
         return self::GENERIC_ERROR.' [Zoho error: '.(is_string($rawError) ? $rawError : json_encode($rawError)).']';
     }
 
+    /**
+     * The Class Zoho considers "active" for this Student, used for the
+     * Grade/class-name fields and for the `Student_Class` sent back to Zoho
+     * in ZohoResultService. Each `Enrolment.classes[]` entry nests its
+     * identity under a `Class` object (`class['Class']['id']`/`['name']`) —
+     * NOT flat on the entry itself — matching the same confirmed shape
+     * `extractSubjectNames()` reads its `Subject` object from; a flat
+     * `id`/`name` on the entry is also tolerated in case an older/different
+     * payload shape is ever received.
+     */
     private function extractActiveClass(array $data): array
     {
         $enrolment = $data['Enrolment'] ?? $data['enrolment'] ?? [];
         $classes = $enrolment['classes'] ?? $enrolment['Classes'] ?? [];
 
-        if (isset($classes['id'])) {
-            return ['id' => (string) $classes['id'], 'name' => (string) ($classes['name'] ?? '')];
+        // A single class entry can arrive as one object instead of a list.
+        if (is_array($classes) && (isset($classes['Class']) || isset($classes['class']) || isset($classes['Subject']) || isset($classes['subject']) || isset($classes['id']))) {
+            $classes = [$classes];
         }
 
-        if (is_array($classes)) {
-            foreach ($classes as $class) {
-                if (! is_array($class)) {
-                    continue;
-                }
+        if (! is_array($classes)) {
+            return ['id' => null, 'name' => null];
+        }
 
-                $active = $class['active'] ?? $class['is_active'] ?? $class['Active'] ?? null;
-                if (in_array($active, [true, 1, '1', 'true'], true)) {
-                    return ['id' => (string) ($class['id'] ?? ''), 'name' => (string) ($class['name'] ?? '')];
-                }
+        foreach ($classes as $class) {
+            if (! is_array($class)) {
+                continue;
             }
 
-            $first = $classes[0] ?? null;
-            if (is_array($first)) {
-                return ['id' => (string) ($first['id'] ?? ''), 'name' => (string) ($first['name'] ?? '')];
+            $active = $class['active'] ?? $class['is_active'] ?? $class['Active'] ?? null;
+            if (in_array($active, [true, 1, '1', 'true'], true)) {
+                return $this->classIdentity($class);
             }
+        }
+
+        $first = $classes[0] ?? null;
+        if (is_array($first)) {
+            return $this->classIdentity($first);
         }
 
         return ['id' => null, 'name' => null];
+    }
+
+    /**
+     * @return array{id: string, name: string}
+     */
+    private function classIdentity(array $class): array
+    {
+        $classObject = $class['Class'] ?? $class['class'] ?? null;
+
+        if (is_array($classObject)) {
+            return [
+                'id' => (string) ($classObject['id'] ?? ''),
+                'name' => (string) ($classObject['name'] ?? ''),
+            ];
+        }
+
+        return [
+            'id' => (string) ($class['id'] ?? ''),
+            'name' => (string) ($class['name'] ?? ''),
+        ];
     }
 
     private function extractGrade(array $data): ?string
