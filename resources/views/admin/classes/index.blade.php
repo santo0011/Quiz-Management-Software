@@ -17,12 +17,6 @@
         </div>
 
         <form method="GET" action="{{ route('admin.classes.index') }}" class="filter-bar compact-filter-bar">
-            <select name="branch_id" class="form-select">
-                <option value="">All Branches</option>
-                @foreach ($branches as $branch)
-                    <option value="{{ $branch->id }}" @selected(($filters['branch_id'] ?? '') == $branch->id)>{{ $branch->name }}</option>
-                @endforeach
-            </select>
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search grade name">
             <button type="submit" class="btn btn-soft">
                 <i class="bi bi-search"></i>

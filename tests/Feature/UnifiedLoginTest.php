@@ -50,6 +50,47 @@ class UnifiedLoginTest extends TestCase
         $this->assertAuthenticated();
     }
 
+    /**
+     * Regression guard: an earlier wrong guess must not poison the stored
+     * OTP record for the subsequent correct one — the record stays
+     * unused/unexpired, only its attempts counter increments, so retrying
+     * with the actual code must still succeed.
+     */
+    public function test_super_admin_can_still_login_after_one_incorrect_otp_attempt(): void
+    {
+        Mail::fake();
+
+        User::create([
+            'name' => 'Super Admin',
+            'email' => 'admin@example.com',
+            'role' => 'Super Admin',
+            'password' => Hash::make('123456'),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'super_admin',
+            'email' => 'admin@example.com',
+            'password' => '123456',
+        ])->assertRedirect(route('login.otp'));
+
+        $otp = null;
+        Mail::assertSent(SuperAdminLoginOtpMail::class, function (SuperAdminLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => '000000'])
+            ->assertSessionHas('otp_error', 'Incorrect code. 4 attempt(s) remaining.');
+
+        $this->assertGuest();
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertAuthenticated();
+    }
+
     public function test_branch_cannot_login_from_super_admin_mode(): void
     {
         $branch = Branch::create(['name' => 'Kolkata Branch', 'email' => 'kolkata@example.com']);
@@ -102,6 +143,49 @@ class UnifiedLoginTest extends TestCase
             ->assertRedirect(route('branch.dashboard'));
     }
 
+    /**
+     * Same regression guard as the Super Admin case, for the Branch guard —
+     * this path also runs SingleSessionService::establish() on success,
+     * which must not be affected by an earlier wrong attempt either.
+     */
+    public function test_branch_can_still_login_after_one_incorrect_otp_attempt(): void
+    {
+        Mail::fake();
+
+        $branch = Branch::create(['name' => 'Delhi Branch', 'email' => 'delhi-retry@example.com', 'is_active' => true]);
+
+        User::create([
+            'name' => $branch->name,
+            'email' => $branch->email,
+            'role' => 'Branch',
+            'branch_id' => $branch->id,
+            'password' => Hash::make('123456'),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'branch',
+            'email' => 'delhi-retry@example.com',
+            'password' => '123456',
+        ])->assertRedirect(route('login.otp'));
+
+        $otp = null;
+        Mail::assertSent(BranchLoginOtpMail::class, function (BranchLoginOtpMail $mail) use (&$otp): bool {
+            $otp = $mail->otp;
+
+            return true;
+        });
+
+        $this->post(route('login.otp.verify'), ['otp' => '000000'])
+            ->assertSessionHas('otp_error', 'Incorrect code. 4 attempt(s) remaining.');
+
+        $this->assertGuest();
+
+        $this->post(route('login.otp.verify'), ['otp' => $otp])
+            ->assertRedirect(route('branch.dashboard'));
+
+        $this->assertAuthenticated();
+    }
+
     public function test_student_can_login_with_nrich_student_id_and_zoho_otp(): void
     {
         $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai@example.com']);
@@ -148,6 +232,50 @@ class UnifiedLoginTest extends TestCase
         $student->refresh();
         $this->assertSame('96867000000904800', $student->zoho_class_id);
         $this->assertSame('English | Grade 1 ( 1 on 1 ) | Clyde North', $student->zoho_class_name);
+    }
+
+    /**
+     * Regression guard: Zoho rejecting one wrong guess must not stop the
+     * student from succeeding with the actual code right afterward — each
+     * verify call is an independent, stateless request to Zoho on our side,
+     * so a prior failure carries nothing forward that could poison it.
+     */
+    public function test_student_can_still_login_after_one_incorrect_otp_attempt(): void
+    {
+        $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai-retry@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student One',
+            'guardian_name' => 'Guardian One',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'student-retry@example.com',
+            'zoho_student_id' => 'NL9001',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::sequence()
+                ->push(['status' => 'success', 'error' => []], 200) // sendOtp
+                ->push(['status' => 'error', 'error' => [['message' => 'Invalid OTP entered.']]], 200) // wrong verify
+                ->push(['status' => 'success', 'error' => []], 200), // correct verify
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL9001',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->post(route('login.otp.verify'), ['otp' => '000000'])
+            ->assertSessionHas('otp_error', 'The verification code you entered is incorrect. Please try again.');
+
+        $this->assertGuest('student');
+
+        $this->post(route('login.otp.verify'), ['otp' => '145263'])
+            ->assertRedirect(route('student.dashboard'));
+
+        $this->assertAuthenticated('student');
     }
 
     public function test_student_login_rejects_an_id_zoho_itself_does_not_recognize(): void

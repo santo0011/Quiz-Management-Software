@@ -8,7 +8,7 @@
         <div class="panel-header">
             <div>
                 <h2>Question Categories</h2>
-                <p>Categories you create here are available to every branch automatically. Filter by branch, or view all of them at once.</p>
+                <p>Categories you create here are available to every branch automatically.</p>
             </div>
             <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addCategoryDrawer" aria-controls="addCategoryDrawer">
                 <i class="bi bi-plus-circle-fill"></i>
@@ -17,12 +17,6 @@
         </div>
 
         <form method="GET" action="{{ route('admin.question-categories.index') }}" class="filter-bar compact-filter-bar">
-            <select name="branch_id" class="form-select">
-                <option value="">All Branches</option>
-                @foreach ($branches as $branch)
-                    <option value="{{ $branch->id }}" @selected($selectedBranchId == $branch->id)>{{ $branch->name }}</option>
-                @endforeach
-            </select>
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search category name">
             <button type="submit" class="btn btn-soft">
                 <i class="bi bi-search"></i>

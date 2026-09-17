@@ -855,7 +855,19 @@ body {
 }
 
 .filter-bar.compact-filter-bar {
-    grid-template-columns: minmax(220px, 1fr) auto;
+    grid-template-columns: 4fr 1fr;
+}
+
+.filter-bar.filter-bar-60-20-20 {
+    grid-template-columns: 3fr 1fr 1fr;
+}
+
+.filter-bar.filter-bar-60-20-20 .btn {
+    width: 100%;
+}
+
+.filter-bar.compact-filter-bar .btn {
+    width: 100%;
 }
 
 .btn {
@@ -7368,6 +7380,13 @@ form .status-badge.status-published:hover {
 
 .math-toolbar-header .btn-close {
     font-size: 0.6rem;
+}
+
+.math-toolbar-hint {
+    margin: 8px 12px 0;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--muted);
 }
 
 .math-toolbar-grid {

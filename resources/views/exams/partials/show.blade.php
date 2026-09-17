@@ -18,10 +18,12 @@
                     <i class="bi {{ $exam->status === 'published' ? 'bi-check-circle-fill' : ($exam->status === 'closed' ? 'bi-x-circle-fill' : 'bi-clock-fill') }}"></i>
                     {{ ucfirst($exam->status) }}
                 </span>
-                <span class="exam-meta-chip">
-                    <i class="bi {{ $contextBranch ? 'bi-building' : 'bi-globe2' }}"></i>
-                    {{ $contextBranch?->name ?? 'All Branches' }}
-                </span>
+                @if ($contextBranch)
+                    <span class="exam-meta-chip">
+                        <i class="bi bi-building"></i>
+                        {{ $contextBranch->name }}
+                    </span>
+                @endif
                 @if ($exam->schoolClass)
                     <span class="exam-meta-chip">
                         <i class="bi bi-people-fill"></i>
