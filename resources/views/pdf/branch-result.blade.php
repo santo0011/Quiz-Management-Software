@@ -10,7 +10,7 @@
             font-size: 12px;
         }
         .header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%);
+            background: #1e293b;
             color: #ffffff;
             padding: 26px 28px;
             border-radius: 10px;

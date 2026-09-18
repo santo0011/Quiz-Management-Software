@@ -17,7 +17,6 @@
                 <span>Insert Math Equation</span>
                 <button type="button" class="btn-close btn-close-sm" data-math-close aria-label="Close"></button>
             </div>
-            <p class="math-toolbar-hint">Type or build the expression here — a word you just typed right before the cursor (e.g. "x") is pulled in automatically, so clicking x² gives "x^2" merged together.</p>
             <div class="ckeditor-math-staging">
                 <input type="text" class="form-control form-control-sm" data-math-staging placeholder="e.g. \frac{1}{2} + x^2" autocomplete="off">
             </div>

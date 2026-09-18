@@ -30,10 +30,10 @@ class ZohoStudentService
         'expired otp' => 'This code has expired. Please request a new one.',
         'code expired' => 'This code has expired. Please request a new one.',
         'verification code has expired' => 'This code has expired. Please request a new one.',
-        'invalid otp' => 'The verification code you entered is incorrect. Please try again.',
-        'incorrect otp' => 'The verification code you entered is incorrect. Please try again.',
-        'invalid verification code' => 'The verification code you entered is incorrect. Please try again.',
-        'invalid code' => 'The verification code you entered is incorrect. Please try again.',
+        'invalid otp' => 'Invalid OTP. Please enter the correct OTP.',
+        'incorrect otp' => 'Invalid OTP. Please enter the correct OTP.',
+        'invalid verification code' => 'Invalid OTP. Please enter the correct OTP.',
+        'invalid code' => 'Invalid OTP. Please enter the correct OTP.',
     ];
 
     private const GENERIC_ERROR = 'We could not verify your Student ID right now. Please try again later.';
@@ -63,10 +63,10 @@ class ZohoStudentService
     {
         return $this->call([
             'nrich_student_id' => $nrichStudentId,
-            'send_otp' => 'true',
+            'send_otp' => true,
             'otp_validity' => config('services.zoho.otp_validity_minutes'),
             'verification_code' => (string) random_int(100000, 999999),
-            'login_through_teacher_master_code' => 'false',
+            'login_through_teacher_master_code' => false,
         ], expectingOtpSend: true);
     }
 
@@ -77,11 +77,11 @@ class ZohoStudentService
     {
         return $this->call([
             'nrich_student_id' => $nrichStudentId,
-            'send_otp' => 'false',
+            'send_otp' => false,
             'otp_validity' => config('services.zoho.otp_validity_minutes'),
             'verification_code' => $code,
-            'login_through_teacher_master_code' => 'false',
-        ]);
+            'login_through_teacher_master_code' => false,
+        ], requireExplicitSuccess: true);
     }
 
     /**
@@ -98,10 +98,10 @@ class ZohoStudentService
     {
         return $this->call([
             'nrich_student_id' => $nrichStudentId,
-            'send_otp' => 'false',
+            'send_otp' => false,
             'otp_validity' => config('services.zoho.otp_validity_minutes'),
             'verification_code' => '145263',
-            'login_through_teacher_master_code' => 'true',
+            'login_through_teacher_master_code' => true,
         ]);
     }
 
@@ -265,8 +265,12 @@ class ZohoStudentService
      *                                  below, which is meaningless for a
      *                                  verify/teacher-override call that
      *                                  never asked Zoho to send anything.
+     * @param  bool  $requireExplicitSuccess  True only for the real OTP-code
+     *                                        verify call — see the block below
+     *                                        for why this can't share the
+     *                                        identify call's lenient default.
      */
-    private function call(array $payload, bool $expectingOtpSend = false): array
+    private function call(array $payload, bool $expectingOtpSend = false, bool $requireExplicitSuccess = false): array
     {
         try {
             $token = $this->auth->getAccessToken();
@@ -307,6 +311,19 @@ class ZohoStudentService
         // array and no `status` field at all should still count as OK.
         $statusIndicatesFailure = in_array($normalizedStatus, ['error', 'failed', 'failure', false, 0, '0'], true);
 
+        // That lenient default is safe for the identify/send-OTP call — at
+        // worst it lets someone reach the OTP screen, which grants nothing.
+        // It is NOT safe for the actual code-verify call: this is where a
+        // Student is authenticated, so an ambiguous Zoho response (HTTP 200,
+        // empty `error`, but no `status: success` confirming the code itself
+        // was checked and matched) must be rejected rather than defaulted to
+        // success. This is the fix for the real bug — an incorrect OTP was
+        // being accepted because "no error reported" was being read as "OTP
+        // correct", when it only ever meant "nothing broke".
+        $statusConfirmsSuccess = $normalizedStatus === 'success';
+        $otpVerificationFailure = $requireExplicitSuccess ? $this->otpVerificationFailure($data) : null;
+        $otpVerificationConfirmed = $requireExplicitSuccess ? $this->otpVerificationConfirmed($data, $statusConfirmsSuccess) : true;
+
         // When we explicitly asked Zoho to send the OTP, an Email_status
         // that positively says it wasn't sent is a real failure even if
         // `error` came back empty — the whole point of this call was the
@@ -316,19 +333,27 @@ class ZohoStudentService
             && is_string($emailStatus)
             && strtolower(trim($emailStatus)) === 'not_sent';
 
-        if (! $response->successful() || $statusIndicatesFailure || ! empty($errors) || $emailSendFailed) {
+        $failed = $requireExplicitSuccess
+            ? (! $response->successful() || ! $otpVerificationConfirmed || ! empty($errors) || $otpVerificationFailure !== null)
+            : (! $response->successful() || $statusIndicatesFailure || ! empty($errors) || $emailSendFailed);
+
+        if ($failed) {
             Log::error('Zoho student verification returned an error.', [
                 'nrich_student_id' => $payload['nrich_student_id'] ?? null,
                 'sent_payload' => $payload,
                 'http_status' => $response->status(),
                 'zoho_status' => $normalizedStatus,
                 'email_status' => $emailStatus,
+                'otp_verification_failure' => $otpVerificationFailure,
                 'errors' => $errors,
             ]);
 
             $message = match (true) {
                 (bool) $errors => $this->mapErrorMessage($errors),
+                $otpVerificationFailure === 'expired' => 'This code has expired. Please request a new one.',
+                $otpVerificationFailure !== null => 'Invalid OTP. Please enter the correct OTP.',
                 $emailSendFailed => 'We could not send the verification code email. Please try again shortly.',
+                $requireExplicitSuccess => 'Invalid OTP. Please enter the correct OTP.',
                 default => self::GENERIC_ERROR,
             };
 
@@ -346,6 +371,106 @@ class ZohoStudentService
             'data' => $data,
             'otp_validity' => (int) ($data['otp_validity'] ?? config('services.zoho.otp_validity_minutes')),
         ];
+    }
+
+    private function otpVerificationConfirmed(array $data, bool $statusConfirmsSuccess): bool
+    {
+        foreach ($this->verificationValues($data) as $value) {
+            if ($this->isTruthyVerificationValue($value)) {
+                return true;
+            }
+        }
+
+        return $statusConfirmsSuccess;
+    }
+
+    private function otpVerificationFailure(array $data): ?string
+    {
+        foreach ($this->verificationValues($data) as $value) {
+            if (is_bool($value)) {
+                return $value ? null : 'invalid';
+            }
+
+            if (is_int($value) || is_float($value)) {
+                return ((int) $value) === 1 ? null : 'invalid';
+            }
+
+            if (! is_string($value)) {
+                continue;
+            }
+
+            $normalized = strtolower(trim($value));
+
+            if (in_array($normalized, ['true', '1', 'success', 'successful', 'verified', 'valid', 'matched', 'match'], true)) {
+                continue;
+            }
+
+            if (str_contains($normalized, 'expired')) {
+                return 'expired';
+            }
+
+            if (str_contains($normalized, 'invalid')
+                || str_contains($normalized, 'incorrect')
+                || str_contains($normalized, 'mismatch')
+                || str_contains($normalized, 'not match')
+                || str_contains($normalized, 'wrong')
+                || in_array($normalized, ['false', '0', 'failed', 'failure', 'fail', 'not_verified', 'unverified'], true)) {
+                return 'invalid';
+            }
+        }
+
+        return null;
+    }
+
+    private function isTruthyVerificationValue(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return ((int) $value) === 1;
+        }
+
+        if (! is_string($value)) {
+            return false;
+        }
+
+        return in_array(strtolower(trim($value)), ['true', '1', 'success', 'successful', 'verified', 'valid', 'matched', 'match'], true);
+    }
+
+    /**
+     * Zoho has used several field names for business-status details over
+     * time. For the OTP verify step only, any verification-looking field is
+     * security-sensitive and must be honored instead of relying solely on
+     * HTTP 200 or a generic top-level `status: success`.
+     *
+     * @return array<int, mixed>
+     */
+    private function verificationValues(array $data): array
+    {
+        $values = [];
+
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                foreach ($this->verificationValues($value) as $nestedValue) {
+                    $values[] = $nestedValue;
+                }
+
+                continue;
+            }
+
+            $normalizedKey = strtolower((string) $key);
+
+            if ((str_contains($normalizedKey, 'otp') || str_contains($normalizedKey, 'verification') || str_contains($normalizedKey, 'verify'))
+                && ! str_contains($normalizedKey, 'email')
+                && ! str_contains($normalizedKey, 'mail')
+                && ! str_contains($normalizedKey, 'validity')) {
+                $values[] = $value;
+            }
+        }
+
+        return $values;
     }
 
     /**
@@ -437,8 +562,10 @@ class ZohoStudentService
             str_contains($haystack, 'parent') && str_contains($haystack, 'email') => 'No parent email is on file for this student. Please contact your administrator.',
             str_contains($haystack, 'email') && str_contains($haystack, 'not_sent') => 'We could not send the verification code email. Please try again shortly.',
             str_contains($haystack, 'otp') && (str_contains($haystack, 'not_sent') || str_contains($haystack, 'fail')) => 'We could not send the verification code email. Please try again shortly.',
-            str_contains($haystack, 'otp') && str_contains($haystack, 'expired') => 'This code has expired. Please request a new one.',
-            str_contains($haystack, 'otp') && (str_contains($haystack, 'invalid') || str_contains($haystack, 'incorrect') || str_contains($haystack, 'mismatch')) => 'The verification code you entered is incorrect. Please try again.',
+            (str_contains($haystack, 'otp') || str_contains($haystack, 'verification_code') || str_contains($haystack, 'verification code'))
+                && str_contains($haystack, 'expired') => 'This code has expired. Please request a new one.',
+            (str_contains($haystack, 'otp') || str_contains($haystack, 'verification_code') || str_contains($haystack, 'verification code'))
+                && (str_contains($haystack, 'invalid') || str_contains($haystack, 'incorrect') || str_contains($haystack, 'mismatch')) => 'Invalid OTP. Please enter the correct OTP.',
             default => $this->genericErrorWithDebugDetail($first),
         };
     }

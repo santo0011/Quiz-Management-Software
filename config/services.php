@@ -44,6 +44,7 @@ return [
         'otp_validity_minutes' => (int) env('ZOHO_OTP_VALIDITY_MINUTES', 15),
         'student_login_function' => env('ZOHO_STUDENT_LOGIN_FUNCTION', 'lms_portal_endpoint_1'),
         'receive_results_function' => env('ZOHO_RECEIVE_RESULTS_FUNCTION', 'receive_results_data_from_portal'),
+        'result_pdf_base_url' => env('ZOHO_RESULT_PDF_BASE_URL'),
     ],
 
 ];

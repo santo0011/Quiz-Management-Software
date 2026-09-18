@@ -8,6 +8,7 @@ use App\Models\ExamAttempt;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\Student;
+use App\Support\ResultPdfUrl;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -205,7 +206,25 @@ class ExamAttemptService
                 'result_pdf_token' => $token,
             ]);
 
-            $url = Storage::disk('public')->url($path);
+            $url = ResultPdfUrl::make($attempt, $token);
+            $student = $attempt->student;
+
+            if (! $student?->zoho_student_id || ! $student->zoho_class_id || ! $student->zoho_class_name) {
+                app(ZohoResultService::class)->sendResult($attempt, $url);
+
+                return;
+            }
+
+            $verifier = app(ResultPdfUrlVerifier::class);
+            if (! $verifier->verify($url)) {
+                Log::warning('Skipped sending result to Zoho: generated result PDF URL is not publicly reachable.', [
+                    'attempt_id' => $attempt->id,
+                    'pdf_url' => $url,
+                    'reason' => $verifier->lastFailureMessage(),
+                ]);
+
+                return;
+            }
 
             app(ZohoResultService::class)->sendResult($attempt, $url);
         } catch (\Throwable $e) {

@@ -170,7 +170,7 @@ class ZohoResponseParsingTest extends TestCase
     /**
      * The actual root cause, confirmed by isolating each field against the
      * LIVE Zoho function (four calls, one variable changed at a time):
-     * omitting `verification_code` on a `send_otp:"true"` call makes Zoho
+     * omitting `verification_code` on a `send_otp:true` call makes Zoho
      * return `status: success` / `error: []` but silently skip the email
      * (`Email_status: "not_sent"`). A non-empty `verification_code` must be
      * present for Zoho to actually send it — its content is irrelevant
@@ -197,8 +197,8 @@ class ZohoResponseParsingTest extends TestCase
             $body = $request->data();
 
             return $body['nrich_student_id'] === 'NL1405'
-                && $body['send_otp'] === 'true'
-                && $body['login_through_teacher_master_code'] === 'false'
+                && $body['send_otp'] === true
+                && $body['login_through_teacher_master_code'] === false
                 && array_key_exists('otp_validity', $body)
                 && array_key_exists('verification_code', $body)
                 && $body['verification_code'] !== '';
@@ -222,9 +222,9 @@ class ZohoResponseParsingTest extends TestCase
             $body = $request->data();
 
             return $body['nrich_student_id'] === 'NL1405'
-                && $body['send_otp'] === 'false'
+                && $body['send_otp'] === false
                 && $body['verification_code'] === '123456'
-                && $body['login_through_teacher_master_code'] === 'false';
+                && $body['login_through_teacher_master_code'] === false;
         });
     }
 
@@ -234,8 +234,8 @@ class ZohoResponseParsingTest extends TestCase
      * never informed a Teacher Override login was happening at all), and
      * must match the confirmed-working request shape exactly:
      * `otp_validity`/`verification_code` present (harmless placeholders
-     * with `send_otp: "false"`), `send_otp: "false"`,
-     * `login_through_teacher_master_code: "true"`.
+     * with `send_otp: false`), `send_otp: false`,
+     * `login_through_teacher_master_code: true`.
      */
     public function test_teacher_override_payload_matches_the_confirmed_working_shape(): void
     {
@@ -254,8 +254,8 @@ class ZohoResponseParsingTest extends TestCase
             $body = $request->data();
 
             return $body['nrich_student_id'] === 'NL1405'
-                && $body['send_otp'] === 'false'
-                && $body['login_through_teacher_master_code'] === 'true'
+                && $body['send_otp'] === false
+                && $body['login_through_teacher_master_code'] === true
                 && array_key_exists('otp_validity', $body)
                 && $body['verification_code'] === '145263';
         });
@@ -305,6 +305,76 @@ class ZohoResponseParsingTest extends TestCase
         $this->assertTrue($result['ok']);
     }
 
+    /**
+     * The actual bug being fixed: unlike the identify/send-OTP call, the
+     * code-verify call must NOT default an ambiguous response (HTTP 200,
+     * empty `error`, no explicit `status: success`) to success — that
+     * lenient default is what let a wrong OTP log a Student in.
+     */
+    public function test_verify_otp_rejects_an_ambiguous_response_with_no_explicit_success_status(): void
+    {
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-token'], 200),
+            '*zohoapis.com.au*' => Http::response([
+                'error' => [],
+            ], 200),
+        ]);
+
+        $result = app(ZohoStudentService::class)->verifyOtp('NL1405', '000000');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('Invalid OTP. Please enter the correct OTP.', $result['message']);
+    }
+
+    public function test_verify_otp_rejects_success_status_when_verification_indicator_is_false(): void
+    {
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-token'], 200),
+            '*zohoapis.com.au*' => Http::response([
+                'status' => 'success',
+                'error' => [],
+                'otp_verified' => false,
+            ], 200),
+        ]);
+
+        $result = app(ZohoStudentService::class)->verifyOtp('NL1405', '999999');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('Invalid OTP. Please enter the correct OTP.', $result['message']);
+    }
+
+    public function test_verify_otp_accepts_success_status_with_truthy_verification_indicator(): void
+    {
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-token'], 200),
+            '*zohoapis.com.au*' => Http::response([
+                'status' => 'success',
+                'error' => [],
+                'otp_verified' => true,
+            ], 200),
+        ]);
+
+        $result = app(ZohoStudentService::class)->verifyOtp('NL1405', '123456');
+
+        $this->assertTrue($result['ok']);
+    }
+
+    public function test_verify_otp_maps_structured_verification_code_errors(): void
+    {
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-token'], 200),
+            '*zohoapis.com.au*' => Http::response([
+                'status' => 'error',
+                'error' => [['verification_code' => 'invalid']],
+            ], 200),
+        ]);
+
+        $result = app(ZohoStudentService::class)->verifyOtp('NL1405', '000000');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('Invalid OTP. Please enter the correct OTP.', $result['message']);
+    }
+
     /** Documented error shape that previously slipped through unmapped. */
     public function test_maps_the_documented_parent_linking_error_shape(): void
     {
@@ -348,7 +418,7 @@ class ZohoResponseParsingTest extends TestCase
 
         $attempt = $this->makeAttemptWithZohoData();
 
-        $sent = app(ZohoResultService::class)->sendResult($attempt, 'http://localhost/storage/results/abc.pdf');
+        $sent = app(ZohoResultService::class)->sendResult($attempt, 'https://portal.example.com/storage/results/abc.pdf');
 
         $this->assertTrue($sent);
         $this->assertNotNull($attempt->fresh()->zoho_result_synced_at);
@@ -363,7 +433,7 @@ class ZohoResponseParsingTest extends TestCase
 
         $attempt = $this->makeAttemptWithZohoData();
 
-        $sent = app(ZohoResultService::class)->sendResult($attempt, 'http://localhost/storage/results/abc.pdf');
+        $sent = app(ZohoResultService::class)->sendResult($attempt, 'https://portal.example.com/storage/results/abc.pdf');
 
         $this->assertTrue($sent);
     }
@@ -377,10 +447,28 @@ class ZohoResponseParsingTest extends TestCase
 
         $attempt = $this->makeAttemptWithZohoData();
 
-        $sent = app(ZohoResultService::class)->sendResult($attempt, 'http://localhost/storage/results/abc.pdf');
+        $sent = app(ZohoResultService::class)->sendResult($attempt, 'https://portal.example.com/storage/results/abc.pdf');
 
         $this->assertFalse($sent);
         $this->assertNull($attempt->fresh()->zoho_result_synced_at);
+    }
+
+    public function test_result_submission_skips_zoho_when_pdf_url_is_localhost(): void
+    {
+        Http::fake();
+
+        $attempt = $this->makeAttemptWithZohoData();
+
+        $service = app(ZohoResultService::class);
+        $sent = $service->sendResult($attempt, 'http://localhost:8000/result-pdfs/1/abc');
+
+        $this->assertFalse($sent);
+        $this->assertSame(
+            'Zoho needs a verified public HTTPS PDF URL. Set APP_URL or ZOHO_RESULT_PDF_BASE_URL to your live HTTPS website URL.',
+            $service->lastFailureMessage()
+        );
+        $this->assertNull($attempt->fresh()->zoho_result_synced_at);
+        Http::assertNothingSent();
     }
 
     private function makeAttemptWithZohoData(): ExamAttempt

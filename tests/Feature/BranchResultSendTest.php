@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Mail\StudentResultMail;
 use App\Models\Branch;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
@@ -12,6 +11,7 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
+use App\Support\ResultPdfUrl;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -30,14 +30,18 @@ class BranchResultSendTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_branch_can_review_and_send_a_result_which_emails_the_student_and_notifies_zoho(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['services.zoho.result_pdf_base_url' => 'https://portal.example.com']);
+    }
+
+    public function test_branch_can_review_and_send_a_result_with_a_verified_public_pdf_url_to_zoho(): void
     {
         Storage::fake('public');
         Mail::fake();
-        Http::fake([
-            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-token'], 200),
-            '*zohoapis.com.au*' => Http::response(['success' => true], 200),
-        ]);
+        $this->fakeSuccessfulZohoFlow();
 
         [$branch, $branchUser, $attempt] = $this->makeSubmittedAttemptFixture([
             'guardian_email' => 'parent-otp-email@example.com',
@@ -55,25 +59,38 @@ class BranchResultSendTest extends TestCase
         $this->assertSame($branchUser->id, $attempt->branch_review_by);
         $this->assertNotNull($attempt->branch_review_at);
 
-        Mail::assertSent(StudentResultMail::class, function (StudentResultMail $mail) use ($attempt) {
-            return $mail->hasTo('parent-otp-email@example.com') && $mail->attempt->is($attempt);
-        });
+        Mail::assertNothingSent();
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'receive_results_data_from_portal'));
 
         $attempt->refresh();
-        $this->assertNotNull($attempt->result_email_sent_at);
-        $this->assertSame($branchUser->id, $attempt->result_email_sent_by);
+        $this->assertNull($attempt->result_email_sent_at);
+        $this->assertNull($attempt->result_email_sent_by);
         $this->assertNotNull($attempt->branch_result_pdf_path);
         $this->assertNotNull($attempt->zoho_result_synced_at);
         Storage::disk('public')->assertExists($attempt->branch_result_pdf_path);
+
+        $pdfBytes = Storage::disk('public')->get($attempt->branch_result_pdf_path);
+        $this->assertStringStartsWith('%PDF', $pdfBytes);
+
+        $token = pathinfo($attempt->branch_result_pdf_path, PATHINFO_FILENAME);
+        $pdfUrl = ResultPdfUrl::make($attempt, $token);
+
+        $this->get($pdfUrl)
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'receive_results_data_from_portal')
+            && $request['Result_PDF_URL'] === $pdfUrl
+            && str_ends_with($request['Result_PDF_URL'], '/result.pdf')
+            && $request['Email'] === 'parent-otp-email@example.com');
     }
 
     public function test_sending_does_not_change_any_calculated_result_value(): void
     {
         Storage::fake('public');
         Mail::fake();
-        Http::fake(['*' => Http::response(['access_token' => 'fake-token', 'success' => true], 200)]);
+        $this->fakeSuccessfulZohoFlow();
 
         [, $branchUser, $attempt] = $this->makeSubmittedAttemptFixture([
             'guardian_email' => 'parent-otp-email@example.com',
@@ -87,11 +104,48 @@ class BranchResultSendTest extends TestCase
         $this->assertSame($before, $attempt->only(['obtained_marks', 'percentage', 'correct_count', 'wrong_count', 'unanswered_count', 'is_passed']));
     }
 
-    public function test_send_uses_the_students_zoho_otp_email_never_a_different_local_email(): void
+    public function test_live_https_request_host_is_used_for_pdf_url_when_env_base_url_is_localhost(): void
     {
         Storage::fake('public');
         Mail::fake();
-        Http::fake(['*' => Http::response(['access_token' => 'fake-token', 'success' => true], 200)]);
+        config([
+            'app.url' => 'http://localhost:8000',
+            'services.zoho.result_pdf_base_url' => null,
+        ]);
+        Http::fake([
+            'https://live.example.com/result-pdfs/*' => Http::response('%PDF fake branch result', 200, ['Content-Type' => 'application/pdf']),
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['success' => true], 200),
+        ]);
+
+        [, $branchUser, $attempt] = $this->makeSubmittedAttemptFixture([
+            'guardian_email' => 'parent-otp-email@example.com',
+        ]);
+
+        $this
+            ->withServerVariables([
+                'HTTPS' => 'on',
+                'HTTP_HOST' => 'live.example.com',
+                'SERVER_PORT' => 443,
+            ])
+            ->withHeaders([
+                'X-Forwarded-Proto' => 'https',
+                'X-Forwarded-Host' => 'live.example.com',
+            ])
+            ->actingAs($branchUser)
+            ->post("/branch/results/{$attempt->id}/send", ['review' => 'Strong work.'])
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'receive_results_data_from_portal')
+            && str_starts_with($request['Result_PDF_URL'], 'https://live.example.com/result-pdfs/')
+            && str_ends_with($request['Result_PDF_URL'], '/result.pdf'));
+    }
+
+    public function test_send_passes_the_students_zoho_otp_email_to_zoho_never_a_different_local_email(): void
+    {
+        Storage::fake('public');
+        Mail::fake();
+        $this->fakeSuccessfulZohoFlow();
 
         [, $branchUser, $attempt] = $this->makeSubmittedAttemptFixture([
             'email' => 'student-local-login-email@example.com',
@@ -100,10 +154,11 @@ class BranchResultSendTest extends TestCase
 
         $this->actingAs($branchUser)->post(route('branch.results.send', $attempt), ['review' => 'Good grasp of core concepts.']);
 
-        Mail::assertSent(StudentResultMail::class, function (StudentResultMail $mail) {
-            return $mail->hasTo('zoho-otp-parent-email@example.com')
-                && ! $mail->hasTo('student-local-login-email@example.com');
-        });
+        Mail::assertNothingSent();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'receive_results_data_from_portal')
+            && $request['Email'] === 'zoho-otp-parent-email@example.com'
+            && $request['Email'] !== 'student-local-login-email@example.com');
     }
 
     public function test_send_fails_gracefully_when_student_has_no_otp_email_on_file(): void
@@ -137,11 +192,12 @@ class BranchResultSendTest extends TestCase
      * body reports failure must not be treated as a successful Zoho send,
      * even though the email to the student still goes out independently.
      */
-    public function test_zoho_rejection_is_not_reported_as_success_even_though_email_still_sends(): void
+    public function test_zoho_rejection_is_not_reported_as_success_and_does_not_send_laravel_email(): void
     {
         Storage::fake('public');
         Mail::fake();
         Http::fake([
+            'https://portal.example.com/result-pdfs/*' => Http::response('%PDF fake branch result', 200, ['Content-Type' => 'application/pdf']),
             '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-token'], 200),
             '*zohoapis.com.au*' => Http::response(['success' => false, 'error' => ['message' => 'Invalid class id']], 200),
         ]);
@@ -152,13 +208,38 @@ class BranchResultSendTest extends TestCase
 
         $response = $this->actingAs($branchUser)->post(route('branch.results.send', $attempt), ['review' => 'Needs more revision on word problems.']);
 
-        $response->assertSessionHas('warning');
+        $response->assertSessionHas('error');
+        $response->assertSessionHas('error', fn (string $message) => str_contains($message, 'Invalid class id'));
         $response->assertSessionMissing('success');
 
-        Mail::assertSent(StudentResultMail::class);
+        Mail::assertNothingSent();
 
         $attempt->refresh();
-        $this->assertNotNull($attempt->result_email_sent_at);
+        $this->assertNull($attempt->result_email_sent_at);
+        $this->assertNull($attempt->zoho_result_synced_at);
+    }
+
+    public function test_result_is_not_sent_to_zoho_when_public_pdf_url_verification_fails(): void
+    {
+        Storage::fake('public');
+        Mail::fake();
+        Http::fake([
+            'https://portal.example.com/result-pdfs/*' => Http::response('not a pdf', 200, ['Content-Type' => 'text/html']),
+        ]);
+
+        [, $branchUser, $attempt] = $this->makeSubmittedAttemptFixture([
+            'guardian_email' => 'parent-otp-email@example.com',
+        ]);
+
+        $response = $this->actingAs($branchUser)->post(route('branch.results.send', $attempt), ['review' => 'Needs more revision on word problems.']);
+
+        $response->assertSessionHas('error', fn (string $message) => str_contains($message, 'application/pdf'));
+
+        Mail::assertNothingSent();
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'receive_results_data_from_portal'));
+
+        $attempt->refresh();
+        $this->assertNotNull($attempt->branch_result_pdf_path);
         $this->assertNull($attempt->zoho_result_synced_at);
     }
 
@@ -187,7 +268,7 @@ class BranchResultSendTest extends TestCase
     {
         Storage::fake('public');
         Mail::fake();
-        Http::fake(['*' => Http::response(['access_token' => 'fake-token', 'success' => true], 200)]);
+        $this->fakeSuccessfulZohoFlow();
 
         [, $branchUser, $attempt] = $this->makeSubmittedAttemptFixture([
             'guardian_email' => 'parent-otp-email@example.com',
@@ -224,7 +305,7 @@ class BranchResultSendTest extends TestCase
     {
         Storage::fake('public');
         Mail::fake();
-        Http::fake(['*' => Http::response(['access_token' => 'fake-token', 'success' => true], 200)]);
+        $this->fakeSuccessfulZohoFlow();
 
         [$ownBranch] = $this->makeSubmittedAttemptFixture(['guardian_email' => 'a@example.com']);
         [, , $otherAttempt] = $this->makeSubmittedAttemptFixture(
@@ -246,7 +327,19 @@ class BranchResultSendTest extends TestCase
         $response = $this->actingAs($branchUser)->post(route('branch.results.send', $otherAttempt), ['review' => 'Consistent effort across the term.']);
 
         $response->assertSessionHas('success');
-        Mail::assertSent(StudentResultMail::class, fn (StudentResultMail $mail) => $mail->hasTo('other-parent@example.com'));
+        Mail::assertNothingSent();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'receive_results_data_from_portal')
+            && $request['Email'] === 'other-parent@example.com');
+    }
+
+    private function fakeSuccessfulZohoFlow(): void
+    {
+        Http::fake([
+            'https://portal.example.com/result-pdfs/*' => Http::response('%PDF fake branch result', 200, ['Content-Type' => 'application/pdf']),
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['success' => true], 200),
+        ]);
     }
 
     /**
