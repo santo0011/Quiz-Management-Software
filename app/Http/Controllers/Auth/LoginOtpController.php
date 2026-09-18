@@ -183,6 +183,10 @@ class LoginOtpController extends Controller
      */
     private function verifyStudentOtp(Request $request, array $pending, string $otp): RedirectResponse
     {
+        if (Auth::guard('student')->check()) {
+            Auth::guard('student')->logout();
+        }
+
         $attempts = (int) ($pending['otp_attempts'] ?? 0);
 
         if ($attempts >= self::STUDENT_MAX_ATTEMPTS) {

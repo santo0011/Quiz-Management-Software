@@ -18,11 +18,19 @@ class ZohoResultSubmissionTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['services.zoho.result_pdf_base_url' => 'https://portal.example.com']);
+    }
+
     public function test_submitting_an_exam_generates_a_result_pdf_and_sends_it_to_zoho(): void
     {
         Storage::fake('public');
 
         Http::fake([
+            'https://portal.example.com/result-pdfs/*' => Http::response('%PDF fake result', 200, ['Content-Type' => 'application/pdf']),
             '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
             '*zohoapis.com.au*' => Http::response(['success' => true], 200),
         ]);
@@ -33,6 +41,7 @@ class ZohoResultSubmissionTest extends TestCase
             'zoho_class_id' => '96867000000904800',
             'zoho_class_name' => 'English | Grade 1 ( 1 on 1 ) | Clyde North',
             'zoho_grade' => 'Grade 1',
+            'guardian_email' => 'parent-result@example.com',
         ]);
 
         $attempt = app(ExamAttemptService::class)->start($exam, $student);
@@ -50,6 +59,7 @@ class ZohoResultSubmissionTest extends TestCase
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'receive_results_data_from_portal')
                 && $request['Student_NRICH_ID'] === 'NL1184'
+                && $request['Email'] === 'parent-result@example.com'
                 && $request['Student_Class']['id'] === '96867000000904800'
                 && $request['Student_Class']['name'] === 'English | Grade 1 ( 1 on 1 ) | Clyde North';
         });
@@ -60,6 +70,7 @@ class ZohoResultSubmissionTest extends TestCase
         Storage::fake('public');
 
         Http::fake([
+            'https://portal.example.com/result-pdfs/*' => Http::response('%PDF fake result', 200, ['Content-Type' => 'application/pdf']),
             '*accounts.zoho.com.au*' => Http::response([], 500),
         ]);
 

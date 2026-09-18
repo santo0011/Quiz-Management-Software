@@ -34,13 +34,13 @@ use App\Http\Controllers\Guardian\DashboardController as GuardianDashboardContro
 use App\Http\Controllers\Guardian\PasswordController as GuardianPasswordUpdateController;
 use App\Http\Controllers\Guardian\ProfileController as GuardianProfileController;
 use App\Http\Controllers\Guardian\StudentController as GuardianStudentController;
+use App\Http\Controllers\ResultPdfController;
+use App\Http\Controllers\Student\ExamApiController as StudentExamApiController;
+use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
 use App\Http\Controllers\Teacher\PasswordController as TeacherPasswordUpdateController;
 use App\Http\Controllers\Teacher\ProfileController as TeacherProfileController;
 use App\Http\Controllers\Teacher\ResultController as TeacherResultController;
-use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
-use App\Http\Controllers\Student\ExamApiController as StudentExamApiController;
-use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Support\RoleRedirector;
 use Illuminate\Support\Facades\Route;
 
@@ -57,9 +57,6 @@ Route::get('/', function () {
 Route::middleware('guest:web,student,guardian,teacher')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.store');
-    Route::get('/verify-login-otp', [LoginOtpController::class, 'show'])->name('login.otp');
-    Route::post('/verify-login-otp', [LoginOtpController::class, 'verify'])->name('login.otp.verify')->middleware('throttle:10,1');
-    Route::post('/verify-login-otp/resend', [LoginOtpController::class, 'resend'])->name('login.otp.resend')->middleware('throttle:5,1');
     Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'sendOtp'])->name('password.email');
     Route::get('/verify-reset-code', [PasswordResetController::class, 'otp'])->name('password.otp');
@@ -72,7 +69,14 @@ Route::middleware('guest:web,student,guardian,teacher')->group(function () {
     Route::post('/guardian-login/create-password', [GuardianPasswordController::class, 'createPassword'])->name('guardian-login.create-password')->middleware('throttle:10,1');
 });
 
+Route::get('/verify-login-otp', [LoginOtpController::class, 'show'])->name('login.otp');
+Route::post('/verify-login-otp', [LoginOtpController::class, 'verify'])->name('login.otp.verify')->middleware('throttle:10,1');
+Route::post('/verify-login-otp/resend', [LoginOtpController::class, 'resend'])->name('login.otp.resend')->middleware('throttle:5,1');
+
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:web,student,guardian,teacher')->name('logout');
+
+Route::get('/result-pdfs/{attempt}/{token}/result.pdf', ResultPdfController::class)->name('result-pdfs.show');
+Route::get('/result-pdfs/{attempt}/{token}', ResultPdfController::class);
 
 Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');

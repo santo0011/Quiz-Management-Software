@@ -62,7 +62,7 @@
 
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-send-check-fill"></i>
-                    {{ $attempt->result_email_sent_at || $attempt->zoho_result_synced_at ? 'Resend Result' : 'Review & Send Result' }}
+                    {{ $attempt->zoho_result_synced_at ? 'Resend Result' : 'Review & Send Result' }}
                 </button>
             </form>
         @endif

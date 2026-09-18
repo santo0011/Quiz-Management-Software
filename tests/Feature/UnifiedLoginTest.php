@@ -268,7 +268,7 @@ class UnifiedLoginTest extends TestCase
         ])->assertRedirect(route('login.otp'));
 
         $this->post(route('login.otp.verify'), ['otp' => '000000'])
-            ->assertSessionHas('otp_error', 'The verification code you entered is incorrect. Please try again.');
+            ->assertSessionHas('otp_error', 'Invalid OTP. Please enter the correct OTP.');
 
         $this->assertGuest('student');
 
@@ -276,6 +276,153 @@ class UnifiedLoginTest extends TestCase
             ->assertRedirect(route('student.dashboard'));
 
         $this->assertAuthenticated('student');
+    }
+
+    /**
+     * The exact live bug this fix targets: Zoho responding to a WRONG code
+     * with HTTP 200, an empty `error` array, and no `status` field at all —
+     * ambiguous, not an explicit success. Previously the identify call's
+     * lenient "no error reported = ok" default was reused here too, so this
+     * logged the Student in on a wrong code. It must now stay rejected.
+     */
+    public function test_student_otp_verification_rejects_an_ambiguous_zoho_response_instead_of_logging_in(): void
+    {
+        $branch = Branch::create(['name' => 'Pune Branch', 'email' => 'pune-ambiguous@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student Ambiguous',
+            'guardian_name' => 'Guardian Ambiguous',
+            'class' => 'Class 10',
+            'phone_number' => '9876500000',
+            'email' => 'student-ambiguous@example.com',
+            'zoho_student_id' => 'NL9002',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::sequence()
+                ->push(['status' => 'success', 'error' => []], 200) // sendOtp
+                ->push(['error' => []], 200), // wrong verify — ambiguous, no explicit status
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL9002',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->post(route('login.otp.verify'), ['otp' => '000000'])
+            ->assertRedirect(route('login.otp'))
+            ->assertSessionHas('otp_error', 'Invalid OTP. Please enter the correct OTP.');
+
+        $this->assertGuest('student');
+    }
+
+    public function test_student_otp_verification_rejects_top_level_success_when_verification_indicator_is_false(): void
+    {
+        $branch = Branch::create(['name' => 'Pune Branch', 'email' => 'pune-false@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student False',
+            'guardian_name' => 'Guardian False',
+            'class' => 'Class 10',
+            'phone_number' => '9876500002',
+            'email' => 'student-false@example.com',
+            'zoho_student_id' => 'NL-FALSE',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::sequence()
+                ->push(['status' => 'success', 'error' => []], 200)
+                ->push(['status' => 'success', 'error' => [], 'otp_verified' => false], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL-FALSE',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->post(route('login.otp.verify'), ['otp' => '999999'])
+            ->assertRedirect(route('login.otp'))
+            ->assertSessionHas('otp_error', 'Invalid OTP. Please enter the correct OTP.');
+
+        $this->assertGuest('student');
+    }
+
+    public function test_multiple_wrong_student_otp_attempts_never_authenticate_even_with_http_200_success_wrapper(): void
+    {
+        $branch = Branch::create(['name' => 'Pune Branch', 'email' => 'pune-many-wrong@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student Many Wrong',
+            'guardian_name' => 'Guardian Many Wrong',
+            'class' => 'Class 10',
+            'phone_number' => '9876500003',
+            'email' => 'student-many-wrong@example.com',
+            'zoho_student_id' => 'NL-MANY-WRONG',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::sequence()
+                ->push(['status' => 'success', 'error' => []], 200)
+                ->push(['status' => 'success', 'error' => [], 'verification_status' => 'invalid'], 200)
+                ->push(['status' => 'success', 'error' => [], 'verification_status' => 'invalid'], 200)
+                ->push(['status' => 'success', 'error' => [], 'verification_status' => 'invalid'], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL-MANY-WRONG',
+        ])->assertRedirect(route('login.otp'));
+
+        foreach (['111111', '222222', '333333'] as $otp) {
+            $this->post(route('login.otp.verify'), ['otp' => $otp])
+                ->assertRedirect(route('login.otp'))
+                ->assertSessionHas('otp_error', 'Invalid OTP. Please enter the correct OTP.');
+
+            $this->assertGuest('student');
+        }
+    }
+
+    public function test_stale_authenticated_student_session_cannot_bypass_otp_verification(): void
+    {
+        $branch = Branch::create(['name' => 'Pune Branch', 'email' => 'pune-stale@example.com']);
+
+        $student = Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student Stale',
+            'guardian_name' => 'Guardian Stale',
+            'class' => 'Class 10',
+            'phone_number' => '9876500001',
+            'email' => 'student-stale@example.com',
+            'zoho_student_id' => 'NL-STALE',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'error', 'error' => ['Invalid OTP entered.']], 200),
+        ]);
+
+        $this->actingAs($student, 'student')
+            ->withSession([
+                'pending_login' => [
+                    'type' => 'student',
+                    'nrich_student_id' => 'NL-STALE',
+                    'parent_email' => 'parent-stale@example.com',
+                    'otp_sent_at' => now()->toIso8601String(),
+                    'otp_validity_minutes' => 15,
+                    'otp_attempts' => 0,
+                ],
+            ])
+            ->post(route('login.otp.verify'), ['otp' => '000000'])
+            ->assertRedirect(route('login.otp'))
+            ->assertSessionHas('otp_error', 'Invalid OTP. Please enter the correct OTP.');
+
+        $this->assertGuest('student');
     }
 
     public function test_student_login_rejects_an_id_zoho_itself_does_not_recognize(): void
@@ -390,7 +537,7 @@ class UnifiedLoginTest extends TestCase
         ])->assertRedirect(route('login.otp'));
 
         $this->post(route('login.otp.verify'), ['otp' => '000000'])
-            ->assertSessionHas('otp_error', 'The verification code you entered is incorrect. Please try again.');
+            ->assertSessionHas('otp_error', 'Invalid OTP. Please enter the correct OTP.');
 
         $this->assertGuest('student');
     }
@@ -427,6 +574,103 @@ class UnifiedLoginTest extends TestCase
         $this->assertGuest('student');
     }
 
+    public function test_empty_student_otp_does_not_call_zoho_or_login(): void
+    {
+        $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai-empty@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student Empty',
+            'guardian_name' => 'Guardian Empty',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'student-empty@example.com',
+            'zoho_student_id' => 'NL-EMPTY',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response(['status' => 'success', 'error' => []], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL-EMPTY',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->post(route('login.otp.verify'), ['otp' => ''])
+            ->assertRedirect(route('login.otp'))
+            ->assertSessionHasErrors('otp');
+
+        $this->assertGuest('student');
+        Http::assertSentCount(2); // token + sendOtp only; no verify call.
+    }
+
+    public function test_student_otp_verify_request_sends_exact_entered_code_and_normal_login_flags(): void
+    {
+        $branch = Branch::create(['name' => 'Mumbai Branch', 'email' => 'mumbai-payload@example.com']);
+
+        Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Student Payload',
+            'guardian_name' => 'Guardian Payload',
+            'class' => 'Class 10',
+            'phone_number' => '9876543210',
+            'email' => 'student-payload@example.com',
+            'zoho_student_id' => 'NL-PAYLOAD',
+        ]);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::sequence()
+                ->push(['status' => 'success', 'error' => []], 200)
+                ->push(['status' => 'error', 'error' => ['Invalid OTP entered.']], 200),
+        ]);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL-PAYLOAD',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->post(route('login.otp.verify'), ['otp' => '987654'])
+            ->assertRedirect(route('login.otp'))
+            ->assertSessionHas('otp_error', 'Invalid OTP. Please enter the correct OTP.');
+
+        $this->assertGuest('student');
+        Http::assertSent(function ($request): bool {
+            if (! str_contains($request->url(), 'lms_portal_endpoint_1')) {
+                return false;
+            }
+
+            $body = $request->data();
+
+            return ($body['nrich_student_id'] ?? null) === 'NL-PAYLOAD'
+                && ($body['send_otp'] ?? null) === false
+                && ($body['verification_code'] ?? null) === '987654'
+                && ($body['login_through_teacher_master_code'] ?? null) === false;
+        });
+    }
+
+    public function test_otp_page_resubmit_without_pending_student_verification_cannot_login(): void
+    {
+        $this->get(route('login.otp'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('login_error', 'Your login session has expired. Please log in again.');
+
+        $this->post(route('login.otp.verify'), ['otp' => '145263'])
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('login_error', 'Your login session has expired. Please log in again.');
+
+        $this->assertGuest('student');
+    }
+
+    public function test_student_dashboard_requires_successful_student_authentication(): void
+    {
+        $this->get(route('student.dashboard'))->assertRedirect(route('login'));
+
+        $this->assertGuest('student');
+    }
+
     public function test_teacher_override_logs_student_in_directly_without_sending_an_otp(): void
     {
         Setting::current()->update(['common_student_password' => 'override-secret']);
@@ -457,11 +701,11 @@ class UnifiedLoginTest extends TestCase
 
         $this->assertAuthenticatedAs($student, 'student');
 
-        // send_otp must have been sent as the literal string "false" and no
+        // send_otp must be a real JSON boolean false and no
         // verification_code step ever occurred (only one Zoho call, not two).
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'lms_portal_endpoint_1')
-                && $request['send_otp'] === 'false';
+                && $request['send_otp'] === false;
         });
         Http::assertSentCount(2); // 1 token request + 1 Zoho identify call, no OTP round trip.
     }
@@ -636,7 +880,7 @@ class UnifiedLoginTest extends TestCase
 
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'lms_portal_endpoint_1')
-                && $request['send_otp'] === 'false';
+                && $request['send_otp'] === false;
         });
     }
 

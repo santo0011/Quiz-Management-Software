@@ -3,17 +3,18 @@
 namespace App\Http\Controllers\Branch;
 
 use App\Http\Controllers\Controller;
-use App\Mail\StudentResultMail;
 use App\Models\ExamAttempt;
+use App\Services\ResultPdfUrlVerifier;
 use App\Services\ZohoResultService;
+use App\Support\ResultPdfUrl;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use RuntimeException;
 
 class ResultController extends Controller
 {
@@ -71,11 +72,9 @@ class ResultController extends Controller
      * — no marks/percentage/pass-fail value is touched here — saves the
      * Branch's written review/feedback with the result (so it stays
      * available on later views), renders it all into a dedicated
-     * professional PDF, emails that PDF to the Student's Zoho/OTP email
-     * (never a manually entered or Branch/Super Admin address), and
-     * forwards it to Zoho through the existing ZohoResultService/access-token
-     * mechanism. Both outcomes are reported back independently since either
-     * can fail without the other.
+     * professional PDF, verifies the public HTTPS PDF URL, and forwards that
+     * URL to Zoho through the existing ZohoResultService/access-token
+     * mechanism. Zoho is responsible for processing the result notification.
      */
     public function send(Request $request, ExamAttempt $attempt): RedirectResponse
     {
@@ -109,57 +108,84 @@ class ResultController extends Controller
         }
 
         try {
-            $pdfBytes = Pdf::loadView('pdf.branch-result', ['attempt' => $attempt])->output();
-            $path = 'results/branch/'.Str::random(48).'.pdf';
-            Storage::disk('public')->put($path, $pdfBytes);
+            [, $path, $pdfUrl] = $this->generateBranchResultPdf($attempt);
         } catch (\Throwable $e) {
-            Log::error('Failed to generate the Branch result PDF.', ['attempt_id' => $attempt->id, 'exception' => $e->getMessage()]);
+            Log::error('Failed to generate the Branch result PDF.', [
+                'attempt_id' => $attempt->id,
+                'exception' => $e->getMessage(),
+            ]);
 
             return redirect()->route('branch.results.show', $attempt)
                 ->with('error', 'Could not generate the result PDF. Please try again.');
         }
 
-        $emailSent = false;
+        $attempt->update(['branch_result_pdf_path' => $path]);
 
-        try {
-            Mail::to($otpEmail)->send(new StudentResultMail($attempt, $pdfBytes));
-            $emailSent = true;
-        } catch (\Throwable $e) {
-            Log::error('Failed to email the Branch-reviewed result to the student.', ['attempt_id' => $attempt->id, 'exception' => $e->getMessage()]);
+        Log::info('Generated Branch result PDF public URL.', [
+            'attempt_id' => $attempt->id,
+            ...ResultPdfUrl::diagnosticsForPath($path, $pdfUrl),
+        ]);
+
+        $verifier = app(ResultPdfUrlVerifier::class);
+
+        if (! $verifier->verify($pdfUrl)) {
+            Log::warning('Result PDF public URL failed verification before sending to Zoho.', [
+                'attempt_id' => $attempt->id,
+                'result_pdf_url' => $pdfUrl,
+                'reason' => $verifier->lastFailureMessage(),
+            ]);
+
+            return redirect()->route('branch.results.show', $attempt)
+                ->with('error', 'Result PDF was generated, but its public URL is not ready for Zoho. '.$verifier->lastFailureMessage());
         }
 
-        $zohoSent = app(ZohoResultService::class)->sendResult($attempt, Storage::disk('public')->url($path));
-
-        $updates = ['branch_result_pdf_path' => $path];
-
-        if ($emailSent) {
-            $updates['result_email_sent_at'] = now();
-            $updates['result_email_sent_by'] = $request->user()->id;
-        }
-
-        $attempt->update($updates);
+        $zohoService = app(ZohoResultService::class);
+        $zohoSent = $zohoService->sendResult($attempt, $pdfUrl);
+        $zohoFailureMessage = $zohoService->lastFailureMessage();
 
         return redirect()->route('branch.results.show', $attempt)
-            ->with($this->sendStatusFlash($emailSent, $zohoSent, $otpEmail));
+            ->with($this->sendStatusFlash($zohoSent, $otpEmail, $zohoFailureMessage));
+    }
+
+    /**
+     * @return array{0: string, 1: string, 2: string}
+     */
+    private function generateBranchResultPdf(ExamAttempt $attempt): array
+    {
+        $pdfBytes = Pdf::loadView('pdf.branch-result', ['attempt' => $attempt])->output();
+
+        if (! str_starts_with($pdfBytes, '%PDF')) {
+            throw new RuntimeException('Dompdf did not return valid PDF bytes.');
+        }
+
+        $token = Str::random(48);
+        $path = "results/branch/{$token}.pdf";
+        $disk = Storage::disk('public');
+
+        $disk->makeDirectory('results/branch');
+
+        if ($disk->put($path, $pdfBytes) !== true) {
+            throw new RuntimeException("Could not write Branch result PDF to {$path}.");
+        }
+
+        if (! $disk->exists($path)) {
+            throw new RuntimeException("Branch result PDF was not found after writing to {$path}.");
+        }
+
+        return [$pdfBytes, $path, ResultPdfUrl::make($attempt, $token)];
     }
 
     /**
      * @return array<string, string>
      */
-    private function sendStatusFlash(bool $emailSent, bool $zohoSent, string $otpEmail): array
+    private function sendStatusFlash(bool $zohoSent, string $otpEmail, ?string $zohoFailureMessage = null): array
     {
-        if ($emailSent && $zohoSent) {
-            return ['success' => "Result sent successfully to {$otpEmail} and submitted to Zoho."];
+        if ($zohoSent) {
+            return ['success' => "Result submitted successfully to Zoho for {$otpEmail}."];
         }
 
-        if ($emailSent && ! $zohoSent) {
-            return ['warning' => "Result emailed to {$otpEmail}, but sending it to Zoho failed. Please try again."];
-        }
+        $reason = $zohoFailureMessage ? " Zoho response: {$zohoFailureMessage}" : '';
 
-        if (! $emailSent && $zohoSent) {
-            return ['warning' => "Result submitted to Zoho, but the email to {$otpEmail} failed. Please try again."];
-        }
-
-        return ['error' => 'Failed to email the result and to submit it to Zoho. Please try again.'];
+        return ['error' => "Sending the result to Zoho failed.{$reason} Please try again."];
     }
 }
