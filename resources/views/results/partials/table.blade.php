@@ -13,9 +13,6 @@
                 <tr>
                     <th>#</th>
                     <th>Student</th>
-                    @if ($prefix === 'branch')
-                        <th>Branch</th>
-                    @endif
                     <th>Grade</th>
                     <th>Exam</th>
                     <th>Marks</th>
@@ -33,9 +30,6 @@
                             <strong>{{ $attempt->student?->student_name }}</strong>
                             <span class="table-subtext">{{ $attempt->student?->email }}</span>
                         </td>
-                        @if ($prefix === 'branch')
-                            <td>{{ $attempt->branch?->name ?? 'Global' }}</td>
-                        @endif
                         <td>{{ $attempt->schoolClass?->name }}</td>
                         <td>{{ $attempt->exam?->title }}</td>
                         <td>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</td>
