@@ -49,9 +49,6 @@
                                 <td>{{ $item->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">
-                                        <a href="{{ route('admin.subjects.show', $item) }}" class="btn btn-sm btn-soft" title="View">
-                                            <i class="bi bi-eye-fill"></i>
-                                        </a>
                                         <button type="button" class="btn btn-sm btn-soft" title="Edit" data-bs-toggle="offcanvas" data-bs-target="#editSubjectDrawer{{ $item->id }}" aria-controls="editSubjectDrawer{{ $item->id }}">
                                             <i class="bi bi-pencil-fill"></i>
                                         </button>

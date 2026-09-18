@@ -37,7 +37,6 @@
                         <tr>
                             <th>#</th>
                             <th>Grade Name</th>
-                            <th>Branch</th>
                             <th>Created</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -47,16 +46,6 @@
                             <tr>
                                 <td>{{ $classes->firstItem() + $loop->index }}</td>
                                 <td><strong>{{ $schoolClass->name }}</strong></td>
-                                <td>
-                                    @if ($schoolClass->isGlobal())
-                                        <span class="status-badge status-published">
-                                            <i class="bi bi-globe2"></i>
-                                            All Branches
-                                        </span>
-                                    @else
-                                        {{ $schoolClass->branch?->name }}
-                                    @endif
-                                </td>
                                 <td>{{ $schoolClass->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">

@@ -88,7 +88,13 @@ class BranchController extends Controller
         DB::transaction(function () use ($request, $branch) {
             $branch->update($request->validated());
 
-            $branch->user()->update([
+            // $branch->user() (the relation query builder) would issue a
+            // bulk UPDATE scoped only by branch_id — if more than one users
+            // row ever shares that branch_id, it updates all of them to the
+            // same email/name in one statement, tripping the email unique
+            // constraint on the second row. Loading the single related model
+            // first scopes the update to that one row's own id instead.
+            $branch->user?->update([
                 'name' => $branch->name,
                 'email' => $branch->email,
             ]);
