@@ -64,12 +64,11 @@ class LoginOtpController extends Controller
 
     public function verify(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'otp' => ['required', 'digits:6'],
-        ], [
+        $rules = ['otp' => ['required', 'digits:6']];
+        $messages = [
             'otp.required' => 'Verification code is required.',
             'otp.digits' => 'Verification code must be 6 digits.',
-        ]);
+        ];
 
         $pending = $request->session()->get(self::SESSION_KEY);
 
@@ -78,8 +77,21 @@ class LoginOtpController extends Controller
         }
 
         if ($pending['type'] === 'student') {
-            return $this->verifyStudentOtp($request, $pending, $validated['otp']);
+            // Validated explicitly (not $request->validate()) so a malformed
+            // code redirects to the named OTP route on failure too, same as
+            // every other student-OTP error path below — never back(), which
+            // depends on url.previous/Referer and can otherwise land the
+            // Student back on the Student Login page instead of here.
+            $validator = validator($request->all(), $rules, $messages);
+
+            if ($validator->fails()) {
+                return redirect()->route('login.otp')->withErrors($validator)->withInput();
+            }
+
+            return $this->verifyStudentOtp($request, $pending, $validator->validated()['otp']);
         }
+
+        $validated = $request->validate($rules, $messages);
 
         $result = LoginOtpService::verify($pending['type'], $pending['email'], $validated['otp']);
 
@@ -186,7 +198,13 @@ class LoginOtpController extends Controller
             $pending['otp_attempts'] = $attempts + 1;
             $request->session()->put(self::SESSION_KEY, $pending);
 
-            return back()->with('otp_error', $result['message']);
+            // Deliberately an explicit redirect to the named OTP route, not
+            // back() — back() falls through to url.previous in the session
+            // (or, failing that, "/"), which "/" then sends a guest straight
+            // to the Student Login page, undoing the whole point of this
+            // branch: the Student must stay on the OTP screen to retry, not
+            // bounce to step 1 for a wrong code.
+            return redirect()->route('login.otp')->with('otp_error', $result['message']);
         }
 
         // Zoho has now verified both the ID and the OTP. This is the actual
@@ -236,14 +254,14 @@ class LoginOtpController extends Controller
         $wait = $this->studentResendCooldown($pending);
 
         if ($wait > 0) {
-            return back()->with('otp_error', "Please wait {$wait} seconds before requesting a new code.");
+            return redirect()->route('login.otp')->with('otp_error', "Please wait {$wait} seconds before requesting a new code.");
         }
 
         $zohoStudentService = app(ZohoStudentService::class);
         $result = $zohoStudentService->sendOtp($pending['nrich_student_id']);
 
         if (! $result['ok']) {
-            return back()->with('otp_error', $result['message']);
+            return redirect()->route('login.otp')->with('otp_error', $result['message']);
         }
 
         $pending['otp_sent_at'] = now()->toIso8601String();
@@ -251,7 +269,7 @@ class LoginOtpController extends Controller
         $pending['parent_email'] = $zohoStudentService->extractParentEmail($result['data']) ?: ($pending['parent_email'] ?? null);
         $request->session()->put(self::SESSION_KEY, $pending);
 
-        return back()->with('otp_success', 'A new verification code has been sent.');
+        return redirect()->route('login.otp')->with('otp_success', 'A new verification code has been sent.');
     }
 
     private function studentResendCooldown(array $pending): int
