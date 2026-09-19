@@ -452,6 +452,17 @@ class ZohoStudentService
         $values = [];
 
         foreach ($data as $key => $value) {
+            // Zoho echoes our own request payload back under this key
+            // (e.g. "send_otp": false, "verification_code": "<submitted code>")
+            // — that's what WE sent, not Zoho's verification result, so it
+            // must be skipped. Otherwise the echoed "send_otp": false is
+            // picked up (its key contains "otp") and misread as Zoho saying
+            // the OTP failed, even when "status": "success" and "error": []
+            // confirm the code was actually correct.
+            if (strtolower((string) $key) === 'payload_received') {
+                continue;
+            }
+
             if (is_array($value)) {
                 foreach ($this->verificationValues($value) as $nestedValue) {
                     $values[] = $nestedValue;

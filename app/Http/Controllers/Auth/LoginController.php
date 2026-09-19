@@ -250,7 +250,7 @@ class LoginController extends Controller
         SingleSessionService::establish($student, 'student');
 
         return redirect()
-            ->intended(RoleRedirector::dashboardUrl($student))
+            ->to(RoleRedirector::postLoginUrl($student))
             ->with('success', 'Login successful. Welcome back!');
     }
 

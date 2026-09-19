@@ -48,7 +48,7 @@ class LoginOtpController extends Controller
         if ($pending['type'] === 'student') {
             return view('auth.login-otp', [
                 'typeLabel' => $typeLabel,
-                'maskedEmail' => $pending['parent_email'] ? $this->mask($pending['parent_email']) : $this->maskId($pending['nrich_student_id']),
+                'maskedEmail' => $pending['parent_email'] ?: $pending['nrich_student_id'],
                 'cooldown' => $this->studentResendCooldown($pending),
                 'expiresInSeconds' => (int) $pending['otp_validity_minutes'] * 60,
             ]);
@@ -56,7 +56,7 @@ class LoginOtpController extends Controller
 
         return view('auth.login-otp', [
             'typeLabel' => $typeLabel,
-            'maskedEmail' => $this->mask($pending['email']),
+            'maskedEmail' => $pending['email'],
             'cooldown' => LoginOtpService::secondsUntilResendAllowed($pending['type'], $pending['email']),
             'expiresInSeconds' => LoginOtpService::OTP_EXPIRY_MINUTES * 60,
         ]);
@@ -121,7 +121,7 @@ class LoginOtpController extends Controller
             SingleSessionService::establish($guardian, 'guardian');
 
             return redirect()
-                ->intended(RoleRedirector::dashboardUrl($guardian))
+                ->to(RoleRedirector::postLoginUrl($guardian))
                 ->with('success', 'Login successful. Welcome back!');
         }
 
@@ -133,7 +133,7 @@ class LoginOtpController extends Controller
             SingleSessionService::establish($teacher, 'teacher');
 
             return redirect()
-                ->intended(RoleRedirector::dashboardUrl($teacher))
+                ->to(RoleRedirector::postLoginUrl($teacher))
                 ->with('success', 'Login successful. Welcome back!');
         }
 
@@ -147,7 +147,7 @@ class LoginOtpController extends Controller
         }
 
         return redirect()
-            ->intended(RoleRedirector::dashboardUrl($user))
+            ->to(RoleRedirector::postLoginUrl($user))
             ->with('success', 'Login successful. Welcome back!');
     }
 
@@ -249,7 +249,7 @@ class LoginOtpController extends Controller
         SingleSessionService::establish($student, 'student');
 
         return redirect()
-            ->intended(RoleRedirector::dashboardUrl($student))
+            ->to(RoleRedirector::postLoginUrl($student))
             ->with('success', 'Login successful. Welcome back!');
     }
 
@@ -284,24 +284,4 @@ class LoginOtpController extends Controller
         return max(0, self::STUDENT_RESEND_COOLDOWN_SECONDS - $elapsed);
     }
 
-    /**
-     * Same masking idea as mask(), adapted for an alphanumeric ID instead of
-     * an email address (no "@domain" part to preserve).
-     */
-    private function maskId(string $id): string
-    {
-        $visible = min(2, strlen($id));
-
-        return substr($id, 0, $visible).str_repeat('*', max(1, strlen($id) - $visible));
-    }
-
-    private function mask(string $email): string
-    {
-        [$name, $domain] = array_pad(explode('@', $email, 2), 2, '');
-
-        $visible = min(2, strlen($name));
-        $masked = substr($name, 0, $visible).str_repeat('*', max(1, strlen($name) - $visible));
-
-        return $masked.'@'.$domain;
-    }
 }
