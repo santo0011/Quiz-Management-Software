@@ -62,19 +62,24 @@ class ResultPdfUrl
         self::addCandidate($candidates, trim((string) config('services.zoho.result_pdf_base_url')), 'ZOHO_RESULT_PDF_BASE_URL');
 
         if (app()->bound('request')) {
+            // route(..., false) strips the request's base path (e.g. "/public"
+            // when the app is served from a subfolder), so it must be added
+            // back here or the generated link points at a non-existent path.
+            $basePath = rtrim(request()->getBaseUrl(), '/');
+
             $forwardedProto = self::firstHeaderValue((string) request()->headers->get('X-Forwarded-Proto', ''));
             $forwardedHost = self::normalizeHost(self::firstHeaderValue((string) request()->headers->get('X-Forwarded-Host', '')));
             self::addCandidate(
                 $candidates,
-                $forwardedProto && $forwardedHost ? "{$forwardedProto}://{$forwardedHost}" : '',
+                self::withPath($forwardedProto && $forwardedHost ? "{$forwardedProto}://{$forwardedHost}" : '', $basePath),
                 'X-Forwarded-Proto/X-Forwarded-Host'
             );
 
             $forwarded = (string) request()->headers->get('Forwarded', '');
-            self::addCandidate($candidates, self::baseUrlFromForwardedHeader($forwarded), 'Forwarded');
+            self::addCandidate($candidates, self::withPath(self::baseUrlFromForwardedHeader($forwarded), $basePath), 'Forwarded');
 
-            self::addCandidate($candidates, request()->getSchemeAndHttpHost(), 'request');
-            self::addCandidate($candidates, self::httpsBaseUrlForHost(request()->getHost()), 'request_host_https');
+            self::addCandidate($candidates, self::withPath(request()->getSchemeAndHttpHost(), $basePath), 'request');
+            self::addCandidate($candidates, self::withPath(self::httpsBaseUrlForHost(request()->getHost()), $basePath), 'request_host_https');
         }
 
         self::addCandidate($candidates, trim((string) config('app.url')), 'APP_URL');
@@ -153,6 +158,11 @@ class ResultPdfUrl
         ];
     }
 
+    private static function withPath(string $url, string $path): string
+    {
+        return $url === '' ? '' : $url.$path;
+    }
+
     private static function withHttpsScheme(string $url): string
     {
         $parts = parse_url($url);
@@ -164,7 +174,7 @@ class ResultPdfUrl
 
         $port = isset($parts['port']) && (int) $parts['port'] !== 443 ? ':'.$parts['port'] : '';
 
-        return 'https://'.$host.$port;
+        return 'https://'.$host.$port.rtrim((string) ($parts['path'] ?? ''), '/');
     }
 
     private static function httpsBaseUrlForHost(string $host): string
