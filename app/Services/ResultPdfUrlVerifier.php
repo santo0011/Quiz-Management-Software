@@ -50,6 +50,9 @@ class ResultPdfUrlVerifier
             'url' => $url,
             'http_status' => $response->status(),
             'content_type' => $contentType,
+            'server' => $response->header('Server'),
+            'location' => $response->header('Location'),
+            'body_snippet' => $response->ok() ? null : mb_substr(strip_tags($response->body()), 0, 300),
             'starts_with_pdf_signature' => str_starts_with($response->body(), '%PDF'),
         ]);
 
