@@ -165,10 +165,6 @@
             <td class="label">Grade</td>
             <td>{{ $attempt->zoho_grade ?? $attempt->schoolClass?->name ?? '—' }}</td>
         </tr>
-        <tr>
-            <td class="label">Branch</td>
-            <td>{{ $attempt->branch?->name ?? 'Global' }}</td>
-        </tr>
     </table>
 
     <div class="section-title">Exam Details</div>
