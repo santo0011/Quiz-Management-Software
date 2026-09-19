@@ -2,7 +2,7 @@
 
 <div class="brand">
     @if ($appSettings?->logo_path)
-        <img src="{{ Storage::url($appSettings->logo_path) }}" alt="Logo" class="brand-logo">
+        <img src="{{ Storage::disk('public')->url($appSettings->logo_path) }}" alt="Logo" class="brand-logo">
     @else
         <div class="brand-mark">B</div>
     @endif

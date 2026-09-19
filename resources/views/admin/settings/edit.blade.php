@@ -38,7 +38,7 @@
                     <label class="form-label">System Logo</label>
                     <div class="logo-upload-zone">
                         <div class="logo-upload-preview">
-                            <img src="{{ $settings->logo_path ? Storage::url($settings->logo_path) : '' }}" alt="Logo preview" data-logo-preview class="{{ $settings->logo_path ? '' : 'd-none' }}">
+                            <img src="{{ $settings->logo_path ? Storage::disk('public')->url($settings->logo_path) : '' }}" alt="Logo preview" data-logo-preview class="{{ $settings->logo_path ? '' : 'd-none' }}">
                             <div data-logo-placeholder @class(['logo-upload-placeholder', 'd-none' => $settings->logo_path])>
                                 <i class="bi bi-image"></i>
                                 <span>No logo yet</span>

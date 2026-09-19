@@ -80,7 +80,7 @@ class ExamApiController extends Controller
                         'id' => $item['group']->id,
                         'title' => $item['group']->title,
                         'content' => $item['group']->content,
-                        'image_url' => $item['group']->image_path ? Storage::url($item['group']->image_path) : null,
+                        'image_url' => $item['group']->image_path ? Storage::disk('public')->url($item['group']->image_path) : null,
                     ],
                     'questions' => $item['group']->questions->map($mapQuestion)->values(),
                 ];
