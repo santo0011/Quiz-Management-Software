@@ -113,10 +113,15 @@ class ResultController extends Controller
             Log::error('Failed to generate the Branch result PDF.', [
                 'attempt_id' => $attempt->id,
                 'exception' => $e->getMessage(),
+                'class' => $e::class,
+                'file' => $e->getFile().':'.$e->getLine(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
+            $detail = config('app.debug') ? ' ['.$e::class.': '.$e->getMessage().']' : '';
+
             return redirect()->route('branch.results.show', $attempt)
-                ->with('error', 'Could not generate the result PDF. Please try again.');
+                ->with('error', 'Could not generate the result PDF. Please try again.'.$detail);
         }
 
         $attempt->update(['branch_result_pdf_path' => $path]);
