@@ -2491,6 +2491,12 @@ body {
         border-radius: 10px;
     }
 
+    .login-brand .brand-logo {
+        flex: 0 0 38px;
+        max-width: 38px;
+        max-height: 38px;
+    }
+
     .login-brand strong {
         font-size: 0.98rem;
     }

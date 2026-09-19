@@ -11,13 +11,7 @@
 <body class="login-body">
     <main class="login-wrap">
         <section class="login-panel">
-            <div class="login-brand">
-                <div class="brand-mark">Q</div>
-                <div>
-                    <strong>QuizCore</strong>
-                    <span>Secure Password Reset</span>
-                </div>
-            </div>
+            @include('partials.auth-brand', ['subtitle' => 'Secure Password Reset'])
 
             <h1>{{ $heading }}</h1>
             <p>{{ $copy }}</p>

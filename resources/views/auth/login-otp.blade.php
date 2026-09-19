@@ -119,13 +119,7 @@
 <body class="login-body">
     <main class="login-wrap">
         <section class="login-panel">
-            <div class="login-brand">
-                <div class="brand-mark">Q</div>
-                <div>
-                    <strong>QuizCore</strong>
-                    <span>Two-Step Verification</span>
-                </div>
-            </div>
+            @include('partials.auth-brand', ['subtitle' => 'Two-Step Verification'])
 
             <div class="otp-page-heading">
                 <h1>Verify your identity</h1>

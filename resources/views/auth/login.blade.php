@@ -16,13 +16,7 @@
             <aside class="login-hero d-none d-lg-flex">
                 <div class="login-hero-glow"></div>
                 <div class="login-hero-inner">
-                    <div class="login-brand">
-                        <div class="brand-mark">Q</div>
-                        <div>
-                            <strong>QuizCore</strong>
-                            <span>Quiz Management Software</span>
-                        </div>
-                    </div>
+                    @include('partials.auth-brand', ['subtitle' => 'Quiz Management Software'])
 
                     <h2 class="login-hero-title">One secure sign-in for everyone.</h2>
                     <p class="login-hero-subtitle">Select your role to continue.</p>
@@ -57,13 +51,7 @@
             </aside>
 
         <section class="login-panel unified-login-panel">
-            <div class="login-brand login-brand-wide d-lg-none">
-                <div class="brand-mark">Q</div>
-                <div>
-                    <strong>QuizCore</strong>
-                    <span>Quiz Management Software</span>
-                </div>
-            </div>
+            @include('partials.auth-brand', ['class' => 'login-brand-wide d-lg-none', 'subtitle' => 'Quiz Management Software'])
 
             <div class="login-type-selector-mobile d-lg-none" role="tablist" aria-label="Login type">
                 <button type="button" class="login-type-option" data-login-type-button="super_admin" role="tab">
