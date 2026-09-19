@@ -294,7 +294,7 @@ class BranchResultSendTest extends TestCase
         $html = view('pdf.branch-result', ['attempt' => $attempt->fresh(['student', 'exam.subject', 'schoolClass', 'branch'])])->render();
 
         $this->assertStringContainsString('Strong in algebra, should revise geometry proofs before the next test.', $html);
-        $this->assertStringContainsString('Branch Review', $html);
+        $this->assertStringContainsString('Feedback', $html);
     }
 
     /**

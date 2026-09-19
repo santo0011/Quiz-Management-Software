@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\ZohoApiException;
+use App\Models\ExamAttempt;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Subject;
@@ -159,6 +160,84 @@ class ZohoStudentService
         // this login, matching the same "resolve to existing local records
         // only, never auto-create" rule already used for Grade above.
         $student->subjects()->sync($this->resolveLocalSubjectIds($this->extractSubjectNames($data)));
+    }
+
+    /**
+     * Fill the attempt's Zoho class/grade (once) with the class of the
+     * exam's Subject: a Student has one Zoho class per Subject (e.g. the
+     * Mathematics exam belongs to "Mathematics | Grade 2 ( 1 on 1 ) | ..."),
+     * so the result must carry THAT class, not whichever one is listed
+     * first. Falls back to the Student's stored class when the exam has no
+     * Subject or Zoho has no class for it. Already-stored values are kept.
+     */
+    public function assignClassToAttempt(ExamAttempt $attempt): void
+    {
+        if (filled($attempt->zoho_class_id) && filled($attempt->zoho_class_name)) {
+            return;
+        }
+
+        $attempt->loadMissing(['student', 'exam.subject']);
+        $student = $attempt->student;
+
+        if (! $student) {
+            return;
+        }
+
+        $payload = is_array($student->zoho_payload) ? $student->zoho_payload : [];
+        $class = $this->classForSubject($payload, $attempt->exam?->subject?->name);
+
+        $classId = $class['id'] ?? $student->zoho_class_id;
+        $className = $class['name'] ?? $student->zoho_class_name;
+
+        if (! filled($classId) || ! filled($className)) {
+            return;
+        }
+
+        $attempt->update([
+            'zoho_class_id' => $classId,
+            'zoho_class_name' => $className,
+            'zoho_grade' => $this->extractGrade($payload) ?? $student->zoho_grade,
+        ]);
+    }
+
+    /**
+     * @return array{id: string, name: string}|null
+     */
+    private function classForSubject(array $data, ?string $subjectName): ?array
+    {
+        if (! filled($subjectName)) {
+            return null;
+        }
+
+        $enrolment = $data['Enrolment'] ?? $data['enrolment'] ?? [];
+        $classes = $enrolment['classes'] ?? $enrolment['Classes'] ?? [];
+
+        if (is_array($classes) && (isset($classes['Subject']) || isset($classes['subject']) || isset($classes['Class']))) {
+            $classes = [$classes];
+        }
+
+        if (! is_array($classes)) {
+            return null;
+        }
+
+        $wanted = strtolower(trim($subjectName));
+
+        foreach ($classes as $class) {
+            if (! is_array($class)) {
+                continue;
+            }
+
+            $subject = $class['Subject'] ?? $class['subject'] ?? null;
+            $name = is_array($subject) ? ($subject['name'] ?? $subject['Name'] ?? null) : null;
+
+            if (is_string($name) && strtolower(trim($name)) === $wanted) {
+                $identity = $this->classIdentity($class);
+
+                return filled($identity['id']) && filled($identity['name']) ? $identity : null;
+            }
+        }
+
+        return null;
     }
 
     /**

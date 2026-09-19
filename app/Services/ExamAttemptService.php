@@ -193,7 +193,8 @@ class ExamAttemptService
     private function generateAndSyncResultPdf(ExamAttempt $attempt): void
     {
         try {
-            $attempt->loadMissing(['student', 'exam', 'schoolClass', 'teacherRemarkBy']);
+            $attempt->loadMissing(['student', 'exam.subject', 'schoolClass', 'teacherRemarkBy']);
+            app(ZohoStudentService::class)->assignClassToAttempt($attempt);
 
             $token = $attempt->result_pdf_token ?: Str::random(48);
             $path = "results/{$token}.pdf";
@@ -209,7 +210,7 @@ class ExamAttemptService
             $url = ResultPdfUrl::make($attempt, $token);
             $student = $attempt->student;
 
-            if (! $student?->zoho_student_id || ! $student->zoho_class_id || ! $student->zoho_class_name) {
+            if (! $student?->zoho_student_id || ! $attempt->zoho_class_id || ! $attempt->zoho_class_name) {
                 app(ZohoResultService::class)->sendResult($attempt, $url);
 
                 return;

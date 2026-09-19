@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ExamAttempt;
 use App\Services\ResultPdfUrlVerifier;
 use App\Services\ZohoResultService;
+use App\Services\ZohoStudentService;
 use App\Support\ResultPdfUrl;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -87,6 +88,7 @@ class ResultController extends Controller
         ]);
 
         $attempt->load(['student', 'exam.subject', 'schoolClass', 'branch']);
+        app(ZohoStudentService::class)->assignClassToAttempt($attempt);
         $student = $attempt->student;
 
         // Saved immediately — before the OTP-email check and PDF/email/Zoho

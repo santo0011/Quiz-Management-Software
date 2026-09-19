@@ -10,12 +10,15 @@
             <h2>{{ $branch?->name ?? 'Branch' }} workspace is ready.</h2>
             <p class="mobile-hide">Manage branch students here. Exams, questions, and results are reserved for the next stages.</p>
         </div>
+        {{-- Hidden for now: Manage Students button
         <a href="{{ route('branch.students.index') }}" class="btn btn-light mobile-hide">
             <i class="bi bi-people-fill"></i>
             Manage Students
         </a>
+        --}}
     </div>
 
+    {{-- Hidden for now: stat cards and Recent Students
     <div class="row g-3 mb-4 dashboard-metric-row">
         <div class="col-md-4">
             <div class="metric-card dashboard-metric-card metric-success">
@@ -90,4 +93,5 @@
             </div>
         @endif
     </section>
+    --}}
 @endsection

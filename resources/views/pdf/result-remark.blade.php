@@ -117,8 +117,12 @@
             <td>{{ $attempt->student?->student_name }}</td>
         </tr>
         <tr>
+            <td class="label">Class</td>
+            <td>{{ $attempt->zoho_class_name ?? '—' }}</td>
+        </tr>
+        <tr>
             <td class="label">Grade</td>
-            <td>{{ $attempt->schoolClass?->name ?? '—' }}</td>
+            <td>{{ $attempt->zoho_grade ?? $attempt->schoolClass?->name ?? '—' }}</td>
         </tr>
         <tr>
             <td class="label">Exam</td>
