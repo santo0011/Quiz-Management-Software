@@ -7,7 +7,7 @@
     <title>Login - {{ config('app.name') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="{{ asset('css/admin.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/admin.css') }}?v={{ filemtime(public_path('css/admin.css')) }}" rel="stylesheet">
 </head>
 @php($selectedType = old('login_type', 'super_admin'))
 <body class="login-body">
