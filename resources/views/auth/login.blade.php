@@ -191,7 +191,7 @@
                 passwordLabel: 'Teacher Override Password',
                 passwordPlaceholder: 'Enter the common Teacher Override password',
                 requiresPassword: false,
-                button: 'Send OTP',
+                button: 'Login',
                 buttonOverride: 'Login',
                 icon: 'bi bi-mortarboard-fill',
                 forgot: false,
@@ -232,9 +232,10 @@
             }
         }
 
-        // Student's submit button reads "Send OTP" normally, or "Login" once
-        // Teacher Override is checked (it skips the OTP step entirely).
-        // Every other type keeps its fixed label regardless of the checkbox.
+        // Student's submit button reads "Login" either way — normally, or
+        // once Teacher Override is checked (which skips the OTP step
+        // entirely). Every other type keeps its fixed label regardless of
+        // the checkbox.
         function currentButtonText(type) {
             const config = loginConfigs[type] || loginConfigs.super_admin;
 
