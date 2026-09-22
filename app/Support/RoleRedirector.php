@@ -40,6 +40,29 @@ class RoleRedirector
     }
 
     /**
+     * Where to send an account right after login: the deep link it was
+     * originally trying to reach (session "url.intended"), but only when
+     * that link lives under the account's own area (e.g. /branch/...).
+     * A leftover link into another role's area would just be rejected by the
+     * role middleware and surface as a "no permission" error right after a
+     * successful login, so it is discarded in favor of the dashboard.
+     */
+    public static function postLoginUrl(Authenticatable $user): string
+    {
+        $dashboard = self::dashboardUrl($user);
+        $intended = session()->pull('url.intended');
+
+        if (! is_string($intended) || $intended === '') {
+            return $dashboard;
+        }
+
+        $areaPath = rtrim(dirname((string) parse_url($dashboard, PHP_URL_PATH)), '/').'/';
+        $intendedPath = (string) parse_url($intended, PHP_URL_PATH);
+
+        return str_starts_with($intendedPath, $areaPath) ? $intended : $dashboard;
+    }
+
+    /**
      * The currently authenticated account, checked across all guards
      * (web, student, guardian), or null when nobody is logged in.
      */

@@ -1,8 +1,14 @@
+@php($appSettings = \App\Models\Setting::query()->first())
+
 <div class="brand">
-    <div class="brand-mark">S</div>
+    @if ($appSettings?->logo_path)
+        <img src="{{ Storage::disk('public')->url($appSettings->logo_path) }}" alt="Logo" class="brand-logo">
+    @else
+        <div class="brand-mark">{{ Str::substr($appSettings?->site_name ?: 'QuizCore', 0, 1) }}</div>
+    @endif
     <div class="brand-copy">
-        <strong>{{ $student?->student_name ?? 'Student Panel' }}</strong>
-        <span>{{ $student?->schoolClass?->name ?? $student?->class ?? 'QuizCore Portal' }}</span>
+        <strong>{{ $appSettings?->site_name ?: 'QuizCore' }}</strong>
+        <span>Student Portal</span>
     </div>
     <button class="sidebar-collapse-toggle d-none d-lg-grid" type="button" aria-label="Collapse sidebar" data-sidebar-toggle>
         <i class="bi bi-chevron-left"></i>

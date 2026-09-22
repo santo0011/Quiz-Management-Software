@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Mail\ResultRemarkMail;
 use App\Models\ExamAttempt;
+use App\Services\ZohoStudentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -70,7 +71,8 @@ class ResultController extends Controller
             'teacher_remark_at' => now(),
         ]);
 
-        $attempt->load(['student', 'exam', 'schoolClass', 'teacherRemarkBy']);
+        $attempt->load(['student', 'exam.subject', 'schoolClass', 'teacherRemarkBy']);
+        app(ZohoStudentService::class)->assignClassToAttempt($attempt);
 
         $emailResults = $this->sendRemarkEmail($attempt);
 

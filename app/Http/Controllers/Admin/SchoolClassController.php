@@ -19,7 +19,8 @@ class SchoolClassController extends Controller
         $classes = SchoolClass::with('branch')
             ->when($branchId, fn ($query) => $query->visibleToBranch($branchId))
             ->when($request->filled('search'), fn ($query) => $query->where('name', 'like', '%'.$request->string('search')->toString().'%'))
-            ->latest()
+            ->oldest()
+            ->orderBy('id')
             ->paginate(20)
             ->withQueryString();
 

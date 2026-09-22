@@ -12,6 +12,7 @@
         </div>
     </div>
 
+    {{-- Hidden for now: stat cards and Recent Branches
     <div class="row g-3 mb-4 dashboard-metric-row">
         <div class="col-md-6">
             <div class="metric-card dashboard-metric-card metric-primary">
@@ -75,4 +76,5 @@
             </div>
         @endif
     </section>
+    --}}
 @endsection

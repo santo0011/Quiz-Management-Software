@@ -14,7 +14,8 @@ class SubjectController extends Controller
     public function index(Request $request): View
     {
         $subjects = Subject::when($request->filled('search'), fn ($query) => $query->where('name', 'like', '%'.$request->string('search')->toString().'%'))
-            ->orderBy('name')
+            ->oldest()
+            ->orderBy('id')
             ->paginate(20)
             ->withQueryString();
 

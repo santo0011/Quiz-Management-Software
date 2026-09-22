@@ -158,12 +158,12 @@
             <td>{{ $attempt->student?->zoho_student_id ?? '—' }}</td>
         </tr>
         <tr>
-            <td class="label">Grade</td>
-            <td>{{ $attempt->schoolClass?->name ?? '—' }}</td>
+            <td class="label">Class</td>
+            <td>{{ $attempt->zoho_class_name ?? '—' }}</td>
         </tr>
         <tr>
-            <td class="label">Branch</td>
-            <td>{{ $attempt->branch?->name ?? 'Global' }}</td>
+            <td class="label">Grade</td>
+            <td>{{ $attempt->zoho_grade ?? $attempt->schoolClass?->name ?? '—' }}</td>
         </tr>
     </table>
 
@@ -216,7 +216,7 @@
     </table>
 
     @if ($attempt->branch_review)
-        <div class="section-title">Branch Review &amp; Feedback</div>
+        <div class="section-title">Feedback</div>
         <div class="review-box">{{ $attempt->branch_review }}</div>
     @endif
 

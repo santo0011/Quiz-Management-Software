@@ -12,6 +12,12 @@
         <p class="label" style="margin:0 0 4px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">Exam</p>
         <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b;">{{ $attempt->exam?->title }}</p>
 
+        <p class="label" style="margin:16px 0 4px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">Class</p>
+        <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b;">{{ $attempt->zoho_class_name ?? '—' }}</p>
+
+        <p class="label" style="margin:16px 0 4px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">Grade</p>
+        <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b;">{{ $attempt->zoho_grade ?? $attempt->schoolClass?->name ?? '—' }}</p>
+
         <p class="label" style="margin:16px 0 4px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">Result</p>
         <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b;">{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }} ({{ $attempt->percentage }}%) &middot; {{ $attempt->is_passed ? 'Passed' : 'Failed' }}</p>
     </div>

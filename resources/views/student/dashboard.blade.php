@@ -43,16 +43,6 @@
                     <canvas id="performanceChart"></canvas>
                 </div>
             </div>
-
-            <div class="chart-card">
-                <div class="chart-card-header">
-                    <h3>Passed vs Failed</h3>
-                    <span class="chart-card-subtitle">Overall exam results</span>
-                </div>
-                <div class="chart-container">
-                    <canvas id="passFailChart"></canvas>
-                </div>
-            </div>
         </div>
     </section>
 
@@ -90,8 +80,6 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const performanceData = @json($performanceData);
-                const passedCount = {{ $passedCount }};
-                const failedCount = {{ $failedCount }};
 
                 // Performance Chart (Bar)
                 const perfCtx = document.getElementById('performanceChart');
@@ -144,51 +132,6 @@
                     });
                 } else if (perfCtx) {
                     perfCtx.parentElement.innerHTML = '<div class="chart-empty"><i class="bi bi-bar-chart"></i><p>Complete exams to see your performance chart.</p></div>';
-                }
-
-                // Pass/Fail Chart (Doughnut)
-                const pfCtx = document.getElementById('passFailChart');
-                if (pfCtx && (passedCount > 0 || failedCount > 0)) {
-                    new Chart(pfCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Passed', 'Failed'],
-                            datasets: [{
-                                data: [passedCount, failedCount],
-                                backgroundColor: ['#10b981', '#ef4444'],
-                                borderColor: ['#059669', '#dc2626'],
-                                borderWidth: 2,
-                                hoverOffset: 8,
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '65%',
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        padding: 16,
-                                        usePointStyle: true,
-                                        pointStyle: 'circle',
-                                        font: { size: 12, weight: '600' }
-                                    }
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function (context) {
-                                            const total = passedCount + failedCount;
-                                            const pct = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
-                                            return ` ${context.label}: ${context.parsed} (${pct}%)`;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                } else if (pfCtx) {
-                    pfCtx.parentElement.innerHTML = '<div class="chart-empty"><i class="bi bi-pie-chart"></i><p>Complete exams to see your pass/fail breakdown.</p></div>';
                 }
             });
         </script>

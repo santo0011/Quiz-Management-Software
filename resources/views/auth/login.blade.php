@@ -7,7 +7,7 @@
     <title>Login - {{ config('app.name') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="{{ asset('css/admin.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/admin.css') }}?v={{ filemtime(public_path('css/admin.css')) }}" rel="stylesheet">
 </head>
 @php($selectedType = old('login_type', 'super_admin'))
 <body class="login-body">
@@ -16,13 +16,7 @@
             <aside class="login-hero d-none d-lg-flex">
                 <div class="login-hero-glow"></div>
                 <div class="login-hero-inner">
-                    <div class="login-brand">
-                        <div class="brand-mark">Q</div>
-                        <div>
-                            <strong>QuizCore</strong>
-                            <span>Quiz Management Software</span>
-                        </div>
-                    </div>
+                    @include('partials.auth-brand', ['subtitle' => 'Quiz Management Software'])
 
                     <h2 class="login-hero-title">One secure sign-in for everyone.</h2>
                     <p class="login-hero-subtitle">Select your role to continue.</p>
@@ -57,13 +51,7 @@
             </aside>
 
         <section class="login-panel unified-login-panel">
-            <div class="login-brand login-brand-wide d-lg-none">
-                <div class="brand-mark">Q</div>
-                <div>
-                    <strong>QuizCore</strong>
-                    <span>Quiz Management Software</span>
-                </div>
-            </div>
+            @include('partials.auth-brand', ['class' => 'login-brand-wide d-lg-none', 'subtitle' => 'Quiz Management Software'])
 
             <div class="login-type-selector-mobile d-lg-none" role="tablist" aria-label="Login type">
                 <button type="button" class="login-type-option" data-login-type-button="super_admin" role="tab">
@@ -203,7 +191,7 @@
                 passwordLabel: 'Teacher Override Password',
                 passwordPlaceholder: 'Enter the common Teacher Override password',
                 requiresPassword: false,
-                button: 'Send OTP',
+                button: 'Login',
                 buttonOverride: 'Login',
                 icon: 'bi bi-mortarboard-fill',
                 forgot: false,
@@ -244,9 +232,10 @@
             }
         }
 
-        // Student's submit button reads "Send OTP" normally, or "Login" once
-        // Teacher Override is checked (it skips the OTP step entirely).
-        // Every other type keeps its fixed label regardless of the checkbox.
+        // Student's submit button reads "Login" either way — normally, or
+        // once Teacher Override is checked (which skips the OTP step
+        // entirely). Every other type keeps its fixed label regardless of
+        // the checkbox.
         function currentButtonText(type) {
             const config = loginConfigs[type] || loginConfigs.super_admin;
 

@@ -36,7 +36,9 @@ class ZohoResultService
             return false;
         }
 
-        if (! $student->zoho_class_id || ! $student->zoho_class_name) {
+        app(ZohoStudentService::class)->assignClassToAttempt($attempt);
+
+        if (! $attempt->zoho_class_id || ! $attempt->zoho_class_name) {
             $this->lastFailureMessage = 'Student has no Zoho class on file.';
             Log::warning('Skipped sending result to Zoho: no Zoho class on file for student.', [
                 'attempt_id' => $attempt->id,
@@ -61,10 +63,10 @@ class ZohoResultService
             'Student_NRICH_ID' => $student->zoho_student_id,
             'Email' => $student->guardian_email ?: $student->email,
             'Student_Class' => [
-                'id' => $student->zoho_class_id,
-                'name' => $student->zoho_class_name,
+                'id' => $attempt->zoho_class_id,
+                'name' => $attempt->zoho_class_name,
             ],
-            'Grade' => $student->zoho_grade ?? $student->schoolClass?->name,
+            'Grade' => $attempt->zoho_grade ?? $student->zoho_grade ?? $student->schoolClass?->name,
             'Result_PDF_URL' => $pdfUrl,
         ];
 
