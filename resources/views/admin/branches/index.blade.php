@@ -50,9 +50,9 @@
                                 <td>{{ $branch->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">
-                                        <a href="{{ route('admin.branches.show', $branch) }}" class="btn btn-sm btn-soft" title="View">
+                                        <button type="button" class="btn btn-sm btn-soft" title="View" data-bs-toggle="offcanvas" data-bs-target="#viewBranchDrawer{{ $branch->id }}" aria-controls="viewBranchDrawer{{ $branch->id }}">
                                             <i class="bi bi-eye-fill"></i>
-                                        </a>
+                                        </button>
                                         <button type="button" class="btn btn-sm btn-soft" title="Edit" data-bs-toggle="offcanvas" data-bs-target="#editBranchDrawer{{ $branch->id }}" aria-controls="editBranchDrawer{{ $branch->id }}">
                                             <i class="bi bi-pencil-fill"></i>
                                         </button>
@@ -102,6 +102,46 @@
     </div>
 
     @foreach ($branches as $branch)
+        <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="viewBranchDrawer{{ $branch->id }}" aria-labelledby="viewBranchDrawerLabel{{ $branch->id }}">
+            <div class="offcanvas-header student-drawer-header">
+                <div>
+                    <span class="page-kicker">Branch Management</span>
+                    <h2 class="offcanvas-title" id="viewBranchDrawerLabel{{ $branch->id }}">{{ $branch->name }}</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <dl class="detail-list">
+                    <div>
+                        <dt>Branch Name</dt>
+                        <dd>{{ $branch->name }}</dd>
+                    </div>
+                    <div>
+                        <dt>Branch Email</dt>
+                        <dd>{{ $branch->email }}</dd>
+                    </div>
+                    <div>
+                        <dt>Status</dt>
+                        <dd>
+                            <span class="status-badge {{ $branch->is_active ? 'status-published' : 'status-closed' }}">
+                                <i class="bi {{ $branch->is_active ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
+                                {{ $branch->is_active ? 'Active' : 'Inactive' }}
+                            </span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>Created At</dt>
+                        <dd>{{ $branch->created_at->format('d M Y') }}</dd>
+                    </div>
+                </dl>
+
+                <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#editBranchDrawer{{ $branch->id }}" aria-controls="editBranchDrawer{{ $branch->id }}">
+                    <i class="bi bi-pencil-fill"></i>
+                    Edit
+                </button>
+            </div>
+        </div>
+
         <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="editBranchDrawer{{ $branch->id }}" aria-labelledby="editBranchDrawerLabel{{ $branch->id }}">
             <div class="offcanvas-header student-drawer-header">
                 <div>
