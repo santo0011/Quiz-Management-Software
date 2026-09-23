@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Exam;
+use App\Models\Teacher;
 use App\Support\HtmlSanitizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -37,7 +38,7 @@ class MultiQuestionRequest extends FormRequest
             return false;
         }
 
-        if ($this->user()?->role === 'Branch') {
+        if ($this->user()?->role === 'Branch' || $this->user() instanceof Teacher) {
             return $exam->branch_id === $this->user()->branch_id;
         }
 

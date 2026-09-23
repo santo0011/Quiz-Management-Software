@@ -43,15 +43,6 @@
             </div>
             <div class="student-detail-item">
                 <div class="student-detail-icon">
-                    <i class="bi bi-telephone-fill"></i>
-                </div>
-                <div>
-                    <dt>Phone</dt>
-                    <dd>{{ $teacher->phone_number ?? '—' }}</dd>
-                </div>
-            </div>
-            <div class="student-detail-item">
-                <div class="student-detail-icon">
                     <i class="bi bi-building"></i>
                 </div>
                 <div>

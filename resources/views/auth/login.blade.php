@@ -46,6 +46,14 @@
                             </span>
                             <i class="bi bi-chevron-right login-hero-role-arrow"></i>
                         </button>
+                        <button type="button" class="login-hero-role-btn" data-login-type-button="teacher" role="tab">
+                            <span class="login-hero-role-icon"><i class="bi bi-person-workspace"></i></span>
+                            <span class="login-hero-role-copy">
+                                <strong>Teacher</strong>
+                                <span>Review results &amp; add remarks</span>
+                            </span>
+                            <i class="bi bi-chevron-right login-hero-role-arrow"></i>
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -65,6 +73,10 @@
                 <button type="button" class="login-type-option" data-login-type-button="student" role="tab">
                     <i class="bi bi-mortarboard-fill"></i>
                     <span>Student</span>
+                </button>
+                <button type="button" class="login-type-option" data-login-type-button="teacher" role="tab">
+                    <i class="bi bi-person-workspace"></i>
+                    <span>Teacher</span>
                 </button>
             </div>
 
@@ -198,11 +210,28 @@
                 rememberLabel: 'Teacher Override',
                 rememberFieldName: 'teacher_override',
             },
+            teacher: {
+                kicker: 'Teacher Portal',
+                title: 'Teacher Login',
+                subtitle: 'Sign in to review results and add remarks',
+                emailLabel: 'Teacher Email',
+                emailPlaceholder: 'teacher@example.com',
+                identifierName: 'email',
+                identifierType: 'email',
+                passwordLabel: 'Password',
+                passwordPlaceholder: 'Enter your password',
+                requiresPassword: true,
+                button: 'Login as Teacher',
+                icon: 'bi bi-person-workspace',
+                forgot: true,
+                rememberLabel: 'Remember me',
+                rememberFieldName: 'remember',
+            },
         };
 
         const LOGIN_TYPE_KEY = 'quizcore.login.type';
         const savedLoginType = localStorage.getItem(LOGIN_TYPE_KEY);
-        const validTypes = ['super_admin', 'branch', 'student'];
+        const validTypes = ['super_admin', 'branch', 'student', 'teacher'];
         const initialType = validTypes.includes(savedLoginType) ? savedLoginType : 'super_admin';
 
         const typeInput = document.getElementById('loginType');

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\SchoolClass;
+use App\Models\Teacher;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ExamRequest extends FormRequest
@@ -11,7 +12,7 @@ class ExamRequest extends FormRequest
     {
         $exam = $this->route('exam');
 
-        if ($this->user()?->role === 'Branch') {
+        if ($this->user()?->role === 'Branch' || $this->user() instanceof Teacher) {
             return ! $exam || $exam->branch_id === $this->user()->branch_id;
         }
 
@@ -78,7 +79,7 @@ class ExamRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
-            $isBranchUser = $this->user()?->role === 'Branch';
+            $isBranchUser = $this->user()?->role === 'Branch' || $this->user() instanceof Teacher;
             $branchId = $isBranchUser
                 ? $this->user()?->branch_id
                 : $this->route('exam')?->branch_id;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Branch;
+namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuestionCategoryRequest;
@@ -23,7 +23,7 @@ class QuestionCategoryController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('branch.question-categories.index', [
+        return view('teacher.question-categories.index', [
             'branch' => $branch,
             'category' => new QuestionCategory,
             'categories' => $categories,
@@ -40,14 +40,14 @@ class QuestionCategoryController extends Controller
             'branch_id' => $branch->id,
         ]));
 
-        return redirect()->route('branch.question-categories.index')->with('success', 'Question category added successfully.');
+        return redirect()->route('teacher.question-categories.index')->with('success', 'Question category added successfully.');
     }
 
     public function update(QuestionCategoryRequest $request, QuestionCategory $questionCategory): RedirectResponse
     {
         $questionCategory->update($request->validated());
 
-        return redirect()->route('branch.question-categories.index')->with('success', 'Question category updated successfully.');
+        return redirect()->route('teacher.question-categories.index')->with('success', 'Question category updated successfully.');
     }
 
     public function destroy(Request $request, QuestionCategory $questionCategory): RedirectResponse
@@ -55,12 +55,12 @@ class QuestionCategoryController extends Controller
         abort_if(! $request->user()->branch_id || $questionCategory->branch_id !== $request->user()->branch_id, 403, 'This category does not belong to your branch.');
 
         if ($questionCategory->questions()->exists() || $questionCategory->exams()->exists()) {
-            return redirect()->route('branch.question-categories.index')
+            return redirect()->route('teacher.question-categories.index')
                 ->with('error', 'This category cannot be deleted because it is used by one or more exams or questions.');
         }
 
         $questionCategory->delete();
 
-        return redirect()->route('branch.question-categories.index')->with('success', 'Question category deleted successfully.');
+        return redirect()->route('teacher.question-categories.index')->with('success', 'Question category deleted successfully.');
     }
 }
