@@ -70,13 +70,11 @@ class AcademicSessionRemovalTest extends TestCase
         $branch = Branch::create(['name' => 'Session Test Branch', 'email' => 'session-test-branch@example.com']);
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_branch_id' => $branch->id])
             ->get(route('admin.exams.index'))
             ->assertOk()
             ->assertDontSee('Select an academic session to continue');
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_branch_id' => $branch->id])
             ->get(route('admin.results.index'))
             ->assertOk()
             ->assertDontSee('Select an academic session to continue');

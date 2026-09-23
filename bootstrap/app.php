@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\EnsureAdminBranchSelected;
 use App\Http\Middleware\EnsureSingleSession;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -34,7 +33,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserHasRole::class,
             'active' => EnsureUserIsActive::class,
             'single_session' => EnsureSingleSession::class,
-            'branch_selected' => EnsureAdminBranchSelected::class,
         ]);
 
         // An already-authenticated visitor hitting a guest-only page (e.g.

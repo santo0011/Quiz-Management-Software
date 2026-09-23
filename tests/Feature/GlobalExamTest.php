@@ -49,7 +49,6 @@ class GlobalExamTest extends TestCase
         $branch = Branch::create(['name' => 'Exam Form Test Branch', 'email' => 'exam-form-test-branch@example.com']);
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_branch_id' => $branch->id])
             ->get(route('admin.exams.index'))
             ->assertOk()
             ->assertDontSee('Select branch');

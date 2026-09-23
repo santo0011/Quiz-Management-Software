@@ -11,6 +11,7 @@
                 <tr>
                     <th>#</th>
                     <th>Student</th>
+                    <th>Branch</th>
                     <th>Guardian</th>
                     <th>Grade</th>
                     <th>Email</th>
@@ -23,6 +24,7 @@
                     <tr>
                         <td>{{ $students->firstItem() + $loop->index }}</td>
                         <td><strong>{{ $student->student_name }}</strong></td>
+                        <td>{{ $student->branch?->name ?? '—' }}</td>
                         <td>{{ $student->guardian_name }}</td>
                         <td>{{ $student->class }}</td>
                         <td>{{ $student->email }}</td>

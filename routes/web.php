@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\BranchController;
-use App\Http\Controllers\Admin\BranchSelectionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
 use App\Http\Controllers\Admin\GuardianController as AdminGuardianController;
@@ -87,9 +86,6 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::put('/password', [AdminPasswordController::class, 'update'])->name('password.update');
     Route::put('/account/email', [AdminAccountController::class, 'updateEmail'])->name('account.email.update');
-    Route::get('/branch-selection', [BranchSelectionController::class, 'index'])->name('branch-selection.index');
-    Route::post('/branch-selection', [BranchSelectionController::class, 'store'])->name('branch-selection.store');
-    Route::delete('/branch-selection', [BranchSelectionController::class, 'clear'])->name('branch-selection.clear');
     Route::resource('branches', BranchController::class);
     Route::post('/branches/{branch}/toggle-active', [BranchController::class, 'toggleActive'])->name('branches.toggle-active');
     Route::put('/branches/{branch}/password', [BranchController::class, 'updatePassword'])->name('branches.password.update');
@@ -98,20 +94,14 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/guardians/search', [AdminGuardianController::class, 'search'])->name('guardians.search');
     Route::resource('question-categories', QuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
 
-    Route::middleware('branch_selected')->group(function () {
-        Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
-        Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
-        Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
-        Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');
-        Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
-        // Exams/Questions/Results are global resources (an Admin-created
-        // Exam has branch_id = null and is visible to every Branch) — only
-        // their index/browsing pages require a branch to be selected first;
-        // the rest of their CRUD works the same with or without one.
-        Route::get('/exams', [AdminExamController::class, 'index'])->name('exams.index');
-        Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
-        Route::get('/results', [AdminResultController::class, 'index'])->name('results.index');
-    });
+    Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
+    Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
+    Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
+    Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');
+    Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
+    Route::get('/exams', [AdminExamController::class, 'index'])->name('exams.index');
+    Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
+    Route::get('/results', [AdminResultController::class, 'index'])->name('results.index');
     Route::post('/exams', [AdminExamController::class, 'store'])->name('exams.store');
     Route::resource('exams', AdminExamController::class)->except(['store', 'index', 'create']);
     Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');

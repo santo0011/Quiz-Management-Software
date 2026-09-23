@@ -47,11 +47,15 @@ class StudentRequest extends FormRequest
                 'string', 'max:255',
             ],
             'guardian_email' => ['nullable', 'email', 'max:255'],
-            // Both Branch and Super Admin now have branch_id supplied by the
-            // controller from their own fixed context (the authenticated
-            // Branch user's branch_id, or the Super Admin's session-selected
-            // branch) rather than from this form — never client-submitted.
-            'branch_id' => ['nullable'],
+            // Branch has branch_id supplied by the controller from its own
+            // fixed context (the authenticated Branch user's branch_id), so
+            // it's never client-submitted there. Super Admin manages every
+            // branch, so it picks one per-student on the form itself.
+            'branch_id' => [
+                Rule::requiredIf(fn () => $this->user()?->role === 'Super Admin'),
+                'nullable',
+                'exists:branches,id',
+            ],
             'class_id' => ['nullable', 'required_without:class', 'exists:school_classes,id'],
             'class' => ['nullable', 'required_without:class_id', 'string', 'max:100'],
             'phone_number' => ['required', 'string', 'max:30'],
@@ -70,7 +74,7 @@ class StudentRequest extends FormRequest
 
             $targetBranchId = $this->user()?->role === 'Branch'
                 ? $this->user()?->branch_id
-                : (session('admin_selected_branch_id') ?: ($this->route('student')?->branch_id ?: $this->input('branch_id')));
+                : ($this->route('student')?->branch_id ?: $this->input('branch_id'));
 
             $classBelongsToBranch = SchoolClass::whereKey($this->input('class_id'))
                 ->visibleToBranch($targetBranchId)
@@ -113,6 +117,8 @@ class StudentRequest extends FormRequest
             'guardian_id.exists' => 'Please select a valid guardian from the list.',
             'guardian_name.required' => 'Please enter the guardian name.',
             'guardian_email.email' => 'Please enter a valid guardian email address.',
+            'branch_id.required' => 'Please select a branch.',
+            'branch_id.exists' => 'Please select a valid branch.',
             'class_id.required' => 'Please select the grade.',
             'class_id.required_without' => 'Please select the grade.',
             'class_id.exists' => 'Please select a valid grade.',

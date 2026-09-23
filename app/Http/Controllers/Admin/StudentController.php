@@ -17,10 +17,10 @@ class StudentController extends Controller
 {
     public function index(Request $request): View
     {
-        $branch = $this->selectedBranch();
+        $branchId = $request->integer('branch_id') ?: null;
 
         $students = Student::with(['branch', 'subjects'])
-            ->forBranch($branch->id)
+            ->when($branchId, fn ($query) => $query->forBranch($branchId))
             ->search($request->string('search')->toString())
             ->when($request->filled('class'), fn ($query) => $query->where('class', $request->string('class')->toString()))
             ->latest()
@@ -28,21 +28,19 @@ class StudentController extends Controller
             ->withQueryString();
 
         return view('admin.students.index', [
-            'branch' => $branch,
+            'branches' => Branch::orderBy('name')->get(),
+            'selectedBranchId' => $branchId,
             'student' => new Student,
             'students' => $students,
-            'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
-            'filters' => $request->only(['search', 'class']),
+            'classes' => $branchId ? SchoolClass::visibleToBranch($branchId)->orderBy('name')->get() : collect(),
+            'filters' => $request->only(['search', 'class', 'branch_id']),
         ]);
     }
 
     public function create(): View
     {
-        $branch = $this->selectedBranch();
-
         return view('admin.students.create', [
-            'selectedBranch' => $branch,
-            'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')->get(),
             'subjects' => Subject::orderBy('name')->get(),
             'student' => new Student,
         ]);
@@ -50,7 +48,7 @@ class StudentController extends Controller
 
     public function store(StudentRequest $request): RedirectResponse
     {
-        $branch = $this->selectedBranch();
+        $branch = Branch::findOrFail($request->validated()['branch_id']);
 
         $validated = GuardianResolver::resolve($request->validated());
         $subjectIds = $validated['subject_ids'] ?? [];
@@ -68,8 +66,6 @@ class StudentController extends Controller
 
     public function show(Student $student): View
     {
-        $this->authorizeSelectedBranchStudent($student);
-
         return view('admin.students.show', [
             'student' => $student->load(['branch', 'subjects']),
             'selectedBranch' => $student->branch,
@@ -78,8 +74,6 @@ class StudentController extends Controller
 
     public function toggleActive(Student $student): RedirectResponse
     {
-        $this->authorizeSelectedBranchStudent($student);
-
         $student->update(['is_active' => ! $student->is_active]);
 
         $message = $student->is_active
@@ -87,21 +81,6 @@ class StudentController extends Controller
             : 'Student deactivated successfully.';
 
         return redirect()->route('admin.students.index')->with('success', $message);
-    }
-
-    /**
-     * The `branch_selected` route middleware guarantees a value is present
-     * in session by the time any of these methods run — this just resolves
-     * it to the actual Branch record.
-     */
-    private function selectedBranch(): Branch
-    {
-        return Branch::findOrFail(session('admin_selected_branch_id'));
-    }
-
-    private function authorizeSelectedBranchStudent(Student $student): void
-    {
-        abort_if($student->branch_id !== (int) session('admin_selected_branch_id'), 403, 'This student does not belong to the currently selected branch.');
     }
 
     private function resolveSchoolClass(array $validated, int $branchId): SchoolClass

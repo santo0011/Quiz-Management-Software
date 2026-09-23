@@ -262,16 +262,14 @@ class StudentManagementTest extends TestCase
         ]);
     }
 
-    public function test_super_admin_can_only_open_students_for_selected_branch(): void
+    /**
+     * Super Admin manages every branch, so it can open any Student
+     * regardless of branch — unlike Branch, which is scoped to its own.
+     */
+    public function test_super_admin_can_open_a_student_from_any_branch(): void
     {
-        [$branch, $otherBranch] = $this->makeBranches();
-
-        $admin = User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@example.com',
-            'role' => 'Super Admin',
-            'password' => Hash::make('123456'),
-        ]);
+        [, $otherBranch] = $this->makeBranches();
+        $admin = $this->makeSuperAdmin();
 
         $otherStudent = Student::create($this->studentPayload([
             'branch_id' => $otherBranch->id,
@@ -279,12 +277,35 @@ class StudentManagementTest extends TestCase
         ]));
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_branch_id' => $branch->id])
             ->get(route('admin.students.show', $otherStudent))
-            ->assertForbidden();
+            ->assertOk();
     }
 
-    public function test_super_admin_student_index_only_shows_the_selected_branch(): void
+    public function test_super_admin_student_index_shows_every_branch_by_default(): void
+    {
+        [$branch, $otherBranch] = $this->makeBranches();
+        $admin = $this->makeSuperAdmin();
+
+        $ownStudent = Student::create($this->studentPayload([
+            'branch_id' => $branch->id,
+            'student_name' => 'Selected Branch Student',
+            'email' => 'selected-branch@example.com',
+        ]));
+
+        $otherStudent = Student::create($this->studentPayload([
+            'branch_id' => $otherBranch->id,
+            'student_name' => 'Other Branch Student',
+            'email' => 'other-branch@example.com',
+        ]));
+
+        $response = $this->actingAs($admin)->get(route('admin.students.index'));
+
+        $response->assertOk();
+        $response->assertSee($ownStudent->student_name);
+        $response->assertSee($otherStudent->student_name);
+    }
+
+    public function test_super_admin_student_index_can_be_filtered_to_one_branch(): void
     {
         [$branch, $otherBranch] = $this->makeBranches();
         $admin = $this->makeSuperAdmin();
@@ -302,23 +323,21 @@ class StudentManagementTest extends TestCase
         ]));
 
         $response = $this->actingAs($admin)
-            ->withSession(['admin_selected_branch_id' => $branch->id])
-            ->get(route('admin.students.index'));
+            ->get(route('admin.students.index', ['branch_id' => $branch->id]));
 
         $response->assertOk();
         $response->assertSee($ownStudent->student_name);
         $response->assertDontSee($otherStudent->student_name);
     }
 
-    public function test_super_admin_created_student_is_forced_to_the_selected_branch(): void
+    public function test_super_admin_created_student_uses_the_branch_chosen_on_the_form(): void
     {
-        [$branch, $otherBranch] = $this->makeBranches();
+        [$branch] = $this->makeBranches();
         $admin = $this->makeSuperAdmin();
 
         $this->actingAs($admin)
-            ->withSession(['admin_selected_branch_id' => $branch->id])
             ->post(route('admin.students.store'), $this->studentPayload([
-                'branch_id' => $otherBranch->id,
+                'branch_id' => $branch->id,
                 'email' => 'admin-created@example.com',
             ]))
             ->assertRedirect(route('admin.students.index'));
@@ -326,6 +345,23 @@ class StudentManagementTest extends TestCase
         $this->assertDatabaseHas('students', [
             'email' => 'admin-created@example.com',
             'branch_id' => $branch->id,
+        ]);
+    }
+
+    public function test_super_admin_create_student_requires_a_branch(): void
+    {
+        [$branch] = $this->makeBranches();
+        $admin = $this->makeSuperAdmin();
+
+        $this->actingAs($admin)
+            ->post(route('admin.students.store'), $this->studentPayload([
+                'branch_id' => null,
+                'email' => 'admin-no-branch@example.com',
+            ]))
+            ->assertSessionHasErrors('branch_id');
+
+        $this->assertDatabaseMissing('students', [
+            'email' => 'admin-no-branch@example.com',
         ]);
     }
 
