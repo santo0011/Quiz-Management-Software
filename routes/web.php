@@ -113,7 +113,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
         Route::get('/results', [AdminResultController::class, 'index'])->name('results.index');
     });
     Route::post('/exams', [AdminExamController::class, 'store'])->name('exams.store');
-    Route::resource('exams', AdminExamController::class)->except(['store', 'index']);
+    Route::resource('exams', AdminExamController::class)->except(['store', 'index', 'create']);
     Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [AdminExamController::class, 'unpublish'])->name('exams.unpublish');
     Route::put('/exams/{exam}/category', [AdminExamController::class, 'updateCategory'])->name('exams.category.update');
@@ -154,7 +154,7 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     Route::put('/teachers/{teacher}/password', [BranchTeacherController::class, 'updatePassword'])->name('teachers.password.update');
     Route::resource('question-categories', BranchQuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('/exams', [BranchExamController::class, 'store'])->name('exams.store');
-    Route::resource('exams', BranchExamController::class)->except(['store']);
+    Route::resource('exams', BranchExamController::class)->except(['store', 'create']);
     Route::post('/exams/{exam}/publish', [BranchExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [BranchExamController::class, 'unpublish'])->name('exams.unpublish');
     Route::put('/exams/{exam}/category', [BranchExamController::class, 'updateCategory'])->name('exams.category.update');
@@ -210,7 +210,7 @@ Route::middleware(['auth:teacher', 'single_session'])->prefix('teacher')->name('
     Route::put('/password', [TeacherPasswordUpdateController::class, 'update'])->name('password.update');
     Route::resource('question-categories', TeacherQuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('/exams', [TeacherExamController::class, 'store'])->name('exams.store');
-    Route::resource('exams', TeacherExamController::class)->except(['store']);
+    Route::resource('exams', TeacherExamController::class)->except(['store', 'create']);
     Route::post('/exams/{exam}/publish', [TeacherExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [TeacherExamController::class, 'unpublish'])->name('exams.unpublish');
     Route::put('/exams/{exam}/category', [TeacherExamController::class, 'updateCategory'])->name('exams.category.update');
