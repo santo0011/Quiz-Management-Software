@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\LoginLogger;
 use App\Services\LoginOtpService;
 use App\Services\SingleSessionService;
 use App\Services\ZohoStudentService;
@@ -85,6 +86,8 @@ class LoginController extends Controller
             $user = User::where('email', $credentials['email'])->first();
 
             if ($user->role !== $expectedRole) {
+                LoginLogger::failed($expectedRole, 'Password + OTP', 'These credentials do not match the selected login type.', $user->name, $user->email, $user->id, $user->role === 'Branch' ? $user->branch : null);
+
                 return back()
                     ->with('login_error', 'These credentials do not match the selected login type.')
                     ->withInput($request->only('email', 'login_type'));
@@ -94,6 +97,8 @@ class LoginController extends Controller
                 $branch = $user->branch;
 
                 if ($branch && ! $branch->isActive()) {
+                    LoginLogger::failed($expectedRole, 'Password + OTP', 'This branch account has been deactivated.', $user->name, $user->email, $user->id, $branch);
+
                     return back()
                         ->with('login_error', 'This branch account has been deactivated. Please contact the administrator.')
                         ->withInput($request->only('email', 'login_type'));
@@ -102,6 +107,9 @@ class LoginController extends Controller
 
             return $this->issueOtpAndRedirect($request, $loginType, $user->email, $request->boolean('remember'));
         }
+
+        $attemptedUser = User::where('email', $credentials['email'])->first();
+        LoginLogger::failed($expectedRole, 'Password + OTP', 'Invalid email or password.', $attemptedUser?->name, $credentials['email'], $attemptedUser?->id, $expectedRole === 'Branch' ? $attemptedUser?->branch : null);
 
         return back()
             ->with('login_error', 'Invalid email or password. Please check your credentials and try again.')
@@ -151,6 +159,8 @@ class LoginController extends Controller
         $result = $zohoStudentService->sendOtp($nrichStudentId);
 
         if (! $result['ok']) {
+            LoginLogger::failed('Student', 'OTP', $result['message'], identifier: $nrichStudentId);
+
             return back()
                 ->with('login_error', $result['message'])
                 ->withInput($request->only('login_type'));
@@ -159,12 +169,16 @@ class LoginController extends Controller
         $student = Student::where('zoho_student_id', $nrichStudentId)->first();
 
         if ($student && ! $student->isActive()) {
+            LoginLogger::failed('Student', 'OTP', 'Student account is deactivated.', $student->student_name, $nrichStudentId, $student->id, $student->branch);
+
             return back()
                 ->with('login_error', 'This student account has been deactivated. Please contact your administrator.')
                 ->withInput($request->only('login_type'));
         }
 
         if ($student && $student->branch && ! $student->branch->isActive()) {
+            LoginLogger::failed('Student', 'OTP', 'Branch is deactivated.', $student->student_name, $nrichStudentId, $student->id, $student->branch);
+
             return back()
                 ->with('login_error', 'This branch has been deactivated. Please contact your administrator.')
                 ->withInput($request->only('login_type'));
@@ -205,6 +219,8 @@ class LoginController extends Controller
         $settings = Setting::current();
 
         if (! $settings->hasCommonStudentPassword() || ! Hash::check($password, $settings->common_student_password)) {
+            LoginLogger::failed('Student', 'Teacher Override', 'Incorrect Teacher Override password.', identifier: $nrichStudentId);
+
             return back()
                 ->with('login_error', 'Incorrect Teacher Override password.')
                 ->withInput($request->only('login_type'));
@@ -214,6 +230,8 @@ class LoginController extends Controller
         $result = $zohoStudentService->verifyForTeacherOverride($nrichStudentId);
 
         if (! $result['ok']) {
+            LoginLogger::failed('Student', 'Teacher Override', $result['message'], identifier: $nrichStudentId);
+
             return back()
                 ->with('login_error', $result['message'])
                 ->withInput($request->only('login_type'));
@@ -225,18 +243,24 @@ class LoginController extends Controller
             [$student, $provisionError] = $this->provisionStudentFromZoho($nrichStudentId, $result['data'], $zohoStudentService);
 
             if (! $student) {
+                LoginLogger::failed('Student', 'Teacher Override', $provisionError, identifier: $nrichStudentId);
+
                 return back()
                     ->with('login_error', $provisionError)
                     ->withInput($request->only('login_type'));
             }
         } else {
             if (! $student->isActive()) {
+                LoginLogger::failed('Student', 'Teacher Override', 'Student account is deactivated.', $student->student_name, $nrichStudentId, $student->id, $student->branch);
+
                 return back()
                     ->with('login_error', 'This student account has been deactivated. Please contact your administrator.')
                     ->withInput($request->only('login_type'));
             }
 
             if ($student->branch && ! $student->branch->isActive()) {
+                LoginLogger::failed('Student', 'Teacher Override', 'Branch is deactivated.', $student->student_name, $nrichStudentId, $student->id, $student->branch);
+
                 return back()
                     ->with('login_error', 'This branch has been deactivated. Please contact your administrator.')
                     ->withInput($request->only('login_type'));
@@ -248,6 +272,8 @@ class LoginController extends Controller
         Auth::guard('student')->login($student, true);
         $request->session()->regenerate();
         SingleSessionService::establish($student, 'student');
+
+        LoginLogger::success('Student', 'Teacher Override', $student->student_name, $nrichStudentId, $student->id, $student->branch);
 
         return redirect()
             ->to(RoleRedirector::postLoginUrl($student))
@@ -312,6 +338,8 @@ class LoginController extends Controller
             return $this->issueOtpAndRedirect($request, 'guardian', $guardian->email);
         }
 
+        LoginLogger::failed('Guardian', 'Password + OTP', 'Invalid email or password.', $guardian?->name, $credentials['email'], $guardian?->id);
+
         return back()
             ->with('login_error', 'The password you entered is incorrect. Please try again.')
             ->withInput($request->only('email', 'login_type'));
@@ -328,6 +356,8 @@ class LoginController extends Controller
 
         if ($teacher && Hash::check($credentials['password'], $teacher->password)) {
             if ($teacher->branch && ! $teacher->branch->isActive()) {
+                LoginLogger::failed('Teacher', 'Password + OTP', 'Branch is deactivated.', $teacher->name, $teacher->email, $teacher->id, $teacher->branch);
+
                 return back()
                     ->with('login_error', 'This branch has been deactivated. Please contact your administrator.')
                     ->withInput($request->only('email', 'login_type'));
@@ -335,6 +365,8 @@ class LoginController extends Controller
 
             return $this->issueOtpAndRedirect($request, 'teacher', $teacher->email);
         }
+
+        LoginLogger::failed('Teacher', 'Password + OTP', 'Invalid email or password.', $teacher?->name, $credentials['email'], $teacher?->id, $teacher?->branch);
 
         return back()
             ->with('login_error', 'The password you entered is incorrect. Please try again.')

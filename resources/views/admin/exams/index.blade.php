@@ -4,7 +4,7 @@
 @section('page-title', 'Exams')
 
 @section('content')
-    <section class="content-panel">
+    <section class="content-panel mb-4">
         <div class="panel-header">
             <div>
                 <h2>Exams</h2>
@@ -16,7 +16,7 @@
             </button>
         </div>
 
-        <form method="GET" action="{{ route('admin.exams.index') }}" class="filter-bar filter-bar-60-20-20">
+        <form method="GET" action="{{ route('admin.exams.index') }}" class="filter-bar filter-bar-60-20-20 mb-0">
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search exam title">
             <select name="status" class="form-select form-control">
                 <option value="">All statuses</option>
@@ -26,7 +26,9 @@
             </select>
             <button type="submit" class="btn btn-soft"><i class="bi bi-search"></i> Filter</button>
         </form>
+    </section>
 
+    <section class="content-panel">
         @include('exams.partials.table', ['prefix' => 'admin'])
     </section>
 

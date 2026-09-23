@@ -7,6 +7,7 @@ use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\LoginLogger;
 use App\Services\LoginOtpService;
 use App\Services\SingleSessionService;
 use App\Services\ZohoStudentService;
@@ -96,7 +97,10 @@ class LoginOtpController extends Controller
         $result = LoginOtpService::verify($pending['type'], $pending['email'], $validated['otp']);
 
         if (! $result['ok']) {
+            [$roleLabel, $name, $subjectId, $branch] = $this->resolveAccountForLogging($pending['type'], $pending['email']);
+
             if ($result['reason'] === 'max_attempts') {
+                LoginLogger::failed($roleLabel, 'Password + OTP', 'Too many incorrect OTP attempts.', $name, $pending['email'], $subjectId, $branch);
                 $request->session()->forget(self::SESSION_KEY);
 
                 return redirect()->route('login')->with('login_error', 'Too many incorrect attempts. Please log in again.');
@@ -105,6 +109,8 @@ class LoginOtpController extends Controller
             $message = $result['reason'] === 'expired'
                 ? 'This code has expired. Please request a new one.'
                 : "Incorrect code. {$result['attemptsRemaining']} attempt(s) remaining.";
+
+            LoginLogger::failed($roleLabel, 'Password + OTP', $result['reason'] === 'expired' ? 'OTP expired.' : 'Incorrect OTP.', $name, $pending['email'], $subjectId, $branch);
 
             return back()->with('otp_error', $message);
         }
@@ -120,6 +126,8 @@ class LoginOtpController extends Controller
             $request->session()->regenerate();
             SingleSessionService::establish($guardian, 'guardian');
 
+            LoginLogger::success('Guardian', 'Password + OTP', $guardian->name, $email, $guardian->id);
+
             return redirect()
                 ->to(RoleRedirector::postLoginUrl($guardian))
                 ->with('success', 'Login successful. Welcome back!');
@@ -131,6 +139,8 @@ class LoginOtpController extends Controller
             Auth::guard('teacher')->login($teacher, true);
             $request->session()->regenerate();
             SingleSessionService::establish($teacher, 'teacher');
+
+            LoginLogger::success('Teacher', 'Password + OTP', $teacher->name, $email, $teacher->id, $teacher->branch);
 
             return redirect()
                 ->to(RoleRedirector::postLoginUrl($teacher))
@@ -146,9 +156,36 @@ class LoginOtpController extends Controller
             SingleSessionService::establish($user, 'web');
         }
 
+        LoginLogger::success($user->role, 'Password + OTP', $user->name, $email, $user->id, $user->role === 'Branch' ? $user->branch : null);
+
         return redirect()
             ->to(RoleRedirector::postLoginUrl($user))
             ->with('success', 'Login successful. Welcome back!');
+    }
+
+    /**
+     * @return array{0: string, 1: ?string, 2: ?int, 3: ?\App\Models\Branch}
+     */
+    private function resolveAccountForLogging(string $type, string $email): array
+    {
+        return match ($type) {
+            'guardian' => (function () use ($email) {
+                $guardian = Guardian::where('email', $email)->first();
+
+                return ['Guardian', $guardian?->name, $guardian?->id, null];
+            })(),
+            'teacher' => (function () use ($email) {
+                $teacher = Teacher::where('email', $email)->first();
+
+                return ['Teacher', $teacher?->name, $teacher?->id, $teacher?->branch];
+            })(),
+            default => (function () use ($type, $email) {
+                $user = User::where('email', $email)->first();
+                $role = $type === 'super_admin' ? 'Super Admin' : 'Branch';
+
+                return [$role, $user?->name, $user?->id, $role === 'Branch' ? $user?->branch : null];
+            })(),
+        };
     }
 
     public function resend(Request $request): RedirectResponse
@@ -188,8 +225,10 @@ class LoginOtpController extends Controller
         }
 
         $attempts = (int) ($pending['otp_attempts'] ?? 0);
+        $knownStudent = Student::where('zoho_student_id', $pending['nrich_student_id'])->first();
 
         if ($attempts >= self::STUDENT_MAX_ATTEMPTS) {
+            LoginLogger::failed('Student', 'OTP', 'Too many incorrect OTP attempts.', $knownStudent?->student_name, $pending['nrich_student_id'], $knownStudent?->id, $knownStudent?->branch);
             $request->session()->forget(self::SESSION_KEY);
 
             return redirect()->route('login')->with('login_error', 'Too many incorrect attempts. Please log in again.');
@@ -199,6 +238,7 @@ class LoginOtpController extends Controller
         $result = $zohoStudentService->verifyOtp($pending['nrich_student_id'], $otp);
 
         if (! $result['ok']) {
+            LoginLogger::failed('Student', 'OTP', $result['message'], $knownStudent?->student_name, $pending['nrich_student_id'], $knownStudent?->id, $knownStudent?->branch);
             $pending['otp_attempts'] = $attempts + 1;
             $request->session()->put(self::SESSION_KEY, $pending);
 
@@ -220,6 +260,7 @@ class LoginOtpController extends Controller
         $student = Student::where('zoho_student_id', $pending['nrich_student_id'])->first();
 
         if (! $student) {
+            LoginLogger::failed('Student', 'OTP', 'No matching student account exists.', identifier: $pending['nrich_student_id']);
             $request->session()->forget(self::SESSION_KEY);
 
             return redirect()->route('login')->with(
@@ -229,12 +270,14 @@ class LoginOtpController extends Controller
         }
 
         if (! $student->isActive()) {
+            LoginLogger::failed('Student', 'OTP', 'Student account is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
             $request->session()->forget(self::SESSION_KEY);
 
             return redirect()->route('login')->with('login_error', 'This student account has been deactivated. Please contact your administrator.');
         }
 
         if ($student->branch && ! $student->branch->isActive()) {
+            LoginLogger::failed('Student', 'OTP', 'Branch is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
             $request->session()->forget(self::SESSION_KEY);
 
             return redirect()->route('login')->with('login_error', 'This branch has been deactivated. Please contact your administrator.');
@@ -247,6 +290,8 @@ class LoginOtpController extends Controller
         Auth::guard('student')->login($student, true);
         $request->session()->regenerate();
         SingleSessionService::establish($student, 'student');
+
+        LoginLogger::success('Student', 'OTP', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
 
         return redirect()
             ->to(RoleRedirector::postLoginUrl($student))
