@@ -54,7 +54,6 @@ class ExamStatusLogicTest extends TestCase
             'total_marks' => 100,
             'marks_per_question' => 1,
             'duration_minutes' => 60,
-            'passing_marks' => 40,
             'maximum_attempts' => 1,
             'status' => Exam::STATUS_PUBLISHED,
         ], $overrides));

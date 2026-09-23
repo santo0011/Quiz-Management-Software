@@ -19,11 +19,6 @@
                 @endforeach
             </select>
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search student or exam">
-            <select name="result" class="form-select form-control">
-                <option value="">All results</option>
-                <option value="passed" @selected(($filters['result'] ?? '') === 'passed')>Passed</option>
-                <option value="failed" @selected(($filters['result'] ?? '') === 'failed')>Failed</option>
-            </select>
             <div class="filter-bar-actions">
                 <button type="submit" class="btn btn-soft"><i class="bi bi-search"></i> Filter</button>
             </div>

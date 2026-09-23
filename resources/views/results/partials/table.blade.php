@@ -17,7 +17,6 @@
                     <th>Exam</th>
                     <th>Marks</th>
                     <th>Percentage</th>
-                    <th>Result</th>
                     <th>Attempt Date</th>
                     <th class="text-end">Action</th>
                 </tr>
@@ -34,7 +33,6 @@
                         <td>{{ $attempt->exam?->title }}</td>
                         <td>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</td>
                         <td>{{ $attempt->percentage }}%</td>
-                        <td><span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">{{ $attempt->is_passed ? 'Passed' : 'Failed' }}</span></td>
                         <td>{{ $attempt->submitted_at?->format('d M Y') }}</td>
                         <td class="text-end">
                             <a href="{{ route($prefix.'.results.show', $attempt) }}" class="btn btn-sm btn-soft"><i class="bi bi-eye-fill"></i></a>

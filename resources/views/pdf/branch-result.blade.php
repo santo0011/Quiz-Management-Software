@@ -33,25 +33,6 @@
             text-transform: uppercase;
             letter-spacing: 1.5px;
         }
-        .header .result-chip {
-            text-align: right;
-        }
-        .result-chip .badge {
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 999px;
-            font-weight: bold;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-        }
-        .badge-pass {
-            background: #22c55e;
-            color: #052e16;
-        }
-        .badge-fail {
-            background: #f87171;
-            color: #450a0a;
-        }
         .section-title {
             font-size: 13px;
             font-weight: bold;
@@ -138,11 +119,6 @@
                     <h1>QuizCore</h1>
                     <p>Official Academic Result Report</p>
                 </td>
-                <td class="result-chip">
-                    <span class="badge {{ $attempt->is_passed ? 'badge-pass' : 'badge-fail' }}">
-                        {{ $attempt->is_passed ? 'PASSED' : 'FAILED' }}
-                    </span>
-                </td>
             </tr>
         </table>
     </div>
@@ -193,13 +169,11 @@
             <th>Total Marks</th>
             <th>Obtained Marks</th>
             <th>Percentage</th>
-            <th>Result Status</th>
         </tr>
         <tr>
             <td>{{ $attempt->exam?->total_marks }}</td>
             <td>{{ $attempt->obtained_marks }}</td>
             <td class="percentage">{{ $attempt->percentage }}%</td>
-            <td>{{ $attempt->is_passed ? 'Passed' : 'Failed' }}</td>
         </tr>
     </table>
     <table class="stats-table" style="margin-top:10px;">

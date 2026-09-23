@@ -30,9 +30,11 @@ class StudentPasswordResetRemovalTest extends TestCase
     public function test_admin_students_index_shows_no_reset_password_action(): void
     {
         $admin = $this->makeAdmin();
-        $this->makeStudent();
+        $student = $this->makeStudent();
 
-        $response = $this->actingAs($admin)->get(route('admin.students.index'));
+        $response = $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $student->branch_id])
+            ->get(route('admin.students.index'));
 
         $response->assertOk();
         $response->assertDontSee('Reset Password');
@@ -45,7 +47,9 @@ class StudentPasswordResetRemovalTest extends TestCase
         $admin = $this->makeAdmin();
         $student = $this->makeStudent();
 
-        $response = $this->actingAs($admin)->get(route('admin.students.show', $student));
+        $response = $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $student->branch_id])
+            ->get(route('admin.students.show', $student));
 
         $response->assertOk();
         $response->assertDontSee('Reset Password');

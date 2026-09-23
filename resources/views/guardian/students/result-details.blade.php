@@ -19,10 +19,6 @@
                 <span>{{ $student->student_name }}</span>
                 <h2>{{ $attempt->exam?->title }}</h2>
             </div>
-            <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
-                <i class="bi {{ $attempt->is_passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
-                {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-            </span>
         </div>
 
         @php($answersByQuestion = $attempt->answers->keyBy('question_id'))

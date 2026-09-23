@@ -350,7 +350,6 @@ class TeacherManagementTest extends TestCase
             'correct_count' => 4,
             'wrong_count' => 1,
             'unanswered_count' => 0,
-            'is_passed' => true,
             'status' => 'submitted',
         ]);
 

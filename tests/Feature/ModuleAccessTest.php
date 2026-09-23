@@ -28,7 +28,7 @@ class ModuleAccessTest extends TestCase
     {
         $admin = $this->makeSuperAdmin();
 
-        foreach (['admin.exams.index', 'admin.questions.index', 'admin.results.index'] as $route) {
+        foreach (['admin.exams.index', 'admin.questions.index', 'admin.results.index', 'admin.students.index', 'admin.students.create'] as $route) {
             $this->actingAs($admin)
                 ->get(route($route))
                 ->assertRedirect(route('admin.branch-selection.index'))
@@ -37,20 +37,17 @@ class ModuleAccessTest extends TestCase
     }
 
     /**
-     * These pages don't actually gate on `admin_selected_branch_id` (only
-     * on the `branch_id` query-string filter, which is unrelated) — this
-     * previously asserted the branch's name only because it happened to
-     * appear as an <option> in a Branch filter dropdown these pages used to
-     * have. That dropdown was deliberately removed (Exams/Question
-     * Categories/Grades no longer filter by branch), so this now only
-     * confirms the pages still load successfully for a Super Admin.
+     * Exams/Questions/Results are global once a branch is selected — that
+     * selection is only a gate for these three, not a content filter (see
+     * ExamController's own docblocks). Students, unlike them, IS actually
+     * scoped to the selected branch — asserted separately below.
      */
     public function test_super_admin_can_open_branch_modules_after_selecting_branch(): void
     {
         $branch = Branch::create(['name' => 'Kolkata Branch', 'email' => 'kolkata@example.com']);
         $admin = $this->makeSuperAdmin();
 
-        foreach (['admin.exams.index', 'admin.questions.index', 'admin.results.index'] as $route) {
+        foreach (['admin.exams.index', 'admin.questions.index', 'admin.results.index', 'admin.students.index'] as $route) {
             $this->actingAs($admin)
                 ->withSession(['admin_selected_branch_id' => $branch->id])
                 ->get(route($route))

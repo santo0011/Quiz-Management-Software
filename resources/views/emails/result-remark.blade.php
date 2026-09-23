@@ -19,7 +19,7 @@
         <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b;">{{ $attempt->zoho_grade ?? $attempt->schoolClass?->name ?? '—' }}</p>
 
         <p class="label" style="margin:16px 0 4px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">Result</p>
-        <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b;">{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }} ({{ $attempt->percentage }}%) &middot; {{ $attempt->is_passed ? 'Passed' : 'Failed' }}</p>
+        <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b;">{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }} ({{ $attempt->percentage }}%)</p>
     </div>
 
     <div class="message" style="color:#475569; margin-bottom:0;">

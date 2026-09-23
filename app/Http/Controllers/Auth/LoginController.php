@@ -17,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -292,10 +293,16 @@ class LoginController extends Controller
      */
     private function provisionStudentFromZoho(string $nrichStudentId, array $zohoData, ZohoStudentService $zohoStudentService): array
     {
-        $branchId = Setting::current()->default_teacher_override_branch_id;
+        $location = $zohoStudentService->extractLocation($zohoData);
+        $branch = $zohoStudentService->resolveBranchFromLocation($location);
 
-        if (! $branchId) {
-            return [null, 'This Student has no account in this system yet, and no default branch is configured for Teacher Override to create one. Please ask your Super Admin to set one in Settings.'];
+        if (! $branch) {
+            Log::warning('Could not create a new Student: no Branch matches the Zoho Enrolment Location.', [
+                'nrich_student_id' => $nrichStudentId,
+                'zoho_location' => $location,
+            ]);
+
+            return [null, 'This Student has no account in this system yet, and their Zoho Enrolment Location does not match any Branch in this system. Please ask your Super Admin to add a matching Branch.'];
         }
 
         $info = $zohoStudentService->extractProvisioningData($zohoData);
@@ -309,7 +316,7 @@ class LoginController extends Controller
         }
 
         $student = Student::create([
-            'branch_id' => $branchId,
+            'branch_id' => $branch->id,
             'student_name' => $info['student_name'] ?: $nrichStudentId,
             'guardian_name' => $info['guardian_name'] ?: ($info['student_name'] ?: $nrichStudentId),
             'guardian_email' => $info['guardian_email'],

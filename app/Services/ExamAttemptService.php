@@ -158,7 +158,6 @@ class ExamAttemptService
 
             $obtained = max(0, $obtained);
             $percentage = $exam->total_marks > 0 ? round(($obtained / $exam->total_marks) * 100, 2) : 0;
-            $passingMarks = $exam->passing_marks ?? 0;
 
             $attempt->update([
                 'submitted_at' => now(),
@@ -167,7 +166,6 @@ class ExamAttemptService
                 'correct_count' => $correct,
                 'wrong_count' => $wrong,
                 'unanswered_count' => $unanswered,
-                'is_passed' => $obtained >= $passingMarks,
                 'status' => 'submitted',
             ]);
 

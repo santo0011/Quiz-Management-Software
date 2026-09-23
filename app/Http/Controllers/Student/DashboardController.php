@@ -53,10 +53,6 @@ class DashboardController extends Controller
             'total' => (float) ($attempt->exam?->total_marks ?? 0),
         ])->values();
 
-        // Chart data: Passed vs Failed
-        $passedCount = (clone $completedAttempts)->where('is_passed', true)->count();
-        $failedCount = (clone $completedAttempts)->where('is_passed', false)->count();
-
         return view('student.dashboard', [
             'student' => $student,
             'availableExams' => $availableExams,
@@ -65,12 +61,8 @@ class DashboardController extends Controller
             'totalExams' => $publishedExams->count(),
             'completedExams' => (clone $completedAttempts)->count(),
             'averageScore' => round((float) (clone $completedAttempts)->avg('percentage'), 2),
-            'passedExams' => $passedCount,
-            'failedExams' => $failedCount,
             'recentResults' => (clone $completedAttempts)->with('exam')->latest('submitted_at')->take(5)->get(),
             'performanceData' => $performanceData,
-            'passedCount' => $passedCount,
-            'failedCount' => $failedCount,
         ]);
     }
 }

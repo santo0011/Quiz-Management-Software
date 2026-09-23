@@ -4,7 +4,7 @@
 @section('page-title', 'Exams')
 
 @section('content')
-    <section class="content-panel">
+    <section class="content-panel mb-4">
         <div class="panel-header">
             <div>
                 <h2>{{ $branch->name }} Exams</h2>
@@ -16,7 +16,7 @@
             </button>
         </div>
 
-        <form method="GET" action="{{ route('teacher.exams.index') }}" class="filter-bar compact-filter-bar">
+        <form method="GET" action="{{ route('teacher.exams.index') }}" class="filter-bar filter-bar-oneline mb-0">
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search exam title">
             <select name="status" class="form-select form-control">
                 <option value="">All statuses</option>
@@ -24,9 +24,13 @@
                     <option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
-            <button type="submit" class="btn btn-soft"><i class="bi bi-search"></i> Filter</button>
+            <div class="filter-bar-actions">
+                <button type="submit" class="btn btn-soft"><i class="bi bi-search"></i> Filter</button>
+            </div>
         </form>
+    </section>
 
+    <section class="content-panel">
         @include('exams.partials.table', ['prefix' => 'teacher'])
     </section>
 

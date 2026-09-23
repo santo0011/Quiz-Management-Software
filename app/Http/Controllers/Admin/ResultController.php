@@ -27,7 +27,6 @@ class ResultController extends Controller
                         ->orWhereHas('exam', fn ($examQuery) => $examQuery->where('title', 'like', "%{$search}%"));
                 });
             })
-            ->when($request->filled('result'), fn ($query) => $query->where('is_passed', $request->string('result')->toString() === 'passed'))
             ->latest('submitted_at')
             ->paginate(20)
             ->withQueryString();
@@ -36,7 +35,7 @@ class ResultController extends Controller
             'branches' => Branch::orderBy('name')->get(),
             'selectedBranchId' => $branchId,
             'attempts' => $attempts,
-            'filters' => $request->only(['search', 'result', 'branch_id']),
+            'filters' => $request->only(['search', 'branch_id']),
         ]);
     }
 

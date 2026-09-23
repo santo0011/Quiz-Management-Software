@@ -95,15 +95,6 @@
         </div>
     </div>
     <div class="exam-stat-card">
-        <div class="exam-stat-icon success">
-            <i class="bi bi-flag-fill"></i>
-        </div>
-        <div class="exam-stat-body">
-            <span>Passing Marks</span>
-            <strong>{{ $exam->passing_marks ?? '—' }}</strong>
-        </div>
-    </div>
-    <div class="exam-stat-card">
         <div class="exam-stat-icon warning">
             <i class="bi bi-stopwatch-fill"></i>
         </div>

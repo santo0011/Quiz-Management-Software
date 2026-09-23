@@ -17,9 +17,9 @@ use Tests\TestCase;
  * Manage Subjects (manually assigning/unassigning a Student's Subjects from
  * the Student List) has been removed entirely. A Student's Subjects now come
  * exclusively from Zoho's `Enrolment.classes[].Subject` on every login,
- * resolved against existing Super-Admin-managed Subject records (never
- * auto-created) — the same pattern already used for Grade in
- * StudentGradeSyncTest.
+ * resolved against existing Subject records case/whitespace-insensitively,
+ * auto-creating one when no match exists — the same pattern already used
+ * for Grade in StudentGradeSyncTest.
  */
 class StudentSubjectSyncTest extends TestCase
 {
@@ -34,9 +34,11 @@ class StudentSubjectSyncTest extends TestCase
     public function test_admin_students_index_shows_no_manage_subjects_action(): void
     {
         $admin = $this->makeAdmin();
-        $this->makeStudent();
+        $student = $this->makeStudent();
 
-        $response = $this->actingAs($admin)->get(route('admin.students.index'));
+        $response = $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $student->branch_id])
+            ->get(route('admin.students.index'));
 
         $response->assertOk();
         $response->assertDontSee('Manage Subjects');
@@ -47,7 +49,9 @@ class StudentSubjectSyncTest extends TestCase
         $admin = $this->makeAdmin();
         $student = $this->makeStudent();
 
-        $response = $this->actingAs($admin)->get(route('admin.students.show', $student));
+        $response = $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $student->branch_id])
+            ->get(route('admin.students.show', $student));
 
         $response->assertOk();
         $response->assertDontSee('Manage Subjects');
@@ -60,7 +64,9 @@ class StudentSubjectSyncTest extends TestCase
         $subject = Subject::create(['name' => 'Science']);
         $student->subjects()->attach($subject->id);
 
-        $response = $this->actingAs($admin)->get(route('admin.students.show', $student));
+        $response = $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $student->branch_id])
+            ->get(route('admin.students.show', $student));
 
         $response->assertOk();
         $response->assertSee('Science');
@@ -172,11 +178,10 @@ class StudentSubjectSyncTest extends TestCase
     }
 
     /**
-     * "Use the existing Subject records/module... do not create duplicate
-     * Subject records" — a Zoho Subject name with no matching local record
-     * must be skipped, never auto-created.
+     * A Zoho Subject name with no matching local record must be
+     * auto-created (never left unassigned) and attached to the Student.
      */
-    public function test_sync_never_creates_a_new_subject_for_an_unmatched_zoho_subject_name(): void
+    public function test_sync_auto_creates_a_new_subject_for_an_unmatched_zoho_subject_name(): void
     {
         $branch = Branch::create(['name' => 'Branch A', 'email' => 'branch-a@example.com']);
         $student = $this->studentFor($branch, 'NL-SUB-4');
@@ -189,8 +194,59 @@ class StudentSubjectSyncTest extends TestCase
             ],
         ]);
 
-        $this->assertSame(0, Subject::count());
-        $this->assertCount(0, $student->fresh()->subjects);
+        $this->assertSame(1, Subject::count());
+        $this->assertSame('Astrophysics', Subject::first()->name);
+        $this->assertSame(['Astrophysics'], $student->fresh()->subjects->pluck('name')->all());
+    }
+
+    /**
+     * All THREE Subjects across multiple classes must be auto-created when
+     * none of them exist yet — not just the first one.
+     */
+    public function test_sync_auto_creates_every_missing_subject_across_multiple_classes(): void
+    {
+        $branch = Branch::create(['name' => 'Branch A', 'email' => 'branch-a@example.com']);
+        $student = $this->studentFor($branch, 'NL-SUB-8');
+
+        app(ZohoStudentService::class)->syncStudentFromZoho($student, [
+            'Enrolment' => [
+                'classes' => [
+                    ['Class' => ['name' => 'Class 10', 'id' => 1], 'Subject' => ['name' => 'English', 'id' => 1]],
+                    ['Class' => ['name' => 'Class 10', 'id' => 1], 'Subject' => ['name' => 'Mathematics', 'id' => 2]],
+                    ['Class' => ['name' => 'Class 10', 'id' => 1], 'Subject' => ['name' => 'Science', 'id' => 3]],
+                ],
+            ],
+        ]);
+
+        $this->assertSame(3, Subject::count());
+        $this->assertEqualsCanonicalizing(
+            ['English', 'Mathematics', 'Science'],
+            $student->fresh()->subjects->pluck('name')->all()
+        );
+    }
+
+    /**
+     * Uppercase/lowercase variants of the same Subject name (whether
+     * already existing or reported twice by Zoho) must never create a
+     * duplicate Subject record.
+     */
+    public function test_sync_does_not_create_duplicate_subjects_for_case_insensitive_matches(): void
+    {
+        $branch = Branch::create(['name' => 'Branch A', 'email' => 'branch-a@example.com']);
+        Subject::create(['name' => 'Mathematics']);
+        $student = $this->studentFor($branch, 'NL-SUB-9');
+
+        app(ZohoStudentService::class)->syncStudentFromZoho($student, [
+            'Enrolment' => [
+                'classes' => [
+                    ['Class' => ['name' => 'Class 10', 'id' => 1], 'Subject' => ['name' => 'MATHEMATICS', 'id' => 1]],
+                    ['Class' => ['name' => 'Class 10', 'id' => 1], 'Subject' => ['name' => 'mathematics', 'id' => 2]],
+                ],
+            ],
+        ]);
+
+        $this->assertSame(1, Subject::count());
+        $this->assertSame(['Mathematics'], $student->fresh()->subjects->pluck('name')->all());
     }
 
     /**

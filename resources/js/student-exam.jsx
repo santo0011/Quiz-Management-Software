@@ -412,7 +412,7 @@ function StudentExamApp({ root }) {
                     <span>Online Exam</span>
                     <h1>{payload.exam.title}</h1>
                 </div>
-                <div className={remainingSeconds <= 60 ? 'exam-timer danger' : 'exam-timer'}>
+                <div className={remainingSeconds <= 300 ? 'exam-timer danger' : 'exam-timer'}>
                     <i className="bi bi-clock-fill"></i>
                     {formatTime(remainingSeconds)}
                 </div>

@@ -96,18 +96,27 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::resource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
     Route::resource('subjects', SubjectController::class);
     Route::get('/guardians/search', [AdminGuardianController::class, 'search'])->name('guardians.search');
-    Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
-    Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
-    Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
-    Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');
-    Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
     Route::resource('question-categories', QuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    Route::middleware('branch_selected')->group(function () {
+        Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
+        Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
+        Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
+        Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');
+        Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
+        // Exams/Questions/Results are global resources (an Admin-created
+        // Exam has branch_id = null and is visible to every Branch) — only
+        // their index/browsing pages require a branch to be selected first;
+        // the rest of their CRUD works the same with or without one.
+        Route::get('/exams', [AdminExamController::class, 'index'])->name('exams.index');
+        Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
+        Route::get('/results', [AdminResultController::class, 'index'])->name('results.index');
+    });
     Route::post('/exams', [AdminExamController::class, 'store'])->name('exams.store');
-    Route::resource('exams', AdminExamController::class)->except(['store']);
+    Route::resource('exams', AdminExamController::class)->except(['store', 'index']);
     Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [AdminExamController::class, 'unpublish'])->name('exams.unpublish');
     Route::put('/exams/{exam}/category', [AdminExamController::class, 'updateCategory'])->name('exams.category.update');
-    Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
     Route::get('/exams/{exam}/questions/create', [AdminQuestionController::class, 'create'])->name('questions.create');
     Route::post('/exams/{exam}/questions', [AdminQuestionController::class, 'store'])->name('questions.store');
     Route::get('/questions/{question}/edit', [AdminQuestionController::class, 'edit'])->name('questions.edit');
@@ -121,7 +130,6 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/exams/{exam}/passage-groups/{passageGroup}/questions/create', [AdminQuestionController::class, 'createForPassage'])->name('passage-groups.questions.create');
     Route::post('/exams/{exam}/passage-groups/{passageGroup}/questions', [AdminQuestionController::class, 'storeForPassage'])->name('passage-groups.questions.store');
     Route::post('/exams/{exam}/reorder', [AdminExamController::class, 'reorderItems'])->name('exams.reorder');
-    Route::get('/results', [AdminResultController::class, 'index'])->name('results.index');
     Route::get('/results/{attempt}', [AdminResultController::class, 'show'])->name('results.show');
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');

@@ -25,7 +25,6 @@ class SettingsRequest extends FormRequest
             'mail_from_address' => ['nullable', 'email', 'max:255'],
             'mail_from_name' => ['nullable', 'string', 'max:255'],
             'common_student_password' => ['nullable', 'string', 'min:6', 'max:255'],
-            'default_teacher_override_branch_id' => ['nullable', 'exists:branches,id'],
         ];
     }
 

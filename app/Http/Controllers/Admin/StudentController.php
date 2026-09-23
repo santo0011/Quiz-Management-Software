@@ -17,10 +17,10 @@ class StudentController extends Controller
 {
     public function index(Request $request): View
     {
-        $branchId = $request->integer('branch_id') ?: null;
+        $branch = $this->selectedBranch();
 
         $students = Student::with(['branch', 'subjects'])
-            ->when($branchId, fn ($query) => $query->forBranch($branchId))
+            ->forBranch($branch->id)
             ->search($request->string('search')->toString())
             ->when($request->filled('class'), fn ($query) => $query->where('class', $request->string('class')->toString()))
             ->latest()
@@ -28,20 +28,21 @@ class StudentController extends Controller
             ->withQueryString();
 
         return view('admin.students.index', [
-            'branches' => Branch::orderBy('name')->get(),
-            'selectedBranchId' => $branchId,
+            'branch' => $branch,
             'student' => new Student,
             'students' => $students,
-            'classes' => SchoolClass::when($branchId, fn ($query) => $query->visibleToBranch($branchId))->orderBy('name')->get(),
-            'filters' => $request->only(['search', 'class', 'branch_id']),
+            'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
+            'filters' => $request->only(['search', 'class']),
         ]);
     }
 
     public function create(): View
     {
+        $branch = $this->selectedBranch();
+
         return view('admin.students.create', [
-            'branches' => Branch::orderBy('name')->get(),
-            'classes' => collect(),
+            'selectedBranch' => $branch,
+            'classes' => SchoolClass::visibleToBranch($branch->id)->orderBy('name')->get(),
             'subjects' => Subject::orderBy('name')->get(),
             'student' => new Student,
         ]);
@@ -49,12 +50,13 @@ class StudentController extends Controller
 
     public function store(StudentRequest $request): RedirectResponse
     {
+        $branch = $this->selectedBranch();
+
         $validated = GuardianResolver::resolve($request->validated());
         $subjectIds = $validated['subject_ids'] ?? [];
         unset($validated['subject_ids']);
-        $branchId = (int) $validated['branch_id'];
-        $schoolClass = $this->resolveSchoolClass($validated, $branchId);
-        $validated['branch_id'] = $branchId;
+        $schoolClass = $this->resolveSchoolClass($validated, $branch->id);
+        $validated['branch_id'] = $branch->id;
         $validated['class_id'] = $schoolClass->id;
         $validated['class'] = $schoolClass->name;
 
@@ -66,6 +68,8 @@ class StudentController extends Controller
 
     public function show(Student $student): View
     {
+        $this->authorizeSelectedBranchStudent($student);
+
         return view('admin.students.show', [
             'student' => $student->load(['branch', 'subjects']),
             'selectedBranch' => $student->branch,
@@ -74,6 +78,8 @@ class StudentController extends Controller
 
     public function toggleActive(Student $student): RedirectResponse
     {
+        $this->authorizeSelectedBranchStudent($student);
+
         $student->update(['is_active' => ! $student->is_active]);
 
         $message = $student->is_active
@@ -81,6 +87,21 @@ class StudentController extends Controller
             : 'Student deactivated successfully.';
 
         return redirect()->route('admin.students.index')->with('success', $message);
+    }
+
+    /**
+     * The `branch_selected` route middleware guarantees a value is present
+     * in session by the time any of these methods run — this just resolves
+     * it to the actual Branch record.
+     */
+    private function selectedBranch(): Branch
+    {
+        return Branch::findOrFail(session('admin_selected_branch_id'));
+    }
+
+    private function authorizeSelectedBranchStudent(Student $student): void
+    {
+        abort_if($student->branch_id !== (int) session('admin_selected_branch_id'), 403, 'This student does not belong to the currently selected branch.');
     }
 
     private function resolveSchoolClass(array $validated, int $branchId): SchoolClass

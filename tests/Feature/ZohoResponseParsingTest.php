@@ -471,6 +471,77 @@ class ZohoResponseParsingTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_extract_location_reads_the_enrolment_location_field(): void
+    {
+        $service = app(ZohoStudentService::class);
+
+        $this->assertSame('Clyde North', $service->extractLocation(['Enrolment' => ['Location' => 'Clyde North']]));
+        $this->assertSame('Ringwood Head Office', $service->extractLocation(['Enrolment' => ['location' => 'Ringwood Head Office']]));
+        $this->assertNull($service->extractLocation(['Enrolment' => []]));
+    }
+
+    public function test_first_location_segment_takes_only_the_first_word(): void
+    {
+        $service = app(ZohoStudentService::class);
+
+        $this->assertSame('Clyde', $service->firstLocationSegment('Clyde North'));
+        $this->assertSame('Clyde', $service->firstLocationSegment('Clyde South'));
+        $this->assertSame('Clyde', $service->firstLocationSegment('Clyde'));
+        $this->assertSame('Ringwood', $service->firstLocationSegment('Ringwood Head Office'));
+        $this->assertNull($service->firstLocationSegment(null));
+        $this->assertNull($service->firstLocationSegment('   '));
+    }
+
+    public function test_resolve_branch_from_location_matches_case_insensitively(): void
+    {
+        $branch = Branch::create(['name' => 'clyde', 'email' => 'clyde-branch@example.com']);
+
+        $service = app(ZohoStudentService::class);
+
+        $this->assertSame($branch->id, $service->resolveBranchFromLocation('Clyde North')?->id);
+        $this->assertSame($branch->id, $service->resolveBranchFromLocation('CLYDE SOUTH')?->id);
+        $this->assertSame($branch->id, $service->resolveBranchFromLocation('ClYdE')?->id);
+    }
+
+    public function test_resolve_branch_from_location_returns_null_and_never_falls_back_when_no_branch_matches(): void
+    {
+        Branch::create(['name' => 'Clyde', 'email' => 'clyde-branch@example.com']);
+
+        $service = app(ZohoStudentService::class);
+
+        $this->assertNull($service->resolveBranchFromLocation('Somewhere Else'));
+        $this->assertNull($service->resolveBranchFromLocation(null));
+    }
+
+    public function test_subject_matching_is_case_insensitive_when_syncing_from_zoho(): void
+    {
+        $branch = Branch::create(['name' => 'Clyde', 'email' => 'clyde-subject-test@example.com']);
+        $class = SchoolClass::create(['branch_id' => $branch->id, 'name' => 'Class 10']);
+        $subject = \App\Models\Subject::create(['name' => 'Mathematics']);
+
+        $student = Student::create([
+            'branch_id' => $branch->id,
+            'class_id' => $class->id,
+            'student_name' => 'Subject Case Test',
+            'guardian_name' => 'Guardian',
+            'class' => $class->name,
+            'phone_number' => '9876543210',
+            'email' => 'subject-case-test@example.com',
+            'is_active' => true,
+            'zoho_student_id' => 'NL2001',
+        ]);
+
+        app(ZohoStudentService::class)->syncStudentFromZoho($student, [
+            'Enrolment' => [
+                'classes' => [
+                    ['Class' => ['id' => 'C1', 'name' => 'Class 10'], 'Subject' => ['name' => 'MATHEMATICS'], 'active' => true],
+                ],
+            ],
+        ]);
+
+        $this->assertTrue($student->subjects()->whereKey($subject->id)->exists());
+    }
+
     private function makeAttemptWithZohoData(): ExamAttempt
     {
         $branch = Branch::create(['name' => 'Main Branch', 'email' => 'main@example.com']);
@@ -499,7 +570,6 @@ class ZohoResponseParsingTest extends TestCase
             'duration_minutes' => 30,
             'starts_at' => now()->subMinute(),
             'ends_at' => now()->addHour(),
-            'passing_marks' => 5,
             'maximum_attempts' => 1,
             'status' => Exam::STATUS_PUBLISHED,
         ]);
@@ -518,7 +588,6 @@ class ZohoResponseParsingTest extends TestCase
             'correct_count' => 1,
             'wrong_count' => 0,
             'unanswered_count' => 0,
-            'is_passed' => true,
             'status' => 'submitted',
         ]);
     }

@@ -18,10 +18,6 @@
                 <span>{{ $attempt->student?->student_name }}</span>
                 <h2>{{ $attempt->exam?->title }}</h2>
             </div>
-            <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
-                <i class="bi {{ $attempt->is_passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
-                {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-            </span>
         </div>
 
         <div class="result-card-grid">
@@ -35,7 +31,7 @@
             <div class="result-card color-green">
                 <div class="result-card-left">
                     <div class="result-card-icon"><i class="bi bi-award-fill"></i></div>
-                    <span>Obtained</span>
+                    <span>Marks Obtained</span>
                 </div>
                 <strong>{{ $attempt->obtained_marks }}</strong>
             </div>
@@ -56,23 +52,16 @@
             <div class="result-card color-red">
                 <div class="result-card-left">
                     <div class="result-card-icon"><i class="bi bi-x-circle-fill"></i></div>
-                    <span>Wrong</span>
+                    <span>Incorrect</span>
                 </div>
                 <strong>{{ $attempt->wrong_count }}</strong>
             </div>
             <div class="result-card color-teal">
                 <div class="result-card-left">
                     <div class="result-card-icon"><i class="bi bi-dash-circle-fill"></i></div>
-                    <span>Unanswered</span>
+                    <span>Not Attempted</span>
                 </div>
                 <strong>{{ $attempt->unanswered_count }}</strong>
-            </div>
-            <div class="result-card color-blue">
-                <div class="result-card-left">
-                    <div class="result-card-icon"><i class="bi bi-flag-fill"></i></div>
-                    <span>Passing Marks</span>
-                </div>
-                <strong>{{ $attempt->exam?->passing_marks ?? 'Not set' }}</strong>
             </div>
             <div class="result-card color-orange">
                 <div class="result-card-left">

@@ -41,7 +41,6 @@ class ResultController extends Controller
                         ->orWhereHas('exam', fn ($examQuery) => $examQuery->where('title', 'like', "%{$search}%"));
                 });
             })
-            ->when($request->filled('result'), fn ($query) => $query->where('is_passed', $request->string('result')->toString() === 'passed'))
             ->latest('submitted_at')
             ->paginate(20)
             ->withQueryString();
@@ -49,7 +48,7 @@ class ResultController extends Controller
         return view('branch.results.index', [
             'branch' => $branch,
             'attempts' => $attempts,
-            'filters' => $request->only(['search', 'result']),
+            'filters' => $request->only(['search']),
         ]);
     }
 

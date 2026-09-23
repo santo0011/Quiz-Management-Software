@@ -69,21 +69,6 @@
             font-size: 10px;
             letter-spacing: 0.5px;
         }
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 11px;
-        }
-        .badge-pass {
-            background: #dcfce7;
-            color: #166534;
-        }
-        .badge-fail {
-            background: #fee2e2;
-            color: #991b1b;
-        }
         .remark-box {
             background: #f0f9ff;
             border: 1px solid #38bdf8;
@@ -143,7 +128,6 @@
             <th>Correct</th>
             <th>Wrong</th>
             <th>Unanswered</th>
-            <th>Status</th>
         </tr>
         <tr>
             <td>{{ $attempt->exam?->total_marks }}</td>
@@ -152,11 +136,6 @@
             <td>{{ $attempt->correct_count }}</td>
             <td>{{ $attempt->wrong_count }}</td>
             <td>{{ $attempt->unanswered_count }}</td>
-            <td>
-                <span class="badge {{ $attempt->is_passed ? 'badge-pass' : 'badge-fail' }}">
-                    {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-                </span>
-            </td>
         </tr>
     </table>
 

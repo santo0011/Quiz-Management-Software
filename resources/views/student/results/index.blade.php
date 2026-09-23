@@ -4,7 +4,7 @@
 @section('page-title', 'Results')
 
 @section('content')
-    <section class="student-section">
+    <section class="student-section mb-4">
         <div class="student-section-header">
             <div>
                 <span>{{ $student->student_name }}</span>
@@ -12,18 +12,15 @@
             </div>
         </div>
 
-        <form method="GET" action="{{ route('student.results.index') }}" class="filter-bar">
+        <form method="GET" action="{{ route('student.results.index') }}" class="filter-bar mb-0">
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search exam title">
-            <select name="result" class="form-select">
-                <option value="">All results</option>
-                <option value="passed" @selected(($filters['result'] ?? '') === 'passed')>Passed</option>
-                <option value="failed" @selected(($filters['result'] ?? '') === 'failed')>Failed</option>
-            </select>
             <button type="submit" class="btn btn-soft">
                 <i class="bi bi-search"></i> Filter
             </button>
         </form>
+    </section>
 
+    <section class="student-section">
         @if ($attempts->isEmpty())
             <div class="empty-state">
                 <i class="bi bi-bar-chart"></i>
@@ -35,35 +32,29 @@
                 @foreach ($attempts as $attempt)
                     <div class="performance-item">
                         <div class="performance-main">
-                            <div class="performance-icon {{ $attempt->is_passed ? 'passed' : 'failed' }}">
+                            <div class="performance-icon">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
                             <div class="performance-info">
                                 <h4>{{ $attempt->exam?->title }}</h4>
-                                <span class="performance-date {{ $attempt->is_passed ? 'passed' : 'failed' }}">
-                                    <i class="bi {{ $attempt->is_passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
-                                    {{ $attempt->is_passed ? 'Passed performance' : 'Needs improvement' }}
+                                <span class="performance-date">
+                                    <i class="bi bi-calendar-check"></i>
+                                    {{ $attempt->submitted_at?->format('d M Y') }}
                                 </span>
                             </div>
                         </div>
                         <div class="performance-metrics">
                             <div class="performance-metric">
-                                <span>Marks</span>
+                                <span>Marks Obtained</span>
                                 <strong>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</strong>
                             </div>
                             <div class="performance-metric">
                                 <span>Percentage</span>
-                                <strong class="{{ $attempt->percentage >= 50 ? 'text-success' : 'text-danger' }}">{{ $attempt->percentage }}%</strong>
+                                <strong>{{ $attempt->percentage }}%</strong>
                             </div>
                             <div class="performance-meter" aria-label="Result percentage">
                                 <span style="width: {{ min(100, max(0, $attempt->percentage)) }}%"></span>
                             </div>
-                        </div>
-                        <div class="performance-status">
-                            <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
-                                <i class="bi {{ $attempt->is_passed ? 'bi-patch-check-fill' : 'bi-exclamation-circle-fill' }}"></i>
-                                {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-                            </span>
                         </div>
                         <a href="{{ route('student.results.show', $attempt) }}" class="btn btn-sm btn-soft performance-action">
                             <i class="bi bi-eye-fill"></i> View Details
