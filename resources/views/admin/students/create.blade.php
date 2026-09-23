@@ -14,7 +14,7 @@
 
         @include('admin.students.partials.form', [
             'student' => $student,
-            'branches' => $branches,
+            'selectedBranch' => $selectedBranch,
             'classes' => $classes,
             'action' => route('admin.students.store'),
             'method' => 'POST',

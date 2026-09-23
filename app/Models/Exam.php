@@ -29,7 +29,6 @@ class Exam extends Model
         'duration_minutes',
         'starts_at',
         'ends_at',
-        'passing_marks',
         'maximum_attempts',
         'randomize_questions',
         'randomize_answers',

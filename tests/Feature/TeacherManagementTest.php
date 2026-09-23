@@ -188,9 +188,9 @@ class TeacherManagementTest extends TestCase
         $this->assertGuest('teacher');
     }
 
-    public function test_login_page_does_not_offer_teacher_option(): void
+    public function test_login_page_offers_teacher_option(): void
     {
-        $this->get(route('login'))->assertOk()->assertDontSee('data-login-type-button="teacher"', false);
+        $this->get(route('login'))->assertOk()->assertSee('data-login-type-button="teacher"', false);
     }
 
     // --- Teacher profile & change password ---
@@ -350,7 +350,6 @@ class TeacherManagementTest extends TestCase
             'correct_count' => 4,
             'wrong_count' => 1,
             'unanswered_count' => 0,
-            'is_passed' => true,
             'status' => 'submitted',
         ]);
 

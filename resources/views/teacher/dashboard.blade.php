@@ -60,12 +60,12 @@
                 @foreach ($recentAttempts as $attempt)
                     <div class="performance-item">
                         <div class="performance-main">
-                            <div class="performance-icon {{ $attempt->is_passed ? 'passed' : 'failed' }}">
+                            <div class="performance-icon">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
                             <div class="performance-info">
                                 <h4>{{ $attempt->student?->student_name }} &middot; {{ $attempt->exam?->title }}</h4>
-                                <span class="performance-date {{ $attempt->is_passed ? 'passed' : 'failed' }}">
+                                <span class="performance-date">
                                     <i class="bi bi-calendar-check"></i>
                                     {{ $attempt->submitted_at?->format('d M Y') }}
                                 </span>

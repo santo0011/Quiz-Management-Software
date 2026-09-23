@@ -37,9 +37,7 @@
                             <strong>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</strong>
                         </div>
                         <div class="exam-history-status">
-                            <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
-                                {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-                            </span>
+                            <span class="status-badge status-published">{{ $attempt->percentage }}%</span>
                         </div>
                         <a href="{{ route('student.results.show', $attempt) }}" class="btn btn-sm btn-soft exam-history-action">
                             <i class="bi bi-eye-fill"></i> View Result

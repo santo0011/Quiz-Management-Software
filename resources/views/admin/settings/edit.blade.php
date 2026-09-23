@@ -97,7 +97,7 @@
                 <div class="col-md-6 col-lg-4">
                     <label for="mail_password" class="form-label">SMTP Password</label>
                     <div class="password-field">
-                        <input id="mail_password" type="password" name="mail_password" class="form-control @error('mail_password') is-invalid @enderror" autocomplete="new-password" placeholder="{{ $settings->mail_password ? 'Leave blank to keep current password' : '' }}">
+                        <input id="mail_password" type="password" name="mail_password" class="form-control @error('mail_password') is-invalid @enderror" autocomplete="new-password" placeholder="{{ $settings->hasMailPassword() ? 'Leave blank to keep current password' : '' }}">
                         <button class="password-toggle" type="button" aria-label="Show password" data-password-toggle>
                             <i class="bi bi-eye-fill"></i>
                         </button>
@@ -179,43 +179,6 @@
                 <button class="btn btn-primary" type="submit">
                     <i class="bi bi-check-circle-fill"></i>
                     Save Teacher Override Password
-                </button>
-            </div>
-        </form>
-    </section>
-
-    <section class="content-panel settings-panel">
-        <div class="panel-header">
-            <div>
-                <h2><i class="bi bi-person-plus-fill me-2 text-primary"></i>New Student Auto-Provisioning</h2>
-                <p>Unrelated to the Teacher Override password above. Only used the first time Teacher Override confirms a Student ID through Zoho that has no local Student record yet, to decide which branch that new record is created under.</p>
-            </div>
-        </div>
-
-        <form method="POST" action="{{ route('admin.settings.update') }}" class="admin-form">
-            @csrf
-            @method('PUT')
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="default_teacher_override_branch_id" class="form-label">Default Branch for New Students</label>
-                    <select id="default_teacher_override_branch_id" name="default_teacher_override_branch_id" class="form-select form-control @error('default_teacher_override_branch_id') is-invalid @enderror">
-                        <option value="">Not set</option>
-                        @foreach ($branches as $branch)
-                            <option value="{{ $branch->id }}" @selected(old('default_teacher_override_branch_id', $settings->default_teacher_override_branch_id) == $branch->id)>{{ $branch->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('default_teacher_override_branch_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                    <div class="form-text">
-                        Required only for Teacher Override to work for a Student Zoho recognizes but this system has never seen before.
-                    </div>
-                </div>
-            </div>
-
-            <div class="d-flex gap-2 mt-4">
-                <button class="btn btn-primary" type="submit">
-                    <i class="bi bi-check-circle-fill"></i>
-                    Save
                 </button>
             </div>
         </form>

@@ -29,7 +29,6 @@ class TeacherRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('teachers', 'email')->ignore($teacherId)],
-            'phone_number' => ['required', 'string', 'max:30'],
         ];
     }
 
@@ -40,7 +39,6 @@ class TeacherRequest extends FormRequest
             'email.required' => 'Please enter the teacher email address.',
             'email.email' => 'Please enter a valid email address.',
             'email.unique' => 'A teacher with this email address already exists.',
-            'phone_number.required' => 'Please enter the phone number.',
         ];
     }
 }

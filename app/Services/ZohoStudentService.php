@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\ZohoApiException;
+use App\Models\Branch;
 use App\Models\ExamAttempt;
 use App\Models\SchoolClass;
 use App\Models\Student;
@@ -290,12 +291,16 @@ class ZohoStudentService
     }
 
     /**
-     * Resolve Zoho Subject names to existing local Subject records (matched
-     * by name, case/whitespace insensitive) — deliberately never creates a
-     * new Subject: Subjects are managed exclusively by Super Admin ("use the
-     * existing Subject records/module... do not create duplicate Subject
-     * records"), so a Zoho Subject name with no matching local record is
-     * simply left unassigned rather than spawning a duplicate.
+     * Resolve EVERY Zoho Subject name (from all of the Student's
+     * `Enrolment.classes[]`, not just the active one) to a local Subject
+     * record, matched by name case/whitespace-insensitively — and
+     * auto-creates one when no match exists, so a Subject Zoho reports but
+     * this system has never seen still gets the Student correctly enrolled
+     * in it rather than silently dropping it. Matching (never the stored
+     * name itself) is what's normalized: a newly created record keeps
+     * Zoho's own casing, trimmed. Never creates a duplicate — every name is
+     * checked against both the existing table AND any Subject already
+     * created earlier in this same call before deciding to insert.
      */
     private function resolveLocalSubjectIds(array $subjectNames): array
     {
@@ -303,28 +308,39 @@ class ZohoStudentService
             return [];
         }
 
-        $normalized = array_map(fn (string $name) => strtolower(trim($name)), $subjectNames);
+        $existingSubjects = Subject::query()->get(['id', 'name']);
+        $ids = [];
 
-        return Subject::query()
-            ->get(['id', 'name'])
-            ->filter(fn (Subject $subject) => in_array(strtolower(trim($subject->name)), $normalized, true))
-            ->pluck('id')
-            ->all();
+        foreach ($subjectNames as $rawName) {
+            $name = trim($rawName);
+
+            if ($name === '') {
+                continue;
+            }
+
+            $normalized = strtolower($name);
+            $subject = $existingSubjects->first(fn (Subject $s) => strtolower(trim($s->name)) === $normalized);
+
+            if (! $subject) {
+                $subject = Subject::create(['name' => $name]);
+                $existingSubjects->push($subject);
+            }
+
+            $ids[] = $subject->id;
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**
-     * Resolve Zoho's raw Grade string (e.g. "Grade 2") to an existing local
-     * Grade (SchoolClass) record — matched by name (case/whitespace
-     * insensitive), scoped to the Student's own branch or a Super-Admin-
-     * created global Grade, exactly like Exam's own branch visibility rule;
-     * a branch-specific match is preferred over a same-named global one.
-     *
-     * Deliberately never creates a new Grade record: Grades are managed
-     * exclusively by Super Admin ("avoid creating duplicate Grade values
-     * from Zoho"), so a Zoho Grade string with no matching local Grade
-     * simply leaves the Student's Grade unresolved — they won't be eligible
-     * for any Grade-scoped exam until Super Admin adds a matching Grade —
-     * rather than silently spawning a duplicate/inconsistent record.
+     * Resolve Zoho's raw Grade string (e.g. "Grade 2") to a local Grade
+     * (SchoolClass) record — matched by name (case/whitespace insensitive),
+     * scoped to the Student's own branch or a Super-Admin-created global
+     * Grade, exactly like Exam's own branch visibility rule; a
+     * branch-specific match is preferred over a same-named global one.
+     * Auto-creates one under the Student's branch when no match exists —
+     * matching (never the stored name itself) is what's normalized; a
+     * newly created record keeps Zoho's own casing, trimmed.
      */
     private function resolveLocalGrade(?int $branchId, ?string $zohoGrade): ?SchoolClass
     {
@@ -332,10 +348,21 @@ class ZohoStudentService
             return null;
         }
 
-        return SchoolClass::visibleToBranch($branchId)
-            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($zohoGrade))])
+        $name = trim($zohoGrade);
+
+        $existing = SchoolClass::visibleToBranch($branchId)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($name)])
             ->orderByRaw('branch_id IS NULL')
             ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return SchoolClass::create([
+            'branch_id' => $branchId,
+            'name' => $name,
+        ]);
     }
 
     /**
@@ -743,6 +770,60 @@ class ZohoStudentService
             ?? $data['Student']['Grade']
             ?? $data['Enrolment']['Grade']
             ?? null;
+    }
+
+    /**
+     * The raw Enrolment Location Zoho reports for this Student (e.g. "Clyde
+     * North", "Ringwood Head Office") — the sole source of truth for Branch
+     * mapping now that the Super-Admin-configured default Branch setting is
+     * gone. Checked at every nesting level Zoho has used for similar fields
+     * elsewhere in this response (top-level, under `Student`, under
+     * `Enrolment`), matching the same defensive pattern as extractGrade().
+     */
+    public function extractLocation(array $data): ?string
+    {
+        return $data['Location']
+            ?? $data['location']
+            ?? $data['Student']['Location']
+            ?? $data['Student']['location']
+            ?? $data['Enrolment']['Location']
+            ?? $data['Enrolment']['location']
+            ?? null;
+    }
+
+    /**
+     * Branch mapping only ever uses the FIRST word of the Location value
+     * ("Clyde North" → "Clyde", "Ringwood Head Office" → "Ringwood") — never
+     * the full string — per the confirmed mapping rule.
+     */
+    public function firstLocationSegment(?string $location): ?string
+    {
+        if (! filled($location)) {
+            return null;
+        }
+
+        $firstWord = preg_split('/\s+/', trim($location))[0] ?? null;
+
+        return filled($firstWord) ? $firstWord : null;
+    }
+
+    /**
+     * Resolve a Zoho Enrolment Location to an existing local Branch, matched
+     * on the Location's first word against the Branch name — fully
+     * case/whitespace-insensitive ("Clyde", "clyde", "CLYDE" are the same
+     * Branch). Never creates a Branch and never falls back to any
+     * default/unrelated Branch: no match simply means no match, and the
+     * caller is responsible for logging/handling that.
+     */
+    public function resolveBranchFromLocation(?string $location): ?Branch
+    {
+        $firstPart = $this->firstLocationSegment($location);
+
+        if (! filled($firstPart)) {
+            return null;
+        }
+
+        return Branch::whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($firstPart))])->first();
     }
 
     /**

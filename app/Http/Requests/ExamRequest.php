@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\SchoolClass;
+use App\Models\Teacher;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ExamRequest extends FormRequest
@@ -11,7 +12,7 @@ class ExamRequest extends FormRequest
     {
         $exam = $this->route('exam');
 
-        if ($this->user()?->role === 'Branch') {
+        if ($this->user()?->role === 'Branch' || $this->user() instanceof Teacher) {
             return ! $exam || $exam->branch_id === $this->user()->branch_id;
         }
 
@@ -33,7 +34,6 @@ class ExamRequest extends FormRequest
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'total_marks' => ['nullable', 'integer', 'min:0'],
-            'passing_marks' => ['nullable', 'integer', 'min:0'],
             'duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
             'maximum_attempts' => ['required', 'integer', 'min:1', 'max:20'],
             'randomize_questions' => ['nullable', 'boolean'],
@@ -60,8 +60,6 @@ class ExamRequest extends FormRequest
             'ends_at.after_or_equal' => 'The end date and time must be on or after the start date and time.',
             'total_marks.integer' => 'Total marks must be a whole number.',
             'total_marks.min' => 'Total marks cannot be negative.',
-            'passing_marks.integer' => 'Pass marks must be a whole number.',
-            'passing_marks.min' => 'Pass marks cannot be negative.',
             'duration_minutes.required' => 'Please enter the exam duration.',
             'duration_minutes.integer' => 'Exam duration must be a whole number of minutes.',
             'duration_minutes.min' => 'Exam duration must be at least 1 minute.',
@@ -78,7 +76,7 @@ class ExamRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
-            $isBranchUser = $this->user()?->role === 'Branch';
+            $isBranchUser = $this->user()?->role === 'Branch' || $this->user() instanceof Teacher;
             $branchId = $isBranchUser
                 ? $this->user()?->branch_id
                 : $this->route('exam')?->branch_id;

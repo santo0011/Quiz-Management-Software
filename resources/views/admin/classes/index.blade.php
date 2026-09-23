@@ -4,7 +4,7 @@
 @section('page-title', 'Grades')
 
 @section('content')
-    <section class="content-panel">
+    <section class="content-panel mb-4">
         <div class="panel-header">
             <div>
                 <h2>Grades</h2>
@@ -16,14 +16,16 @@
             </button>
         </div>
 
-        <form method="GET" action="{{ route('admin.classes.index') }}" class="filter-bar compact-filter-bar">
+        <form method="GET" action="{{ route('admin.classes.index') }}" class="filter-bar compact-filter-bar mb-0">
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search grade name">
             <button type="submit" class="btn btn-soft">
                 <i class="bi bi-search"></i>
                 Filter
             </button>
         </form>
+    </section>
 
+    <section class="content-panel">
         @if ($classes->isEmpty())
             <div class="empty-state">
                 <i class="bi bi-collection"></i>

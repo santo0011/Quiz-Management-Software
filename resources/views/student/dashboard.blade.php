@@ -68,7 +68,7 @@
                             <strong>{{ $attempt->exam?->title }}</strong>
                             <span>{{ $attempt->submitted_at?->format('d M Y') }}</span>
                         </div>
-                        <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">{{ $attempt->percentage }}%</span>
+                        <span class="status-badge status-published">{{ $attempt->percentage }}%</span>
                     </a>
                 @endforeach
             </div>
@@ -91,8 +91,8 @@
                             datasets: [{
                                 label: 'Percentage (%)',
                                 data: performanceData.map(d => d.percentage),
-                                backgroundColor: performanceData.map(d => d.percentage >= 50 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
-                                borderColor: performanceData.map(d => d.percentage >= 50 ? '#10b981' : '#ef4444'),
+                                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                                borderColor: '#3b82f6',
                                 borderWidth: 2,
                                 borderRadius: 8,
                                 maxBarThickness: 40,

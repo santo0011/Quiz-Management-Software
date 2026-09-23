@@ -30,7 +30,6 @@
                             <th>#</th>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>Phone</th>
                             <th>Created</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -41,7 +40,6 @@
                                 <td>{{ $teachers->firstItem() + $loop->index }}</td>
                                 <td><strong>{{ $teacher->name }}</strong></td>
                                 <td>{{ $teacher->email }}</td>
-                                <td>{{ $teacher->phone_number ?? '—' }}</td>
                                 <td>{{ $teacher->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="action-group">

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -66,13 +67,16 @@ class AcademicSessionRemovalTest extends TestCase
             'role' => 'Super Admin',
             'password' => Hash::make('123456'),
         ]);
+        $branch = Branch::create(['name' => 'Session Test Branch', 'email' => 'session-test-branch@example.com']);
 
         $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $branch->id])
             ->get(route('admin.exams.index'))
             ->assertOk()
             ->assertDontSee('Select an academic session to continue');
 
         $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $branch->id])
             ->get(route('admin.results.index'))
             ->assertOk()
             ->assertDontSee('Select an academic session to continue');

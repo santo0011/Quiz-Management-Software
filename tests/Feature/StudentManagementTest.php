@@ -14,12 +14,7 @@ class StudentManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * Explicit, temporary product decision: the Branch Panel's Student List
-     * shows the same complete list as Super Admin — every student from
-     * every branch, not just the authenticated Branch user's own.
-     */
-    public function test_branch_user_sees_the_complete_student_list_from_every_branch(): void
+    public function test_branch_user_only_sees_their_own_branch_students(): void
     {
         [$branch, $otherBranch, $branchUser] = $this->makeBranchUser();
 
@@ -39,16 +34,10 @@ class StudentManagementTest extends TestCase
 
         $response->assertOk();
         $response->assertSee($ownStudent->student_name);
-        $response->assertSee($otherStudent->student_name);
+        $response->assertDontSee($otherStudent->student_name);
     }
 
-    /**
-     * Same temporary "complete Student List" decision as the index test
-     * above: a Branch user can open and toggle any branch's student, and
-     * the page shows that STUDENT's own branch — not the viewing Branch
-     * user's own branch.
-     */
-    public function test_branch_user_can_view_and_toggle_another_branch_student_by_id(): void
+    public function test_branch_user_cannot_view_or_toggle_another_branch_student(): void
     {
         [, $otherBranch, $branchUser] = $this->makeBranchUser();
 
@@ -59,14 +48,13 @@ class StudentManagementTest extends TestCase
 
         $this->actingAs($branchUser)
             ->get(route('branch.students.show', $otherStudent))
-            ->assertOk()
-            ->assertSee($otherBranch->name);
+            ->assertForbidden();
 
         $this->actingAs($branchUser)
             ->post(route('branch.students.toggle-active', $otherStudent))
-            ->assertRedirect(route('branch.students.index'));
+            ->assertForbidden();
 
-        $this->assertFalse($otherStudent->fresh()->is_active);
+        $this->assertTrue($otherStudent->fresh()->is_active);
     }
 
     public function test_branch_created_student_is_forced_to_authenticated_branch(): void
@@ -294,6 +282,61 @@ class StudentManagementTest extends TestCase
             ->withSession(['admin_selected_branch_id' => $branch->id])
             ->get(route('admin.students.show', $otherStudent))
             ->assertForbidden();
+    }
+
+    public function test_super_admin_student_index_only_shows_the_selected_branch(): void
+    {
+        [$branch, $otherBranch] = $this->makeBranches();
+        $admin = $this->makeSuperAdmin();
+
+        $ownStudent = Student::create($this->studentPayload([
+            'branch_id' => $branch->id,
+            'student_name' => 'Selected Branch Student',
+            'email' => 'selected-branch@example.com',
+        ]));
+
+        $otherStudent = Student::create($this->studentPayload([
+            'branch_id' => $otherBranch->id,
+            'student_name' => 'Other Branch Student',
+            'email' => 'other-branch@example.com',
+        ]));
+
+        $response = $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $branch->id])
+            ->get(route('admin.students.index'));
+
+        $response->assertOk();
+        $response->assertSee($ownStudent->student_name);
+        $response->assertDontSee($otherStudent->student_name);
+    }
+
+    public function test_super_admin_created_student_is_forced_to_the_selected_branch(): void
+    {
+        [$branch, $otherBranch] = $this->makeBranches();
+        $admin = $this->makeSuperAdmin();
+
+        $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $branch->id])
+            ->post(route('admin.students.store'), $this->studentPayload([
+                'branch_id' => $otherBranch->id,
+                'email' => 'admin-created@example.com',
+            ]))
+            ->assertRedirect(route('admin.students.index'));
+
+        $this->assertDatabaseHas('students', [
+            'email' => 'admin-created@example.com',
+            'branch_id' => $branch->id,
+        ]);
+    }
+
+    private function makeSuperAdmin(): User
+    {
+        return User::create([
+            'name' => 'Super Admin',
+            'email' => 'admin-'.uniqid().'@example.com',
+            'role' => 'Super Admin',
+            'password' => Hash::make('123456'),
+        ]);
     }
 
     private function makeBranchUser(): array

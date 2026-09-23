@@ -4,14 +4,14 @@
 @section('page-title', 'Questions')
 
 @section('content')
-    <section class="content-panel">
+    <section class="content-panel mb-4">
         <div class="panel-header">
             <div>
                 <h2>Question Banks</h2>
                 <p>Select an exam to add or manage MCQ questions.</p>
             </div>
         </div>
-        <form method="GET" action="{{ route('admin.questions.index') }}" class="filter-bar compact-filter-bar">
+        <form method="GET" action="{{ route('admin.questions.index') }}" class="filter-bar compact-filter-bar mb-0">
             <select name="branch_id" class="form-select">
                 <option value="">All Branches</option>
                 @foreach ($branches as $branch)
@@ -20,6 +20,9 @@
             </select>
             <button type="submit" class="btn btn-soft"><i class="bi bi-search"></i> Filter</button>
         </form>
+    </section>
+
+    <section class="content-panel">
         @include('questions.partials.exam-list', ['prefix' => 'admin'])
     </section>
 @endsection

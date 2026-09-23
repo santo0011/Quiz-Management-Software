@@ -867,6 +867,36 @@ body {
     grid-template-columns: 3fr 1fr 1fr;
 }
 
+.filter-bar.logs-filter-bar,
+.filter-bar.filter-bar-oneline {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.filter-bar.logs-filter-bar > *,
+.filter-bar.filter-bar-oneline > * {
+    flex: 1 1 0;
+    min-width: 140px;
+}
+
+.filter-bar.logs-filter-bar .filter-bar-actions,
+.filter-bar.filter-bar-oneline .filter-bar-actions {
+    display: flex;
+    gap: 10px;
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.filter-bar.logs-filter-bar .btn,
+.filter-bar.filter-bar-oneline .btn {
+    width: auto;
+    white-space: nowrap;
+    padding: 6px 22px;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
 .filter-bar.filter-bar-60-20-20 .btn {
     width: 100%;
 }
@@ -2645,6 +2675,17 @@ body {
 
     .filter-bar.compact-filter-bar {
         grid-template-columns: 1fr;
+    }
+
+    .filter-bar.logs-filter-bar,
+    .filter-bar.filter-bar-oneline {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-bar.logs-filter-bar > *,
+    .filter-bar.filter-bar-oneline > * {
+        min-width: 0;
     }
 
     .content-panel,
@@ -5936,6 +5977,14 @@ form .status-badge.status-published:hover {
     .filter-bar,
     .filter-bar.compact-filter-bar {
         grid-template-columns: 1fr;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .filter-bar.logs-filter-bar,
+    .filter-bar.filter-bar-oneline {
+        flex-direction: column;
+        align-items: stretch;
         gap: 8px;
         margin-bottom: 14px;
     }

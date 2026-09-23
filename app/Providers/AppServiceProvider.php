@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Services\SingleSessionService;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -119,11 +120,21 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
+        try {
+            $mailPassword = $settings->mail_password;
+        } catch (DecryptException) {
+            // Stored mail_password was encrypted with a different APP_KEY
+            // (e.g. the key was regenerated) and can no longer be read.
+            // Don't let a bad credential blow up every request in the app;
+            // fall back to no password and let an admin re-save it.
+            $mailPassword = null;
+        }
+
         Config::set('mail.default', $settings->mail_mailer ?: 'smtp');
         Config::set('mail.mailers.smtp.host', $settings->mail_host);
         Config::set('mail.mailers.smtp.port', $settings->mail_port ?: 587);
         Config::set('mail.mailers.smtp.username', $settings->mail_username);
-        Config::set('mail.mailers.smtp.password', $settings->mail_password);
+        Config::set('mail.mailers.smtp.password', $mailPassword);
         Config::set('mail.mailers.smtp.encryption', $settings->mail_encryption);
 
         if ($settings->mail_from_address) {

@@ -50,9 +50,6 @@ class ExamController extends Controller
             'total' => (float) ($attempt->exam?->total_marks ?? 0),
         ])->values();
 
-        $passedCount = (clone $completedAttempts)->where('is_passed', true)->count();
-        $failedCount = (clone $completedAttempts)->where('is_passed', false)->count();
-
         return view('student.dashboard', [
             'student' => $student,
             'availableExams' => $availableExams,
@@ -62,8 +59,6 @@ class ExamController extends Controller
             'averageScore' => round((float) (clone $completedAttempts)->avg('percentage'), 2),
             'recentResults' => (clone $completedAttempts)->with('exam')->latest('submitted_at')->take(5)->get(),
             'performanceData' => $performanceData,
-            'passedCount' => $passedCount,
-            'failedCount' => $failedCount,
         ]);
     }
 
@@ -200,7 +195,6 @@ class ExamController extends Controller
                 $search = $request->string('search')->toString();
                 $query->whereHas('exam', fn ($examQuery) => $examQuery->where('title', 'like', "%{$search}%"));
             })
-            ->when($request->filled('result'), fn ($query) => $query->where('is_passed', $request->string('result')->toString() === 'passed'))
             ->latest('submitted_at')
             ->paginate(20)
             ->withQueryString();
@@ -208,7 +202,7 @@ class ExamController extends Controller
         return view('student.results.index', [
             'student' => $student->load(['branch', 'schoolClass']),
             'attempts' => $attempts,
-            'filters' => $request->only(['search', 'result']),
+            'filters' => $request->only(['search']),
         ]);
     }
 

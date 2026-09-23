@@ -36,9 +36,9 @@ class QuestionCategoryController extends Controller
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
-        QuestionCategory::create($request->validated() + [
+        QuestionCategory::create(array_merge($request->validated(), [
             'branch_id' => $branch->id,
-        ]);
+        ]));
 
         return redirect()->route('branch.question-categories.index')->with('success', 'Question category added successfully.');
     }

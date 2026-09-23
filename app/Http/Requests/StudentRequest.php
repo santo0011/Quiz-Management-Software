@@ -29,7 +29,6 @@ class StudentRequest extends FormRequest
     public function rules(): array
     {
         $studentId = $this->route('student')?->id;
-        $isBranch = $this->user()?->role === 'Branch';
         $isCreate = ! $studentId;
         $guardianType = $this->input('guardian_type');
 
@@ -48,7 +47,11 @@ class StudentRequest extends FormRequest
                 'string', 'max:255',
             ],
             'guardian_email' => ['nullable', 'email', 'max:255'],
-            'branch_id' => $isBranch ? ['nullable'] : ['sometimes', 'required', 'exists:branches,id'],
+            // Both Branch and Super Admin now have branch_id supplied by the
+            // controller from their own fixed context (the authenticated
+            // Branch user's branch_id, or the Super Admin's session-selected
+            // branch) rather than from this form — never client-submitted.
+            'branch_id' => ['nullable'],
             'class_id' => ['nullable', 'required_without:class', 'exists:school_classes,id'],
             'class' => ['nullable', 'required_without:class_id', 'string', 'max:100'],
             'phone_number' => ['required', 'string', 'max:30'],
@@ -67,7 +70,7 @@ class StudentRequest extends FormRequest
 
             $targetBranchId = $this->user()?->role === 'Branch'
                 ? $this->user()?->branch_id
-                : ($this->route('student')?->branch_id ?: $this->input('branch_id'));
+                : (session('admin_selected_branch_id') ?: ($this->route('student')?->branch_id ?: $this->input('branch_id')));
 
             $classBelongsToBranch = SchoolClass::whereKey($this->input('class_id'))
                 ->visibleToBranch($targetBranchId)

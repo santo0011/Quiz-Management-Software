@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
@@ -18,7 +19,6 @@ class Setting extends Model
         'mail_from_address',
         'mail_from_name',
         'common_student_password',
-        'default_teacher_override_branch_id',
     ];
 
     protected $hidden = [
@@ -39,9 +39,20 @@ class Setting extends Model
         return filled($this->common_student_password);
     }
 
-    public function defaultTeacherOverrideBranch()
+    /**
+     * A stored mail_password can be undecryptable if APP_KEY was ever
+     * regenerated after it was saved — accessing the raw (encrypted)
+     * attribute in that case throws and would otherwise crash any page
+     * that merely checks "is a password already set?" (e.g. the Settings
+     * form's placeholder). This is the safe way to ask that question.
+     */
+    public function hasMailPassword(): bool
     {
-        return $this->belongsTo(Branch::class, 'default_teacher_override_branch_id');
+        try {
+            return filled($this->mail_password);
+        } catch (DecryptException) {
+            return false;
+        }
     }
 
     /**

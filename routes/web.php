@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BranchSelectionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
 use App\Http\Controllers\Admin\GuardianController as AdminGuardianController;
+use App\Http\Controllers\Admin\LogController as AdminLogController;
 use App\Http\Controllers\Admin\PassageGroupController as AdminPassageGroupController;
 use App\Http\Controllers\Admin\PasswordController as AdminPasswordController;
 use App\Http\Controllers\Admin\QuestionCategoryController;
@@ -38,8 +39,12 @@ use App\Http\Controllers\ResultPdfController;
 use App\Http\Controllers\Student\ExamApiController as StudentExamApiController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
+use App\Http\Controllers\Teacher\ExamController as TeacherExamController;
+use App\Http\Controllers\Teacher\PassageGroupController as TeacherPassageGroupController;
 use App\Http\Controllers\Teacher\PasswordController as TeacherPasswordUpdateController;
 use App\Http\Controllers\Teacher\ProfileController as TeacherProfileController;
+use App\Http\Controllers\Teacher\QuestionCategoryController as TeacherQuestionCategoryController;
+use App\Http\Controllers\Teacher\QuestionController as TeacherQuestionController;
 use App\Http\Controllers\Teacher\ResultController as TeacherResultController;
 use App\Support\RoleRedirector;
 use Illuminate\Support\Facades\Route;
@@ -91,18 +96,27 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::resource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
     Route::resource('subjects', SubjectController::class);
     Route::get('/guardians/search', [AdminGuardianController::class, 'search'])->name('guardians.search');
-    Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
-    Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
-    Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
-    Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');
-    Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
     Route::resource('question-categories', QuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    Route::middleware('branch_selected')->group(function () {
+        Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
+        Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
+        Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
+        Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');
+        Route::post('/students/{student}/toggle-active', [AdminStudentController::class, 'toggleActive'])->name('students.toggle-active');
+        // Exams/Questions/Results are global resources (an Admin-created
+        // Exam has branch_id = null and is visible to every Branch) — only
+        // their index/browsing pages require a branch to be selected first;
+        // the rest of their CRUD works the same with or without one.
+        Route::get('/exams', [AdminExamController::class, 'index'])->name('exams.index');
+        Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
+        Route::get('/results', [AdminResultController::class, 'index'])->name('results.index');
+    });
     Route::post('/exams', [AdminExamController::class, 'store'])->name('exams.store');
-    Route::resource('exams', AdminExamController::class)->except(['store']);
+    Route::resource('exams', AdminExamController::class)->except(['store', 'index']);
     Route::post('/exams/{exam}/publish', [AdminExamController::class, 'publish'])->name('exams.publish');
     Route::post('/exams/{exam}/unpublish', [AdminExamController::class, 'unpublish'])->name('exams.unpublish');
     Route::put('/exams/{exam}/category', [AdminExamController::class, 'updateCategory'])->name('exams.category.update');
-    Route::get('/questions', [AdminQuestionController::class, 'index'])->name('questions.index');
     Route::get('/exams/{exam}/questions/create', [AdminQuestionController::class, 'create'])->name('questions.create');
     Route::post('/exams/{exam}/questions', [AdminQuestionController::class, 'store'])->name('questions.store');
     Route::get('/questions/{question}/edit', [AdminQuestionController::class, 'edit'])->name('questions.edit');
@@ -116,10 +130,10 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/exams/{exam}/passage-groups/{passageGroup}/questions/create', [AdminQuestionController::class, 'createForPassage'])->name('passage-groups.questions.create');
     Route::post('/exams/{exam}/passage-groups/{passageGroup}/questions', [AdminQuestionController::class, 'storeForPassage'])->name('passage-groups.questions.store');
     Route::post('/exams/{exam}/reorder', [AdminExamController::class, 'reorderItems'])->name('exams.reorder');
-    Route::get('/results', [AdminResultController::class, 'index'])->name('results.index');
     Route::get('/results/{attempt}', [AdminResultController::class, 'show'])->name('results.show');
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('/logs', [AdminLogController::class, 'index'])->name('logs.index');
 });
 
 Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('branch')->name('branch.')->group(function () {
@@ -194,6 +208,26 @@ Route::middleware(['auth:teacher', 'single_session'])->prefix('teacher')->name('
     Route::get('/profile', [TeacherProfileController::class, 'show'])->name('profile');
     Route::get('/password', [TeacherPasswordUpdateController::class, 'edit'])->name('password.edit');
     Route::put('/password', [TeacherPasswordUpdateController::class, 'update'])->name('password.update');
+    Route::resource('question-categories', TeacherQuestionCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::post('/exams', [TeacherExamController::class, 'store'])->name('exams.store');
+    Route::resource('exams', TeacherExamController::class)->except(['store']);
+    Route::post('/exams/{exam}/publish', [TeacherExamController::class, 'publish'])->name('exams.publish');
+    Route::post('/exams/{exam}/unpublish', [TeacherExamController::class, 'unpublish'])->name('exams.unpublish');
+    Route::put('/exams/{exam}/category', [TeacherExamController::class, 'updateCategory'])->name('exams.category.update');
+    Route::get('/questions', [TeacherQuestionController::class, 'index'])->name('questions.index');
+    Route::get('/exams/{exam}/questions/create', [TeacherQuestionController::class, 'create'])->name('questions.create');
+    Route::post('/exams/{exam}/questions', [TeacherQuestionController::class, 'store'])->name('questions.store');
+    Route::get('/questions/{question}/edit', [TeacherQuestionController::class, 'edit'])->name('questions.edit');
+    Route::put('/questions/{question}', [TeacherQuestionController::class, 'update'])->name('questions.update');
+    Route::delete('/questions/{question}', [TeacherQuestionController::class, 'destroy'])->name('questions.destroy');
+    Route::get('/exams/{exam}/passage-groups/create', [TeacherPassageGroupController::class, 'create'])->name('passage-groups.create');
+    Route::post('/exams/{exam}/passage-groups', [TeacherPassageGroupController::class, 'store'])->name('passage-groups.store');
+    Route::get('/passage-groups/{passageGroup}/edit', [TeacherPassageGroupController::class, 'edit'])->name('passage-groups.edit');
+    Route::put('/passage-groups/{passageGroup}', [TeacherPassageGroupController::class, 'update'])->name('passage-groups.update');
+    Route::delete('/passage-groups/{passageGroup}', [TeacherPassageGroupController::class, 'destroy'])->name('passage-groups.destroy');
+    Route::get('/exams/{exam}/passage-groups/{passageGroup}/questions/create', [TeacherQuestionController::class, 'createForPassage'])->name('passage-groups.questions.create');
+    Route::post('/exams/{exam}/passage-groups/{passageGroup}/questions', [TeacherQuestionController::class, 'storeForPassage'])->name('passage-groups.questions.store');
+    Route::post('/exams/{exam}/reorder', [TeacherExamController::class, 'reorderItems'])->name('exams.reorder');
     Route::get('/results', [TeacherResultController::class, 'index'])->name('results.index');
     Route::get('/results/{attempt}', [TeacherResultController::class, 'show'])->name('results.show');
     Route::post('/results/{attempt}/remark', [TeacherResultController::class, 'storeRemark'])->name('results.remark.store');

@@ -15,7 +15,7 @@ class ExamMarksAndDurationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_super_admin_sets_total_marks_pass_marks_and_duration_at_creation(): void
+    public function test_super_admin_sets_total_marks_and_duration_at_creation(): void
     {
         [$admin, $class, $subject] = $this->makeAdminFixture();
 
@@ -27,7 +27,6 @@ class ExamMarksAndDurationTest extends TestCase
                 'starts_at' => now()->addDay()->format('Y-m-d H:i:s'),
                 'ends_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
                 'total_marks' => 50,
-                'passing_marks' => 20,
                 'duration_minutes' => 45,
                 'maximum_attempts' => 1,
             ])
@@ -36,12 +35,11 @@ class ExamMarksAndDurationTest extends TestCase
         $this->assertDatabaseHas('exams', [
             'title' => 'Math Test',
             'total_marks' => 50,
-            'passing_marks' => 20,
             'duration_minutes' => 45,
         ]);
     }
 
-    public function test_branch_sets_total_marks_pass_marks_and_duration_at_creation(): void
+    public function test_branch_sets_total_marks_and_duration_at_creation(): void
     {
         [$branch, $branchUser, $class, $subject] = $this->makeBranchFixture();
 
@@ -53,7 +51,6 @@ class ExamMarksAndDurationTest extends TestCase
                 'starts_at' => now()->addDay()->format('Y-m-d H:i:s'),
                 'ends_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
                 'total_marks' => 30,
-                'passing_marks' => 12,
                 'duration_minutes' => 20,
                 'maximum_attempts' => 1,
             ])
@@ -63,7 +60,6 @@ class ExamMarksAndDurationTest extends TestCase
             'title' => 'Branch Science Test',
             'branch_id' => $branch->id,
             'total_marks' => 30,
-            'passing_marks' => 12,
             'duration_minutes' => 20,
         ]);
     }
@@ -116,7 +112,6 @@ class ExamMarksAndDurationTest extends TestCase
             'subject_id' => $subject->id,
             'title' => 'Recalculated Exam',
             'total_marks' => 15,
-            'passing_marks' => 5,
             'duration_minutes' => 30,
             'maximum_attempts' => 1,
             'status' => Exam::STATUS_DRAFT,

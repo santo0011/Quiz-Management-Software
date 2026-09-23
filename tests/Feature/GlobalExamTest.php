@@ -46,8 +46,10 @@ class GlobalExamTest extends TestCase
     public function test_exam_create_form_does_not_show_branch_field_for_super_admin(): void
     {
         [$admin] = $this->makeAdminFixture();
+        $branch = Branch::create(['name' => 'Exam Form Test Branch', 'email' => 'exam-form-test-branch@example.com']);
 
         $this->actingAs($admin)
+            ->withSession(['admin_selected_branch_id' => $branch->id])
             ->get(route('admin.exams.index'))
             ->assertOk()
             ->assertDontSee('Select branch');

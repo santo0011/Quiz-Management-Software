@@ -16,10 +16,6 @@
             <h2><i class="bi bi-award me-2 text-primary"></i>{{ $attempt->exam?->title }}</h2>
             <p>{{ $attempt->student?->student_name }} · Attempt {{ $attempt->attempt_number }}</p>
         </div>
-        <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
-            <i class="bi {{ $attempt->is_passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
-            {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-        </span>
     </div>
 
     <div class="exam-stats-grid">
@@ -28,7 +24,7 @@
                 <i class="bi bi-trophy-fill"></i>
             </div>
             <div class="exam-stat-body">
-                <span>Obtained Marks</span>
+                <span>Marks Obtained</span>
                 <strong>{{ $attempt->obtained_marks }}</strong>
             </div>
         </div>
@@ -94,7 +90,7 @@
                 <i class="bi bi-x-circle-fill"></i>
             </div>
             <div>
-                <dt>Wrong</dt>
+                <dt>Incorrect</dt>
                 <dd>{{ $attempt->wrong_count }}</dd>
             </div>
         </div>
@@ -103,17 +99,8 @@
                 <i class="bi bi-dash-circle-fill"></i>
             </div>
             <div>
-                <dt>Unanswered</dt>
+                <dt>Not Attempted</dt>
                 <dd>{{ $attempt->unanswered_count }}</dd>
-            </div>
-        </div>
-        <div class="exam-detail-item">
-            <div class="exam-detail-icon">
-                <i class="bi bi-flag-fill"></i>
-            </div>
-            <div>
-                <dt>Passing Marks</dt>
-                <dd>{{ $attempt->exam?->passing_marks ?? 'Not set' }}</dd>
             </div>
         </div>
         <div class="exam-detail-item">
