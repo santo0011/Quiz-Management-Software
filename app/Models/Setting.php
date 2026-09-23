@@ -62,4 +62,15 @@ class Setting extends Model
     {
         return static::query()->firstOrCreate([]);
     }
+
+    /**
+     * The Admin-configured company name, for anywhere it's needed outside a
+     * view (e.g. a Mailable's envelope() subject, built before the view
+     * renders). Views under resources/views/emails read the same value as
+     * $siteName instead, shared by AppServiceProvider's view composer.
+     */
+    public static function siteName(): string
+    {
+        return static::current()->site_name ?: 'QuizCore';
+    }
 }

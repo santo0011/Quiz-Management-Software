@@ -4,7 +4,7 @@
     <h2 class="greeting" style="margin:0 0 12px; font-size:18px; font-weight:600; color:#1e293b;">Hello {{ $name }},</h2>
 
     <div class="message" style="color:#475569; margin-bottom:20px;">
-        <p style="margin:0 0 10px;">A login attempt was made to your <strong>QuizCore {{ $typeLabel }}</strong> account.</p>
+        <p style="margin:0 0 10px;">A login attempt was made to your <strong>{{ $siteName }} {{ $typeLabel }}</strong> account.</p>
         <p style="margin:0;">Use the code below to complete your login:</p>
     </div>
 

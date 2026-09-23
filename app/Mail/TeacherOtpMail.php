@@ -19,14 +19,14 @@ class TeacherOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your QuizCore Teacher Password Reset Code');
+        return new Envelope(subject: 'Your '.\App\Models\Setting::siteName().' Teacher Password Reset Code');
     }
 
     public function content(): Content
     {
         return new Content(
             view: 'emails.teacher-otp',
-            with: ['subject' => 'Your QuizCore Teacher Password Reset Code'],
+            with: ['subject' => 'Your '.\App\Models\Setting::siteName().' Teacher Password Reset Code'],
         );
     }
 }

@@ -18,7 +18,7 @@ class SuperAdminLoginOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your QuizCore Super Admin Login Verification Code');
+        return new Envelope(subject: 'Your '.\App\Models\Setting::siteName().' Super Admin Login Verification Code');
     }
 
     public function content(): Content
@@ -26,7 +26,7 @@ class SuperAdminLoginOtpMail extends Mailable
         return new Content(
             view: 'emails.login-otp',
             with: [
-                'subject' => 'Your QuizCore Super Admin Login Verification Code',
+                'subject' => 'Your '.\App\Models\Setting::siteName().' Super Admin Login Verification Code',
                 'otp' => $this->otp,
                 'name' => 'Admin',
                 'typeLabel' => 'Super Admin',

@@ -4,7 +4,7 @@
     <h2 class="greeting" style="margin:0 0 12px; font-size:18px; font-weight:600; color:#1e293b;">Hello {{ $teacher->name }},</h2>
 
     <div class="message" style="color:#475569; margin-bottom:20px;">
-        <p style="margin:0 0 10px;">We received a request to reset the password for your <strong>QuizCore</strong> Teacher account.</p>
+        <p style="margin:0 0 10px;">We received a request to reset the password for your <strong>{{ $siteName }}</strong> Teacher account.</p>
         <p style="margin:0;">Use the secure code below to verify your identity:</p>
     </div>
 

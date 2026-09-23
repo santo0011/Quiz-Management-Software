@@ -7,7 +7,7 @@
     <meta name="x-apple-disable-message-reformatting">
     <meta name="color-scheme" content="light">
     <meta name="supported-color-schemes" content="light">
-    <title>{{ $subject ?? 'QuizCore' }}</title>
+    <title>{{ $subject ?? $siteName }}</title>
     <!--[if mso]>
     <noscript>
         <xml>
@@ -262,7 +262,7 @@
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e2e8f0; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
                     <tr>
                         <td style="background:linear-gradient(135deg, #1e293b 0%, #334155 100%); padding:32px 40px; text-align:center;">
-                            <h1 style="margin:0; font-size:24px; font-weight:700; color:#ffffff; letter-spacing:0.5px;">QuizCore</h1>
+                            <h1 style="margin:0; font-size:24px; font-weight:700; color:#ffffff; letter-spacing:0.5px;">{{ $siteName }}</h1>
                             <p style="margin:4px 0 0; font-size:13px; color:#94a3b8; letter-spacing:1px; text-transform:uppercase;">Quiz Management Software</p>
                         </td>
                     </tr>
@@ -274,8 +274,7 @@
                     <tr>
                         <td style="background-color:#f8fafc; border-top:1px solid #e2e8f0; padding:20px 40px; text-align:center;">
                             <p style="margin:0; font-size:12px; color:#94a3b8; line-height:1.5;">
-                                &copy; {{ date('Y') }} QuizCore &middot; Quiz Management Software<br>
-                                Need help? Contact <a href="mailto:support@quizcore.com" style="color:#64748b; text-decoration:underline;">support@quizcore.com</a>
+                                &copy; {{ date('Y') }} {{ $siteName }} &middot; Quiz Management Software
                             </p>
                         </td>
                     </tr>

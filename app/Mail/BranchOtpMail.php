@@ -19,14 +19,14 @@ class BranchOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your QuizCore Branch Password Reset Code');
+        return new Envelope(subject: 'Your '.\App\Models\Setting::siteName().' Branch Password Reset Code');
     }
 
     public function content(): Content
     {
         return new Content(
             view: 'emails.branch-otp',
-            with: ['subject' => 'Your QuizCore Branch Password Reset Code'],
+            with: ['subject' => 'Your '.\App\Models\Setting::siteName().' Branch Password Reset Code'],
         );
     }
 }

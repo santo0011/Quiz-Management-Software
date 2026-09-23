@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -34,6 +35,26 @@ class AppServiceProvider extends ServiceProvider
         $this->applyStoredMailSettings();
         $this->registerSingleSessionOnRememberLogin();
         $this->blockDestructiveArtisanCommandsInProduction();
+        $this->shareSiteNameWithEmailViews();
+    }
+
+    /**
+     * Every "emails.*" view (the shared layout and every mail body it
+     * extends) reads the Admin-configured site name as $siteName instead of
+     * hardcoding "QuizCore", so branded mail stays in sync with Settings
+     * without each Mailable having to pass it explicitly.
+     */
+    private function shareSiteNameWithEmailViews(): void
+    {
+        View::composer('emails.*', function ($view): void {
+            try {
+                $siteName = Schema::hasTable('settings') ? Setting::siteName() : 'QuizCore';
+            } catch (\Throwable) {
+                $siteName = 'QuizCore';
+            }
+
+            $view->with('siteName', $siteName);
+        });
     }
 
     /**
