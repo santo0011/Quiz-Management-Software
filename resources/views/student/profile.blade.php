@@ -46,7 +46,7 @@
                     <i class="bi bi-person-heart"></i>
                 </div>
                 <div>
-                    <dt>Guardian</dt>
+                    <dt>Parent</dt>
                     <dd>{{ $student->guardian_name ?? '—' }}</dd>
                 </div>
             </div>
