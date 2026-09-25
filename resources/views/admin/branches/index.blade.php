@@ -56,6 +56,9 @@
                                         <button type="button" class="btn btn-sm btn-soft" title="Edit" data-bs-toggle="offcanvas" data-bs-target="#editBranchDrawer{{ $branch->id }}" aria-controls="editBranchDrawer{{ $branch->id }}">
                                             <i class="bi bi-pencil-fill"></i>
                                         </button>
+                                        <button type="button" class="btn btn-sm btn-soft" title="Change Password" data-bs-toggle="offcanvas" data-bs-target="#passwordBranchDrawer{{ $branch->id }}" aria-controls="passwordBranchDrawer{{ $branch->id }}">
+                                            <i class="bi bi-key-fill"></i>
+                                        </button>
                                         <form method="POST" action="{{ route('admin.branches.toggle-active', $branch) }}" data-confirm-toggle>
                                             @csrf
                                             <button class="btn btn-sm {{ $branch->is_active ? 'btn-danger-soft' : 'btn-soft' }}" type="submit" title="{{ $branch->is_active ? 'Deactivate' : 'Activate' }}">
@@ -139,6 +142,10 @@
                     <i class="bi bi-pencil-fill"></i>
                     Edit
                 </button>
+                <button type="button" class="btn btn-soft" data-bs-toggle="offcanvas" data-bs-target="#passwordBranchDrawer{{ $branch->id }}" aria-controls="passwordBranchDrawer{{ $branch->id }}">
+                    <i class="bi bi-key-fill"></i>
+                    Change Password
+                </button>
             </div>
         </div>
 
@@ -159,10 +166,22 @@
                     'drawer' => true,
                     'drawerId' => 'editBranchDrawer'.$branch->id,
                 ])
+            </div>
+        </div>
+
+        <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="passwordBranchDrawer{{ $branch->id }}" aria-labelledby="passwordBranchDrawerLabel{{ $branch->id }}">
+            <div class="offcanvas-header student-drawer-header">
+                <div>
+                    <span class="page-kicker">{{ $branch->name }}</span>
+                    <h2 class="offcanvas-title" id="passwordBranchDrawerLabel{{ $branch->id }}">Change Password</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
                 @include('admin.partials.change-password-form', [
                     'action' => route('admin.branches.password.update', $branch),
                     'fieldSuffix' => '_branch_'.$branch->id,
-                    'drawerId' => 'editBranchDrawer'.$branch->id,
+                    'drawerId' => 'passwordBranchDrawer'.$branch->id,
                 ])
             </div>
         </div>

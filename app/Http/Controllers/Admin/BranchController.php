@@ -136,9 +136,15 @@ class BranchController extends Controller
             'password.confirmed' => 'Passwords do not match.',
         ]);
 
-        abort_if(! $branch->user, 404, 'This branch has no linked login account.');
+        // Branch login looks the account up by email (LoginController), so
+        // update that exact row. $branch->user (hasOne by branch_id) can
+        // resolve to a different users row when several share a branch_id,
+        // which silently left the real login account on its old password.
+        $account = User::where('email', $branch->email)->where('role', 'Branch')->first() ?? $branch->user;
 
-        $branch->user->update([
+        abort_if(! $account, 404, 'This branch has no linked login account.');
+
+        $account->update([
             'password' => Hash::make($validated['password']),
         ]);
 
