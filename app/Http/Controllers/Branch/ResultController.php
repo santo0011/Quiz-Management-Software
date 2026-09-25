@@ -81,8 +81,10 @@ class ResultController extends Controller
         abort_if($attempt->status !== 'submitted', 404);
 
         // A result (and its review) goes out exactly once; a failed attempt
-        // never sets zoho_result_synced_at, so it can still be retried.
-        if ($attempt->zoho_result_synced_at) {
+        // never sets branch_result_sent_at, so it can still be retried.
+        // (Not zoho_result_synced_at: the automatic sync on exam submission
+        // sets that too, before the Branch has sent anything.)
+        if ($attempt->branch_result_sent_at) {
             return redirect()->route('branch.results.show', $attempt)
                 ->with('error', 'This result has already been sent and cannot be sent again.');
         }
@@ -155,6 +157,10 @@ class ResultController extends Controller
         $zohoService = app(ZohoResultService::class);
         $zohoSent = $zohoService->sendResult($attempt, $pdfUrl);
         $zohoFailureMessage = $zohoService->lastFailureMessage();
+
+        if ($zohoSent) {
+            $attempt->update(['branch_result_sent_at' => now()]);
+        }
 
         return redirect()->route('branch.results.show', $attempt)
             ->with($this->sendStatusFlash($zohoSent, $otpEmail, $zohoFailureMessage));

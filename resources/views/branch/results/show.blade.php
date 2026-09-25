@@ -18,15 +18,15 @@
             </div>
         </div>
 
-        @if ($attempt->result_email_sent_at || $attempt->zoho_result_synced_at)
+        @if ($attempt->result_email_sent_at || $attempt->branch_result_sent_at)
             <div class="alert alert-info d-flex flex-wrap gap-3 align-items-center mb-3">
                 <i class="bi bi-info-circle-fill"></i>
                 <div>
                     @if ($attempt->result_email_sent_at)
                         <div>Emailed to <strong>{{ $attempt->student?->guardian_email }}</strong> on {{ $attempt->result_email_sent_at->format('d M Y') }}{{ $attempt->resultEmailSentBy ? ' by '.$attempt->resultEmailSentBy->name : '' }}.</div>
                     @endif
-                    @if ($attempt->zoho_result_synced_at)
-                        <div>Sent to Zoho on {{ $attempt->zoho_result_synced_at->format('d M Y') }}.</div>
+                    @if ($attempt->branch_result_sent_at)
+                        <div>Result sent on {{ $attempt->branch_result_sent_at->format('d M Y') }}.</div>
                     @endif
                 </div>
             </div>
@@ -42,7 +42,7 @@
             </p>
         @endif
 
-        @if ($attempt->zoho_result_synced_at)
+        @if ($attempt->branch_result_sent_at)
             {{-- Already sent: the review shown above is final. --}}
         @elseif (! $attempt->student?->guardian_email)
             <div class="alert alert-warning">

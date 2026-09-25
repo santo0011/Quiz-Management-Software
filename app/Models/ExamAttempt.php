@@ -36,6 +36,7 @@ class ExamAttempt extends Model
         'branch_review',
         'branch_review_by',
         'branch_review_at',
+        'branch_result_sent_at',
     ];
 
     protected function casts(): array
@@ -50,6 +51,7 @@ class ExamAttempt extends Model
             'zoho_result_synced_at' => 'datetime',
             'result_email_sent_at' => 'datetime',
             'branch_review_at' => 'datetime',
+            'branch_result_sent_at' => 'datetime',
         ];
     }
 
