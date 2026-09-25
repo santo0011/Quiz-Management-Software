@@ -80,6 +80,13 @@ class ResultController extends Controller
     {
         abort_if($attempt->status !== 'submitted', 404);
 
+        // A result (and its review) goes out exactly once; a failed attempt
+        // never sets zoho_result_synced_at, so it can still be retried.
+        if ($attempt->zoho_result_synced_at) {
+            return redirect()->route('branch.results.show', $attempt)
+                ->with('error', 'This result has already been sent and cannot be sent again.');
+        }
+
         $validated = $request->validate([
             'review' => ['required', 'string', 'max:2000'],
         ], [
