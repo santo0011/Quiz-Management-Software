@@ -109,18 +109,16 @@
             line-height: 1.6;
             white-space: pre-line;
         }
+        .brand-row { width: 100%; border-collapse: collapse; }
+        .brand-row td { vertical-align: middle; padding: 0; }
+        .brand-logo-cell { width: 76px; padding-right: 14px !important; }
+        .brand-logo-box { background: #ffffff; border-radius: 8px; padding: 6px; text-align: center; }
+        .brand-logo { max-width: 60px; max-height: 48px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <table class="header-top">
-            <tr>
-                <td>
-                    <h1>QuizCore</h1>
-                    <p>Official Academic Result Report</p>
-                </td>
-            </tr>
-        </table>
+        @include('pdf.partials.brand', ['subtitle' => 'Official Academic Result Report'])
     </div>
 
     <div class="section-title">Student Details</div>
@@ -197,7 +195,7 @@
     <p class="disclaimer">This result reflects exactly what was recorded by the system at the time of submission and has not been recalculated.</p>
 
     <div class="footer">
-        &copy; {{ date('Y') }} QuizCore &middot; Quiz Management Software &middot; This is a system-generated official result report.
+        &copy; {{ date('Y') }} {{ \App\Models\Setting::siteName() }} &middot; Quiz Management Software &middot; This is a system-generated official result report.
     </div>
 </body>
 </html>

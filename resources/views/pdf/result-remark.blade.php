@@ -87,12 +87,16 @@
             color: #94a3b8;
             text-align: center;
         }
+        .brand-row { width: 100%; border-collapse: collapse; }
+        .brand-row td { vertical-align: middle; padding: 0; }
+        .brand-logo-cell { width: 76px; padding-right: 14px !important; }
+        .brand-logo-box { background: #ffffff; border-radius: 8px; padding: 6px; text-align: center; }
+        .brand-logo { max-width: 60px; max-height: 48px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>QuizCore</h1>
-        <p>Exam Result Report</p>
+        @include('pdf.partials.brand', ['subtitle' => 'Exam Result Report'])
     </div>
 
     <div class="section-title">Student & Exam Details</div>
@@ -155,7 +159,7 @@
     </table>
 
     <div class="footer">
-        &copy; {{ date('Y') }} QuizCore &middot; Quiz Management Software &middot; This is a system-generated report.
+        &copy; {{ date('Y') }} {{ \App\Models\Setting::siteName() }} &middot; Quiz Management Software &middot; This is a system-generated report.
     </div>
 </body>
 </html>
