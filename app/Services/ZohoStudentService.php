@@ -144,6 +144,15 @@ class ZohoStudentService
             'zoho_grade' => $zohoGrade,
         ];
 
+        // Keep the Student's Branch in line with their Zoho Enrolment
+        // Location on every sync (not only when the record is first
+        // created), so branch-scoped views — e.g. Teacher Results — follow
+        // the Location. No matching Branch leaves the current one untouched.
+        if ($locationBranch = $this->resolveBranchFromLocation($this->extractLocation($data))) {
+            $attributes['branch_id'] = $locationBranch->id;
+            $student->branch_id = $locationBranch->id;
+        }
+
         if ($localGrade = $this->resolveLocalGrade($student->branch_id, $zohoGrade)) {
             $attributes['class_id'] = $localGrade->id;
             $attributes['class'] = $localGrade->name;
