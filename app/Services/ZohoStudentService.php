@@ -791,13 +791,21 @@ class ZohoStudentService
      */
     public function extractLocation(array $data): ?string
     {
-        return $data['Location']
+        $location = $data['Location']
             ?? $data['location']
             ?? $data['Student']['Location']
             ?? $data['Student']['location']
             ?? $data['Enrolment']['Location']
             ?? $data['Enrolment']['location']
             ?? null;
+
+        // Zoho sends Location as a lookup object, e.g.
+        // {"name": "Ringwood (Head Office)", "id": "96867000000513414"}.
+        if (is_array($location)) {
+            $location = $location['name'] ?? $location['Name'] ?? null;
+        }
+
+        return is_string($location) && filled($location) ? $location : null;
     }
 
     /**
