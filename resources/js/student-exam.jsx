@@ -53,6 +53,17 @@ function loadStoredFontStep() {
     }
 }
 
+// Steps the student has already moved away from, kept per attempt so a
+// reload keeps showing which questions were skipped.
+function loadVisitedSteps(key) {
+    try {
+        const stored = JSON.parse(window.sessionStorage.getItem(key));
+        return Array.isArray(stored) ? stored : [];
+    } catch {
+        return [];
+    }
+}
+
 function formatTime(seconds) {
     const value = Math.max(0, seconds);
     const minutes = Math.floor(value / 60).toString().padStart(2, '0');
@@ -297,6 +308,8 @@ function StudentExamApp({ root }) {
     const [activeIndex, setActiveIndex] = useState(0);
     const [remainingSeconds, setRemainingSeconds] = useState(0);
     const [fontStepIndex, setFontStepIndex] = useState(loadStoredFontStep);
+    const visitedStorageKey = `quizcore.student.visitedSteps:${root.dataset.stateUrl}`;
+    const [visitedSteps, setVisitedSteps] = useState(() => loadVisitedSteps(visitedStorageKey));
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
 
     const stateUrl = root.dataset.stateUrl;
@@ -315,6 +328,25 @@ function StudentExamApp({ root }) {
     }, [allQuestions]);
 
     const answeredCount = useMemo(() => allQuestions.filter((question) => question.selected_option_id).length, [allQuestions]);
+    const answeredNumbers = allQuestions.filter((question) => question.selected_option_id).map((question) => questionNumbers[question.id]);
+    const skippedNumbers = allQuestions.filter((question) => !question.selected_option_id).map((question) => questionNumbers[question.id]);
+
+    // A question counts as skipped once the student has moved off its step
+    // without answering it.
+    const isSkipped = (question) => !question.selected_option_id && visitedSteps.includes(questionStepIndex[question.id]);
+
+    const goToStep = (index) => {
+        if (index === activeIndex) return;
+        setVisitedSteps((current) => (current.includes(activeIndex) ? current : [...current, activeIndex]));
+        setActiveIndex(index);
+    };
+
+    const goToQuestionNumber = (number) => {
+        const question = allQuestions[number - 1];
+        if (!question) return;
+        setShowSubmitModal(false);
+        goToStep(questionStepIndex[question.id]);
+    };
 
     // Submit button is only enabled when on the LAST step
     const isOnLastStep = steps.length > 0 && activeIndex === steps.length - 1;
@@ -377,6 +409,14 @@ function StudentExamApp({ root }) {
         }
     }, [fontStepIndex]);
 
+    useEffect(() => {
+        try {
+            window.sessionStorage.setItem(visitedStorageKey, JSON.stringify(visitedSteps));
+        } catch {
+            // Storage unavailable — skipped markers just won't survive a reload.
+        }
+    }, [visitedSteps]);
+
     const decreaseFontSize = () => setFontStepIndex((index) => Math.max(0, index - 1));
     const increaseFontSize = () => setFontStepIndex((index) => Math.min(FONT_STEPS.length - 1, index + 1));
 
@@ -433,8 +473,9 @@ function StudentExamApp({ root }) {
                             <button
                                 type="button"
                                 key={question.id}
-                                className={`exam-nav-btn ${questionStepIndex[question.id] === activeIndex ? 'active' : ''} ${question.selected_option_id ? 'answered' : ''}`}
-                                onClick={() => setActiveIndex(questionStepIndex[question.id])}
+                                className={`exam-nav-btn ${questionStepIndex[question.id] === activeIndex ? 'active' : ''} ${question.selected_option_id ? 'answered' : ''} ${isSkipped(question) ? 'skipped' : ''}`}
+                                title={question.selected_option_id ? 'Answered' : (isSkipped(question) ? 'Skipped' : 'Not visited')}
+                                onClick={() => goToStep(questionStepIndex[question.id])}
                             >
                                 {index + 1}
                             </button>
@@ -471,11 +512,11 @@ function StudentExamApp({ root }) {
                 )}
 
                 <div className="exam-controls">
-                    <button type="button" className="btn btn-soft" onClick={() => setActiveIndex(Math.max(0, activeIndex - 1))} disabled={activeIndex === 0}>
+                    <button type="button" className="btn btn-soft" onClick={() => goToStep(Math.max(0, activeIndex - 1))} disabled={activeIndex === 0}>
                         <i className="bi bi-arrow-left"></i>
                         Previous
                     </button>
-                    <button type="button" className="btn btn-soft" onClick={() => setActiveIndex(Math.min(steps.length - 1, activeIndex + 1))} disabled={activeIndex === steps.length - 1}>
+                    <button type="button" className="btn btn-soft" onClick={() => goToStep(Math.min(steps.length - 1, activeIndex + 1))} disabled={activeIndex === steps.length - 1}>
                         Next
                         <i className="bi bi-arrow-right"></i>
                     </button>
@@ -507,7 +548,39 @@ function StudentExamApp({ root }) {
                                 <div className="begin-exam-icon">
                                     <i className="bi bi-send-check-fill"></i>
                                 </div>
-                                <p className="mb-0 text-center">Are you sure you want to submit the exam? You cannot change your answers after submission.</p>
+                                <p className="text-center">Are you sure you want to submit the exam? You cannot change your answers after submission.</p>
+
+                                <div className="submit-summary">
+                                    <div className="submit-summary-group">
+                                        <div className="submit-summary-title answered">
+                                            <i className="bi bi-check-circle-fill"></i>
+                                            Attempted <strong>{answeredNumbers.length}</strong>
+                                        </div>
+                                        {answeredNumbers.length ? (
+                                            <div className="submit-summary-list">
+                                                {answeredNumbers.map((number) => (
+                                                    <button type="button" key={number} className="exam-nav-btn answered" onClick={() => goToQuestionNumber(number)}>{number}</button>
+                                                ))}
+                                            </div>
+                                        ) : <p className="submit-summary-empty">No questions attempted.</p>}
+                                    </div>
+                                    <div className="submit-summary-group">
+                                        <div className="submit-summary-title skipped">
+                                            <i className="bi bi-exclamation-circle-fill"></i>
+                                            Skipped <strong>{skippedNumbers.length}</strong>
+                                        </div>
+                                        {skippedNumbers.length ? (
+                                            <div className="submit-summary-list">
+                                                {skippedNumbers.map((number) => (
+                                                    <button type="button" key={number} className="exam-nav-btn skipped" onClick={() => goToQuestionNumber(number)}>{number}</button>
+                                                ))}
+                                            </div>
+                                        ) : <p className="submit-summary-empty">All questions attempted.</p>}
+                                    </div>
+                                    {skippedNumbers.length > 0 && (
+                                        <p className="submit-summary-hint">Tap a question number to go back to it.</p>
+                                    )}
+                                </div>
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-outline-secondary" onClick={() => setShowSubmitModal(false)}>Cancel</button>
