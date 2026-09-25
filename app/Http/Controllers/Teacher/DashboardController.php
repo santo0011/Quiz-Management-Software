@@ -13,7 +13,9 @@ class DashboardController extends Controller
     {
         $teacher = $request->user('teacher');
 
-        $baseQuery = ExamAttempt::where('branch_id', $teacher->branch_id)
+        // Same scoping as Teacher\ResultController::index(): by the
+        // student's current branch.
+        $baseQuery = ExamAttempt::whereHas('student', fn ($studentQuery) => $studentQuery->where('branch_id', $teacher->branch_id))
             ->where('status', 'submitted');
 
         return view('teacher.dashboard', [
