@@ -46,6 +46,9 @@
                                         <button type="button" class="btn btn-sm btn-soft" title="Edit" data-bs-toggle="offcanvas" data-bs-target="#editTeacherDrawer{{ $teacher->id }}" aria-controls="editTeacherDrawer{{ $teacher->id }}">
                                             <i class="bi bi-pencil-fill"></i>
                                         </button>
+                                        <button type="button" class="btn btn-sm btn-soft" title="Change Password" data-bs-toggle="offcanvas" data-bs-target="#passwordTeacherDrawer{{ $teacher->id }}" aria-controls="passwordTeacherDrawer{{ $teacher->id }}">
+                                            <i class="bi bi-key-fill"></i>
+                                        </button>
                                         <form method="POST" action="{{ route('branch.teachers.destroy', $teacher) }}" data-confirm-delete>
                                             @csrf
                                             @method('DELETE')
@@ -104,10 +107,22 @@
                     'drawerId' => 'editTeacherDrawer'.$teacher->id,
                     'fieldSuffix' => '_teacher_'.$teacher->id,
                 ])
+            </div>
+        </div>
+
+        <div class="offcanvas offcanvas-end student-drawer" tabindex="-1" id="passwordTeacherDrawer{{ $teacher->id }}" aria-labelledby="passwordTeacherDrawerLabel{{ $teacher->id }}">
+            <div class="offcanvas-header student-drawer-header">
+                <div>
+                    <span class="page-kicker">{{ $teacher->name }}</span>
+                    <h2 class="offcanvas-title" id="passwordTeacherDrawerLabel{{ $teacher->id }}">Change Password</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
                 @include('admin.partials.change-password-form', [
                     'action' => route('branch.teachers.password.update', $teacher),
-                    'fieldSuffix' => '_teacher_'.$teacher->id,
-                    'drawerId' => 'editTeacherDrawer'.$teacher->id,
+                    'fieldSuffix' => '_teacher_pw_'.$teacher->id,
+                    'drawerId' => 'passwordTeacherDrawer'.$teacher->id,
                 ])
             </div>
         </div>
