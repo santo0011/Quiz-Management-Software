@@ -18,6 +18,9 @@
                 <span>{{ $attempt->student?->student_name }}</span>
                 <h2>{{ $attempt->exam?->title }}</h2>
             </div>
+            @if (($attempt->exam?->maximum_attempts ?? 1) > 1)
+                <span class="attempt-chip attempt-chip-lg">Attempt {{ $attempt->attemptLabel() }}</span>
+            @endif
         </div>
 
         <div class="result-card-grid">
@@ -72,6 +75,15 @@
             </div>
         </div>
     </section>
+
+    @include('results.partials.attempt-history', [
+        'history' => $history ?? collect([$attempt]),
+        'current' => $attempt,
+        'routeFor' => fn ($item) => route('student.results.show', $item),
+        'selectedLabel' => 'Your answer',
+        'sectionClass' => 'student-section',
+        'headerClass' => 'student-section-header',
+    ])
 
     @php($answersByQuestion = $attempt->answers->keyBy('question_id'))
     @php($orderedItems = $attempt->exam->orderedItems())

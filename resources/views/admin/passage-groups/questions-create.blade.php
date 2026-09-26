@@ -48,6 +48,7 @@
                 'button' => 'Save Questions',
                 'defaultMarks' => $exam->marks_per_question ?? 1,
                 'existingQuestions' => $passageGroup->questions,
+                'numberStart' => $exam->questionCountBefore($passageGroup),
                 'categories' => $categories,
             ])
         @endif

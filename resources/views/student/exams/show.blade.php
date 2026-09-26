@@ -20,7 +20,7 @@
 
         <div class="student-section-header">
             <div>
-                <span>{{ $exam->schoolClass?->name }}</span>
+                <span>{{ $student->schoolClass?->name ?? $student->class }}</span>
                 <h2>{{ $exam->title }}</h2>
             </div>
 
@@ -72,26 +72,15 @@
             </div>
 
 
-            {{-- Start Date --}}
+            {{-- Attempts used so far, out of the exam's maximum --}}
             <div class="info-card color-teal">
                 <div class="info-card-icon">
-                    <i class="bi bi-play-circle-fill"></i>
+                    <i class="bi bi-arrow-repeat"></i>
                 </div>
-                <span>Starts</span>
+                <span>Attempted</span>
                 <strong>
-                    {{ $exam->starts_at?->format('d M Y') ?? 'Open' }}
-                </strong>
-            </div>
-
-
-            {{-- End Date --}}
-            <div class="info-card color-red">
-                <div class="info-card-icon">
-                    <i class="bi bi-stop-circle-fill"></i>
-                </div>
-                <span>Ends</span>
-                <strong>
-                    {{ $exam->ends_at?->format('d M Y') ?? 'Open' }}
+                    {{ max(0, $exam->maximum_attempts - $remainingAttempts) }}
+                    <small>/ {{ $exam->maximum_attempts }}</small>
                 </strong>
             </div>
 

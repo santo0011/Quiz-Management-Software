@@ -43,8 +43,16 @@ class ExamController extends Controller
             ->latest('submitted_at')
             ->get();
 
-        $performanceData = $allAttempts->map(fn ($attempt) => [
-            'label' => $attempt->exam?->title ?? 'Exam #'.$attempt->exam_id,
+        // Scores only count once the student has finished all attempts of
+        // that exam (its results are released).
+        $summaries = Exam::attemptSummaries($student, $allAttempts->pluck('exam'));
+        $releasedAttempts = $allAttempts
+            ->filter(fn (ExamAttempt $attempt) => $summaries[$attempt->exam_id]['released'] ?? false)
+            ->values();
+
+        $performanceData = $releasedAttempts->map(fn ($attempt) => [
+            'label' => ($attempt->exam?->title ?? 'Exam #'.$attempt->exam_id)
+                .(($attempt->exam?->maximum_attempts ?? 1) > 1 ? ' (Attempt '.$attempt->attempt_number.')' : ''),
             'percentage' => (float) $attempt->percentage,
             'obtained' => (float) $attempt->obtained_marks,
             'total' => (float) ($attempt->exam?->total_marks ?? 0),
@@ -55,9 +63,9 @@ class ExamController extends Controller
             'availableExams' => $availableExams,
             'upcomingExams' => $upcomingExams,
             'totalExams' => $publishedExams->count(),
-            'completedExams' => (clone $completedAttempts)->count(),
-            'averageScore' => round((float) (clone $completedAttempts)->avg('percentage'), 2),
-            'recentResults' => (clone $completedAttempts)->with('exam')->latest('submitted_at')->take(5)->get(),
+            'completedExams' => $allAttempts->count(),
+            'averageScore' => round((float) $releasedAttempts->avg('percentage'), 2),
+            'recentResults' => $releasedAttempts->take(5),
             'performanceData' => $performanceData,
         ]);
     }
@@ -107,11 +115,12 @@ class ExamController extends Controller
         $exams = Exam::availableForStudent($student)
             ->withCount('questions')
             ->with('schoolClass')
-            // Exclude exams the student has already submitted
-            ->whereDoesntHave('attempts', function ($query) use ($student): void {
-                $query->where('student_id', $student->id)
-                    ->where('status', 'submitted');
-            })
+            // Exclude exams whose Attempt Limit the student has used up (a
+            // limit of 1 hides it after the first submission, as before).
+            ->whereRaw(
+                '(select count(*) from exam_attempts where exam_attempts.exam_id = exams.id and exam_attempts.student_id = ? and exam_attempts.status = ?) < exams.maximum_attempts',
+                [$student->id, 'submitted']
+            )
             ->latest()
             ->paginate(12)
             ->withQueryString();
@@ -181,6 +190,7 @@ class ExamController extends Controller
         return view('student.exams.mine', [
             'student' => $student,
             'attempts' => $attempts,
+            'summaries' => Exam::attemptSummaries($student, $attempts->getCollection()->pluck('exam')),
         ]);
     }
 
@@ -202,17 +212,33 @@ class ExamController extends Controller
         return view('student.results.index', [
             'student' => $student->load(['branch', 'schoolClass']),
             'attempts' => $attempts,
+            'summaries' => Exam::attemptSummaries($student, $attempts->getCollection()->pluck('exam')),
             'filters' => $request->only(['search']),
         ]);
     }
 
     public function result(Request $request, ExamAttempt $attempt): View
     {
-        abort_if($attempt->student_id !== $request->user('student')->id || $attempt->status !== 'submitted', 403);
+        $student = $request->user('student');
+        abort_if($attempt->student_id !== $student->id || $attempt->status !== 'submitted', 403);
+
+        $attempt->load(['exam', 'schoolClass']);
+        $summary = Exam::attemptSummaries($student, collect([$attempt->exam]))[$attempt->exam_id];
+
+        // Results stay hidden until every allowed attempt is completed.
+        if (! $summary['released']) {
+            return view('student.results.pending', [
+                'student' => $student->load(['branch', 'schoolClass']),
+                'attempt' => $attempt,
+                'summary' => $summary,
+                'canTakeNextAttempt' => $attempt->exam->isOpen() && $summary['remaining'] > 0,
+            ]);
+        }
 
         return view('student.results.show', [
-            'student' => $request->user('student')->load(['branch', 'schoolClass']),
-            'attempt' => $attempt->load(['exam', 'schoolClass', 'answers.question.options', 'answers.selectedOption']),
+            'student' => $student->load(['branch', 'schoolClass']),
+            'attempt' => $attempt->load(['answers.question.options', 'answers.selectedOption']),
+            'history' => $attempt->submittedSiblings(),
         ]);
     }
 

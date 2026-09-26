@@ -29,7 +29,7 @@ class ExamCreationValidationTest extends TestCase
             ]);
 
         $response->assertSessionHasErrors([
-            'school_class_id' => 'Please select a grade for this exam.',
+            'school_class_ids' => 'Please select at least one grade for this exam.',
             'subject_id' => 'Please select a subject for this exam.',
         ]);
 
@@ -126,7 +126,7 @@ class ExamCreationValidationTest extends TestCase
             ]);
 
         $response->assertSessionHasErrors([
-            'school_class_id' => 'Please select a grade for this exam.',
+            'school_class_ids' => 'Please select at least one grade for this exam.',
             'subject_id' => 'Please select a subject for this exam.',
         ]);
         $response->assertSessionHas('_old_input._drawer', 'addExamDrawer');

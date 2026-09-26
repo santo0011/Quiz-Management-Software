@@ -1,5 +1,6 @@
 @php($prefix = $prefix ?? 'admin')
 @php($orderedItems = $exam->orderedItems())
+@php($questionNumbers = $exam->questionNumbers($orderedItems))
 
 <section class="content-panel questions-panel question-mgmt-panel">
     @if ($orderedItems->isEmpty())
@@ -13,7 +14,7 @@
         <div class="question-list">
             @foreach ($orderedItems as $item)
                 @if ($item['type'] === 'question')
-                    @include('exams.partials.question-item', ['question' => $item['question'], 'prefix' => $prefix, 'exam' => $exam, 'itemIndex' => $loop->index, 'itemCount' => $orderedItems->count()])
+                    @include('exams.partials.question-item', ['question' => $item['question'], 'prefix' => $prefix, 'exam' => $exam, 'itemIndex' => $loop->index, 'itemCount' => $orderedItems->count(), 'questionNumber' => $questionNumbers[$item['question']->id] ?? null])
                 @else
                     @php($group = $item['group'])
                     @php($groupFormKey = 'summary-'.$group->id)
@@ -71,7 +72,7 @@
 
                         <div class="passage-group-questions">
                             @foreach ($group->questions as $question)
-                                @include('exams.partials.question-item', ['question' => $question, 'prefix' => $prefix, 'exam' => $exam, 'itemIndex' => $loop->index, 'itemCount' => $group->questions->count()])
+                                @include('exams.partials.question-item', ['question' => $question, 'prefix' => $prefix, 'exam' => $exam, 'itemIndex' => $loop->index, 'itemCount' => $group->questions->count(), 'questionNumber' => $questionNumbers[$question->id] ?? null])
                             @endforeach
                         </div>
 
@@ -86,6 +87,8 @@
                                 'existingQuestions' => collect(),
                                 'showExistingQuestions' => false,
                                 'categories' => $categories ?? collect(),
+                                // New questions go at the end of this Summary.
+                                'numberStart' => $exam->questionCountBefore($group, $orderedItems) + $group->questions->count(),
                             ])
                             </div>
                         </div>

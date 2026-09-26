@@ -22,9 +22,12 @@ class SchoolClass extends Model
         return $this->hasMany(Student::class, 'class_id');
     }
 
+    /**
+     * Every Exam assigned to this Grade (an Exam may have several Grades).
+     */
     public function exams()
     {
-        return $this->hasMany(Exam::class);
+        return $this->belongsToMany(Exam::class, 'exam_school_class')->withTimestamps();
     }
 
     public function isGlobal(): bool

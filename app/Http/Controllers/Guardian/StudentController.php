@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Guardian;
 
 use App\Http\Controllers\Controller;
+use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\Student;
 use Illuminate\Http\Request;
@@ -22,6 +23,13 @@ class StudentController extends Controller
             ->latest('submitted_at')
             ->get();
 
+        // Like the Student, a Guardian only sees an exam's results once the
+        // Student has completed all of its allowed attempts.
+        $summaries = Exam::attemptSummaries($student, $attempts->pluck('exam'));
+        $attempts = $attempts
+            ->filter(fn (ExamAttempt $attempt) => $summaries[$attempt->exam_id]['released'] ?? false)
+            ->values();
+
         return view('guardian.students.show', [
             'guardian' => $request->user('guardian'),
             'student' => $student,
@@ -35,11 +43,13 @@ class StudentController extends Controller
         $this->authorizeGuardianStudent($request, $student);
 
         abort_if($attempt->student_id !== $student->id || $attempt->status !== 'submitted', 404);
+        $this->ensureResultReleased($student, $attempt);
 
         return view('guardian.students.result', [
             'guardian' => $request->user('guardian'),
             'student' => $student,
             'attempt' => $attempt->load(['exam', 'schoolClass']),
+            'history' => $attempt->submittedSiblings(),
             'siblingStudents' => $this->siblingStudents($request, $student),
         ]);
     }
@@ -49,6 +59,7 @@ class StudentController extends Controller
         $this->authorizeGuardianStudent($request, $student);
 
         abort_if($attempt->student_id !== $student->id || $attempt->status !== 'submitted', 404);
+        $this->ensureResultReleased($student, $attempt);
 
         return view('guardian.students.result-details', [
             'guardian' => $request->user('guardian'),
@@ -56,6 +67,15 @@ class StudentController extends Controller
             'attempt' => $attempt->load(['exam', 'schoolClass', 'answers.question.options', 'answers.selectedOption']),
             'siblingStudents' => $this->siblingStudents($request, $student),
         ]);
+    }
+
+    private function ensureResultReleased(Student $student, ExamAttempt $attempt): void
+    {
+        abort_unless(
+            $attempt->exam && $attempt->exam->resultsReleasedFor($student),
+            403,
+            'This result will be available after the student completes all allowed attempts.'
+        );
     }
 
     /**

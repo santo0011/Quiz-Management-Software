@@ -66,7 +66,12 @@
                     <a href="{{ route('student.results.show', $attempt) }}" class="result-row">
                         <div>
                             <strong>{{ $attempt->exam?->title }}</strong>
-                            <span>{{ $attempt->submitted_at?->format('d M Y') }}</span>
+                            <span>
+                                {{ $attempt->submitted_at?->format('d M Y') }}
+                                @if (($attempt->exam?->maximum_attempts ?? 1) > 1)
+                                    · Attempt {{ $attempt->attemptLabel() }}
+                                @endif
+                            </span>
                         </div>
                         <span class="status-badge status-published">{{ $attempt->percentage }}%</span>
                     </a>

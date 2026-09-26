@@ -104,9 +104,18 @@
                 </div>
                 <div>
                     <dt>Attempt Number</dt>
-                    <dd>{{ $attempt->attempt_number }}</dd>
+                    <dd>{{ $attempt->attemptLabel() }}</dd>
                 </div>
             </div>
         </div>
     </section>
+
+    @include('results.partials.attempt-history', [
+        'history' => $history ?? collect([$attempt]),
+        'current' => $attempt,
+        'routeFor' => fn ($item) => route('guardian.students.results.show', [$student, $item]),
+        'selectedLabel' => 'Student answer',
+        'sectionClass' => 'student-section',
+        'headerClass' => 'student-section-header',
+    ])
 @endsection

@@ -30,34 +30,49 @@
         @else
             <div class="performance-list">
                 @foreach ($attempts as $attempt)
+                    @php($summary = $summaries[$attempt->exam_id] ?? ['released' => true, 'used' => 1, 'max' => 1])
                     <div class="performance-item">
                         <div class="performance-main">
                             <div class="performance-icon">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
                             <div class="performance-info">
-                                <h4>{{ $attempt->exam?->title }}</h4>
+                                <h4>
+                                    {{ $attempt->exam?->title }}
+                                    @if ($summary['max'] > 1)
+                                        <span class="attempt-chip">Attempt {{ $attempt->attemptLabel() }}</span>
+                                    @endif
+                                </h4>
                                 <span class="performance-date">
                                     <i class="bi bi-calendar-check"></i>
                                     {{ $attempt->submitted_at?->format('d M Y') }}
                                 </span>
                             </div>
                         </div>
-                        <div class="performance-metrics">
-                            <div class="performance-metric">
-                                <span>Marks Obtained</span>
-                                <strong>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</strong>
+                        @if ($summary['released'])
+                            <div class="performance-metrics">
+                                <div class="performance-metric">
+                                    <span>Marks Obtained</span>
+                                    <strong>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</strong>
+                                </div>
+                                <div class="performance-metric">
+                                    <span>Percentage</span>
+                                    <strong>{{ $attempt->percentage }}%</strong>
+                                </div>
+                                <div class="performance-meter" aria-label="Result percentage">
+                                    <span style="width: {{ min(100, max(0, $attempt->percentage)) }}%"></span>
+                                </div>
                             </div>
-                            <div class="performance-metric">
-                                <span>Percentage</span>
-                                <strong>{{ $attempt->percentage }}%</strong>
+                        @else
+                            <div class="performance-metrics">
+                                <div class="performance-metric">
+                                    <span>Result Pending</span>
+                                    <strong class="text-warning-emphasis">{{ $summary['used'] }}/{{ $summary['max'] }} attempts done</strong>
+                                </div>
                             </div>
-                            <div class="performance-meter" aria-label="Result percentage">
-                                <span style="width: {{ min(100, max(0, $attempt->percentage)) }}%"></span>
-                            </div>
-                        </div>
+                        @endif
                         <a href="{{ route('student.results.show', $attempt) }}" class="btn btn-sm btn-soft performance-action">
-                            <i class="bi bi-eye-fill"></i> View Details
+                            <i class="bi bi-eye-fill"></i> {{ $summary['released'] ? 'View Details' : 'View Status' }}
                         </a>
                     </div>
                 @endforeach

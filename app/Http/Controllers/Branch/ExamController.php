@@ -10,6 +10,7 @@ use App\Models\SchoolClass;
 use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ExamController extends Controller
@@ -19,7 +20,9 @@ class ExamController extends Controller
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
-        $exams = Exam::with(['schoolClass', 'subject', 'questions'])
+        // Own exams + Super Admin (global) exams only — never another
+        // branch's exams.
+        $exams = Exam::with(['schoolClass', 'grades', 'subject', 'branch', 'questions'])
             ->visibleToBranch($branch->id)
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
@@ -42,11 +45,17 @@ class ExamController extends Controller
         $branch = $request->user()->branch;
         abort_if(! $branch, 403, 'Your account is not linked to a branch.');
 
-        Exam::create($request->validated() + [
-            'branch_id' => $branch->id,
-            'status' => Exam::STATUS_DRAFT,
-            'marks_per_question' => 1,
-        ]);
+        // One Exam row for all selected Grades, visible only to this branch
+        // (and the Super Admin).
+        DB::transaction(function () use ($request, $branch): void {
+            $exam = Exam::create($request->validated() + [
+                'branch_id' => $branch->id,
+                'status' => Exam::STATUS_DRAFT,
+                'marks_per_question' => 1,
+            ]);
+
+            $exam->syncGrades($request->gradeIds());
+        });
 
         return redirect()->route('branch.exams.index')->with('success', 'Exam created successfully.');
     }
@@ -57,7 +66,7 @@ class ExamController extends Controller
 
         return view('branch.exams.show', [
             'branch' => $request->user()->branch,
-            'exam' => $exam->load(['schoolClass', 'subject', 'questions.options']),
+            'exam' => $exam->load(['schoolClass', 'grades', 'subject', 'questions.options']),
         ]);
     }
 
@@ -67,7 +76,7 @@ class ExamController extends Controller
 
         return view('branch.exams.edit', [
             'branch' => $request->user()->branch,
-            'exam' => $exam,
+            'exam' => $exam->load('grades'),
             'classes' => SchoolClass::visibleToBranch($request->user()->branch_id)->orderBy('name')->get(),
             'subjects' => Subject::orderBy('name')->get(),
         ]);
@@ -77,7 +86,10 @@ class ExamController extends Controller
     {
         $this->authorizeExam($request, $exam);
 
-        $exam->update($request->validated());
+        DB::transaction(function () use ($exam, $request): void {
+            $exam->update($request->validated());
+            $exam->syncGrades($request->gradeIds());
+        });
 
         return redirect()->route('branch.exams.index')->with('success', 'Exam updated successfully.');
     }

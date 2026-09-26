@@ -80,6 +80,30 @@ class ExamAttempt extends Model
         return $this->hasMany(ExamAnswer::class);
     }
 
+    /**
+     * "2/3" — this attempt's number out of the Exam's Attempt Limit.
+     */
+    public function attemptLabel(): string
+    {
+        $max = max((int) ($this->exam?->maximum_attempts ?? 1), (int) $this->attempt_number);
+
+        return $this->attempt_number.'/'.$max;
+    }
+
+    /**
+     * Every submitted attempt this Student made at the same Exam (this one
+     * included), oldest first — the per-exam attempt history.
+     */
+    public function submittedSiblings()
+    {
+        return static::query()
+            ->where('exam_id', $this->exam_id)
+            ->where('student_id', $this->student_id)
+            ->where('status', 'submitted')
+            ->orderBy('attempt_number')
+            ->get();
+    }
+
     public function teacherRemarkBy()
     {
         return $this->belongsTo(Teacher::class, 'teacher_remark_by');

@@ -11,7 +11,7 @@
         <div class="exam-summary-row">
             <div class="exam-summary-title">
                 <h2>{{ $exam->title }}</h2>
-                <p>Manage questions for {{ $exam->schoolClass?->name }}. Each question has its own category.</p>
+                <p>Manage questions for {{ $exam->gradeNames() }}. Each question has its own category.</p>
             </div>
 
             @if ($categories->isNotEmpty())
@@ -99,6 +99,8 @@
                         'existingQuestions' => collect(),
                         'showExistingQuestions' => false,
                         'categories' => $categories,
+                        // New standalone questions are appended after every existing question.
+                        'numberStart' => $exam->questions()->count(),
                     ])
                 </div>
             </div>

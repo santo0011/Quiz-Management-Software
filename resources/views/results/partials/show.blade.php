@@ -14,7 +14,7 @@
     <div class="panel-header">
         <div>
             <h2><i class="bi bi-award me-2 text-primary"></i>{{ $attempt->exam?->title }}</h2>
-            <p>{{ $attempt->student?->student_name }} · Attempt {{ $attempt->attempt_number }}</p>
+            <p>{{ $attempt->student?->student_name }} · Attempt {{ $attempt->attemptLabel() }}</p>
         </div>
     </div>
 
@@ -109,15 +109,29 @@
             </div>
             <div>
                 <dt>Submitted</dt>
-                <dd>{{ $attempt->submitted_at?->format('d M Y') }}</dd>
+                <dd>{{ $attempt->submitted_at?->format('d-m-Y H:i:s') }}</dd>
             </div>
         </div>
     </div>
 </section>
 
+{{-- Staff always see every attempt (no waiting for the Attempt Limit). --}}
+@php($attemptHistory = $attempt->submittedSiblings())
+@include('results.partials.attempt-history', [
+    'history' => $attemptHistory,
+    'current' => $attempt,
+    'routeFor' => fn ($item) => route($prefix.'.results.show', $item),
+])
+
+{{-- Multi-attempt exams review answers per attempt inside Attempt History
+     (same condition that partial renders on); single-attempt exams keep
+     this Answer Review card. --}}
+@php($showsAttemptHistory = $attemptHistory->count() > 1 || (int) ($attempt->exam?->maximum_attempts ?? 1) > 1)
+
 @php($answersByQuestion = $attempt->answers->keyBy('question_id'))
 @php($orderedItems = $attempt->exam->orderedItems())
 
+@unless ($showsAttemptHistory)
 <section class="content-panel questions-panel">
     <div class="panel-header">
         <div>
@@ -165,6 +179,7 @@
         @endforeach
     </div>
 </section>
+@endunless
 
 @push('scripts')
     <script>

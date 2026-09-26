@@ -11,6 +11,7 @@ use App\Models\SchoolClass;
 use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ExamController extends Controller
@@ -19,8 +20,12 @@ class ExamController extends Controller
     {
         $branchId = $request->integer('branch_id') ?: null;
 
-        $exams = Exam::with(['schoolClass', 'subject', 'questions'])
+        // Super Admin sees every exam: its own global exams and every
+        // branch's exams. The optional scope filter narrows that down.
+        $exams = Exam::with(['schoolClass', 'grades', 'subject', 'branch', 'questions'])
             ->when($branchId, fn ($query) => $query->visibleToBranch($branchId))
+            ->when($request->string('scope')->toString() === 'global', fn ($query) => $query->whereNull('branch_id'))
+            ->when($request->string('scope')->toString() === 'branch', fn ($query) => $query->whereNotNull('branch_id'))
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->latest()
@@ -36,7 +41,7 @@ class ExamController extends Controller
             // drawer's Grade field always offers the full grade list.
             'classes' => SchoolClass::orderBy('name')->get(),
             'subjects' => Subject::orderBy('name')->get(),
-            'filters' => $request->only(['search', 'status', 'branch_id']),
+            'filters' => $request->only(['search', 'status', 'branch_id', 'scope']),
         ]);
     }
 
@@ -47,11 +52,17 @@ class ExamController extends Controller
         $validated = $request->validated();
         unset($validated['branch_id']);
 
-        Exam::create($validated + [
-            'branch_id' => null,
-            'status' => Exam::STATUS_DRAFT,
-            'marks_per_question' => 1,
-        ]);
+        // One Exam row assigned to every selected Grade — never one copy
+        // per Grade.
+        DB::transaction(function () use ($validated, $request): void {
+            $exam = Exam::create($validated + [
+                'branch_id' => null,
+                'status' => Exam::STATUS_DRAFT,
+                'marks_per_question' => 1,
+            ]);
+
+            $exam->syncGrades($request->gradeIds());
+        });
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam created successfully.');
     }
@@ -60,7 +71,7 @@ class ExamController extends Controller
     {
         return view('admin.exams.show', [
             'selectedBranch' => $exam->branch,
-            'exam' => $exam->load(['schoolClass', 'subject', 'questions.options']),
+            'exam' => $exam->load(['schoolClass', 'grades', 'subject', 'questions.options']),
         ]);
     }
 
@@ -68,7 +79,7 @@ class ExamController extends Controller
     {
         return view('admin.exams.edit', [
             'selectedBranch' => $exam->branch,
-            'exam' => $exam,
+            'exam' => $exam->load('grades'),
             'classes' => $exam->branch_id
                 ? SchoolClass::visibleToBranch($exam->branch_id)->orderBy('name')->get()
                 : SchoolClass::orderBy('name')->get(),
@@ -78,7 +89,10 @@ class ExamController extends Controller
 
     public function update(ExamRequest $request, Exam $exam): RedirectResponse
     {
-        $exam->update($request->validated());
+        DB::transaction(function () use ($exam, $request): void {
+            $exam->update($request->validated());
+            $exam->syncGrades($request->gradeIds());
+        });
 
         return redirect()->route('admin.exams.index')->with('success', 'Exam updated successfully.');
     }
