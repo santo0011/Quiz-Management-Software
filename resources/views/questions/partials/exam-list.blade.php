@@ -11,7 +11,7 @@
                 <tr>
                     <th>#</th>
                     <th>Exam</th>
-                    <th>Grade</th>
+                    <th>Grade(s)</th>
                     <th>Questions</th>
                     <th>Status</th>
                     <th class="text-end">Actions</th>
@@ -22,7 +22,7 @@
                     <tr>
                         <td>{{ $exams->firstItem() + $loop->index }}</td>
                         <td><strong>{{ $exam->title }}</strong></td>
-                        <td>{{ $exam->schoolClass?->name }}</td>
+                        <td>{{ $exam->gradeNames() }}</td>
                         <td>{{ $exam->questions_count }}</td>
                         <td><span class="status-badge status-{{ $exam->status }}">{{ ucfirst($exam->status) }}</span></td>
                         <td class="text-end">

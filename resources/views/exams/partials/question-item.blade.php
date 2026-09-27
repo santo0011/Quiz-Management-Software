@@ -1,4 +1,5 @@
-@php($numberLabel = $question->passage_group_id ? chr(65 + $itemIndex) : $itemIndex + 1)
+{{-- Continuous numeric serial across the whole exam (Summary questions included). --}}
+@php($numberLabel = $questionNumber ?? $itemIndex + 1)
 
 <article class="question-admin-item {{ $question->passage_group_id ? 'passage-child-item' : '' }}">
     <div class="question-item-header">

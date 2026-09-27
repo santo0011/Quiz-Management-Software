@@ -17,12 +17,10 @@ class ResultController extends Controller
     {
         $teacher = $request->user('teacher');
 
-        // Scoped by the student's (current) branch rather than the attempt's
-        // stored branch_id, which is a snapshot from when the exam was taken
-        // and can be empty or stale if the student's branch changed since.
+        // Exactly the results that belong to the teacher's own Branch (see
+        // ExamAttempt::scopeBelongingToBranch) — never another Branch's.
         $attempts = ExamAttempt::with(['student', 'exam', 'schoolClass'])
-            ->whereHas('student', fn ($studentQuery) => $studentQuery->where('branch_id', $teacher->branch_id))
-            ->where('status', 'submitted')
+            ->belongingToBranch($teacher->branch_id ? (int) $teacher->branch_id : null)
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->toString();
                 $query->where(function ($query) use ($search): void {
@@ -147,12 +145,10 @@ class ResultController extends Controller
 
     private function authorizeTeacherAttempt(Request $request, ExamAttempt $attempt): void
     {
-        $teacherBranchId = (int) $request->user('teacher')->branch_id;
+        $teacherBranchId = $request->user('teacher')->branch_id;
 
-        abort_if(
-            ! $teacherBranchId
-                || (int) $attempt->student?->branch_id !== $teacherBranchId
-                || $attempt->status !== 'submitted',
+        abort_unless(
+            $attempt->belongsToBranch($teacherBranchId ? (int) $teacherBranchId : null),
             403,
             'This result does not belong to your branch.'
         );

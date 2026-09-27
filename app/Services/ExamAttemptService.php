@@ -229,7 +229,9 @@ class ExamAttemptService
             throw ValidationException::withMessages(['exam' => 'Your branch has been deactivated. Please contact your administrator.']);
         }
 
-        if (($exam->branch_id !== null && $exam->branch_id !== $student->branch_id) || $exam->school_class_id !== $student->class_id) {
+        // Branch exams are only for their own branch; the Student's Grade
+        // must be one of the Exam's (possibly several) Grades.
+        if (($exam->branch_id !== null && $exam->branch_id !== $student->branch_id) || ! $exam->isAssignedToGrade($student->class_id)) {
             throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your class.']);
         }
 

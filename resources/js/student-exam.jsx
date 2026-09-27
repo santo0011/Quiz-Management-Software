@@ -111,17 +111,25 @@ function updateStepsWithAnswer(steps, questionId, optionId) {
 function QuestionOptions({ question, onSelect }) {
     return (
         <div className="exam-options">
-            {question.options.map((option) => (
-                <button
-                    type="button"
-                    key={option.id}
-                    className={question.selected_option_id === option.id ? 'exam-option selected' : 'exam-option'}
-                    onClick={() => onSelect(question.id, option.id)}
-                >
-                    <span></span>
-                    <div className="math-content">{option.text}</div>
-                </button>
-            ))}
+            {question.options.map((option) => {
+                const isSelected = question.selected_option_id === option.id;
+
+                // Clicking the already-selected option clears it (null), so the
+                // question goes back to Unanswered — the answer endpoint stores a
+                // null option and scoring counts it as unanswered.
+                return (
+                    <button
+                        type="button"
+                        key={option.id}
+                        className={isSelected ? 'exam-option selected' : 'exam-option'}
+                        aria-pressed={isSelected}
+                        onClick={() => onSelect(question.id, isSelected ? null : option.id)}
+                    >
+                        <span></span>
+                        <div className="math-content">{option.text}</div>
+                    </button>
+                );
+            })}
         </div>
     );
 }
@@ -341,6 +349,13 @@ function StudentExamApp({ root }) {
         setActiveIndex(index);
     };
 
+    // Opening the Submit confirmation counts as leaving the current step, so
+    // any unanswered questions on it turn red in the navigation too.
+    const openSubmitModal = () => {
+        setVisitedSteps((current) => (current.includes(activeIndex) ? current : [...current, activeIndex]));
+        setShowSubmitModal(true);
+    };
+
     const goToQuestionNumber = (number) => {
         const question = allQuestions[number - 1];
         if (!question) return;
@@ -474,7 +489,7 @@ function StudentExamApp({ root }) {
                                 type="button"
                                 key={question.id}
                                 className={`exam-nav-btn ${questionStepIndex[question.id] === activeIndex ? 'active' : ''} ${question.selected_option_id ? 'answered' : ''} ${isSkipped(question) ? 'skipped' : ''}`}
-                                title={question.selected_option_id ? 'Answered' : (isSkipped(question) ? 'Skipped' : 'Not visited')}
+                                title={question.selected_option_id ? 'Answered' : (isSkipped(question) ? 'Unanswered' : 'Not visited')}
                                 onClick={() => goToStep(questionStepIndex[question.id])}
                             >
                                 {index + 1}
@@ -525,7 +540,7 @@ function StudentExamApp({ root }) {
                         className="btn btn-primary"
                         disabled={!isOnLastStep || submitting}
                         title={!isOnLastStep ? 'Submit is available on the last question' : 'Submit your exam'}
-                        onClick={() => setShowSubmitModal(true)}
+                        onClick={openSubmitModal}
                     >
                         <i className="bi bi-send-fill"></i>
                         Submit Exam
@@ -551,6 +566,20 @@ function StudentExamApp({ root }) {
                                 <p className="text-center">Are you sure you want to submit the exam? You cannot change your answers after submission.</p>
 
                                 <div className="submit-summary">
+                                    <div className="submit-summary-stats">
+                                        <div className="submit-summary-stat">
+                                            <strong>{allQuestions.length}</strong>
+                                            <span>Total Questions</span>
+                                        </div>
+                                        <div className="submit-summary-stat answered">
+                                            <strong>{answeredNumbers.length}</strong>
+                                            <span>Attempted</span>
+                                        </div>
+                                        <div className={`submit-summary-stat ${skippedNumbers.length ? 'skipped' : ''}`}>
+                                            <strong>{skippedNumbers.length}</strong>
+                                            <span>Unanswered</span>
+                                        </div>
+                                    </div>
                                     <div className="submit-summary-group">
                                         <div className="submit-summary-title answered">
                                             <i className="bi bi-check-circle-fill"></i>
@@ -567,7 +596,7 @@ function StudentExamApp({ root }) {
                                     <div className="submit-summary-group">
                                         <div className="submit-summary-title skipped">
                                             <i className="bi bi-exclamation-circle-fill"></i>
-                                            Skipped <strong>{skippedNumbers.length}</strong>
+                                            Unanswered <strong>{skippedNumbers.length}</strong>
                                         </div>
                                         {skippedNumbers.length ? (
                                             <div className="submit-summary-list">

@@ -32,7 +32,7 @@ class ExamEligibilityTest extends TestCase
                 'duration_minutes' => 30,
                 'maximum_attempts' => 1,
             ])
-            ->assertSessionHasErrors(['school_class_id', 'subject_id']);
+            ->assertSessionHasErrors(['school_class_ids', 'subject_id']);
     }
 
     // --- Visibility: Grade and Subject must match ---

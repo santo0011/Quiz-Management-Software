@@ -16,13 +16,18 @@
             </button>
         </div>
 
-        <form method="GET" action="{{ route('admin.exams.index') }}" class="filter-bar filter-bar-60-20-20 mb-0">
+        <form method="GET" action="{{ route('admin.exams.index') }}" class="filter-bar filter-bar-exams mb-0">
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search exam title">
             <select name="status" class="form-select form-control">
                 <option value="">All statuses</option>
                 @foreach (['draft' => 'Draft', 'published' => 'Published', 'closed' => 'Closed'] as $value => $label)
                     <option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $label }}</option>
                 @endforeach
+            </select>
+            <select name="scope" class="form-select form-control" aria-label="Scope">
+                <option value="">All scopes</option>
+                <option value="global" @selected(($filters['scope'] ?? '') === 'global')>All Branches (Super Admin)</option>
+                <option value="branch" @selected(($filters['scope'] ?? '') === 'branch')>Branch Only</option>
             </select>
             <button type="submit" class="btn btn-soft"><i class="bi bi-search"></i> Filter</button>
         </form>

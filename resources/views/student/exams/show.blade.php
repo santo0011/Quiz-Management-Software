@@ -4,6 +4,9 @@
 @section('page-title', 'Exam Instructions')
 
 @section('content')
+    {{-- Same deduction ExamAttemptService::submit() applies per wrong answer. --}}
+    @php($hasNegativeMarking = $exam->negative_marking_enabled && (float) $exam->negative_marks > 0)
+    @php($negativeMarks = rtrim(rtrim(number_format((float) $exam->negative_marks, 2), '0'), '.'))
 
     {{-- Back Button --}}
     <div class="student-profile-top-actions">
@@ -20,7 +23,7 @@
 
         <div class="student-section-header">
             <div>
-                <span>{{ $exam->schoolClass?->name }}</span>
+                <span>{{ $student->schoolClass?->name ?? $student->class }}</span>
                 <h2>{{ $exam->title }}</h2>
             </div>
 
@@ -72,30 +75,37 @@
             </div>
 
 
-            {{-- Start Date --}}
+            {{-- Attempts used so far, out of the exam's maximum --}}
             <div class="info-card color-teal">
                 <div class="info-card-icon">
-                    <i class="bi bi-play-circle-fill"></i>
+                    <i class="bi bi-arrow-repeat"></i>
                 </div>
-                <span>Starts</span>
+                <span>Attempted</span>
                 <strong>
-                    {{ $exam->starts_at?->format('d M Y') ?? 'Open' }}
+                    {{ max(0, $exam->maximum_attempts - $remainingAttempts) }}
+                    <small>/ {{ $exam->maximum_attempts }}</small>
                 </strong>
             </div>
 
 
-            {{-- End Date --}}
-            <div class="info-card color-red">
-                <div class="info-card-icon">
-                    <i class="bi bi-stop-circle-fill"></i>
+            {{-- Negative marking — only when the exam actually deducts marks --}}
+            @if ($hasNegativeMarking)
+                <div class="info-card color-red">
+                    <div class="info-card-icon">
+                        <i class="bi bi-dash-circle-fill"></i>
+                    </div>
+                    {{-- Kept short so the card stays one line tall like the others. --}}
+                    <span>Negative</span>
+                    <strong>
+                        -{{ $negativeMarks }}
+                        <small>/ wrong</small>
+                    </strong>
                 </div>
-                <span>Ends</span>
-                <strong>
-                    {{ $exam->ends_at?->format('d M Y') ?? 'Open' }}
-                </strong>
-            </div>
+            @endif
 
         </div>
+
+
 
 
         {{-- Exam Warning --}}

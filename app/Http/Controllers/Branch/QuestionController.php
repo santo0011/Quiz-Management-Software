@@ -23,7 +23,7 @@ class QuestionController extends Controller
 
         return view('branch.questions.index', [
             'branch' => $branch,
-            'exams' => Exam::withCount('questions')->with('schoolClass')->forBranch($branch->id)->latest()->paginate(20),
+            'exams' => Exam::withCount('questions')->with(['schoolClass', 'grades'])->forBranch($branch->id)->latest()->paginate(20),
         ]);
     }
 

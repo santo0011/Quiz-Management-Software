@@ -106,7 +106,7 @@
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
                             <div class="performance-info">
-                                <h4>{{ $attempt->exam?->title }}</h4>
+                                <h4>{{ $attempt->exam?->title }} @if (($attempt->exam?->maximum_attempts ?? 1) > 1) <span class="attempt-chip">Attempt {{ $attempt->attemptLabel() }}</span> @endif</h4>
                                 <span class="performance-date">
                                     <i class="bi bi-calendar-check"></i>
                                     {{ $attempt->submitted_at?->format('d M Y') }}

@@ -63,6 +63,15 @@
                 </div>
                 <strong>{{ $attempt->wrong_count }}</strong>
             </div>
+            @if ($attempt->showsNegativeMarks())
+                <div class="result-card color-red">
+                    <div class="result-card-left">
+                        <div class="result-card-icon"><i class="bi bi-dash-square-fill"></i></div>
+                        <span>Negative Marks</span>
+                    </div>
+                    <strong>{{ $attempt->negativeMarksLabel() }}</strong>
+                </div>
+            @endif
             <div class="result-card color-teal">
                 <div class="result-card-left">
                     <div class="result-card-icon"><i class="bi bi-dash-circle-fill"></i></div>
@@ -104,9 +113,25 @@
                 </div>
                 <div>
                     <dt>Attempt Number</dt>
-                    <dd>{{ $attempt->attempt_number }}</dd>
+                    <dd>{{ $attempt->attemptLabel() }}</dd>
                 </div>
             </div>
         </div>
     </section>
+
+    @include('results.partials.attempt-history', [
+        'history' => $history ?? collect([$attempt]),
+        'current' => $attempt,
+        'routeFor' => fn ($item) => route('guardian.students.results.show', [$student, $item]),
+        'selectedLabel' => 'Student answer',
+        'sectionClass' => 'student-section',
+        'headerClass' => 'student-section-header',
+    ])
+
+    @push('scripts')
+        <script>
+            window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+        </script>
+        <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    @endpush
 @endsection
