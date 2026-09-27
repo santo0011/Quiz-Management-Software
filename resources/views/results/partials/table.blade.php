@@ -28,9 +28,6 @@
                         <td>{{ $attempts->firstItem() + $loop->index }}</td>
                         <td>
                             <strong>{{ $attempt->student?->student_name }}</strong>
-                            @if (! in_array($prefix, ['admin', 'branch'], true))
-                                <span class="table-subtext">{{ $attempt->student?->email }}</span>
-                            @endif
                         </td>
                         <td>{{ $attempt->schoolClass?->name }}</td>
                         <td>{{ $attempt->exam?->title }}</td>

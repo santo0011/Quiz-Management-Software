@@ -4,6 +4,9 @@
 @section('page-title', 'Exam Instructions')
 
 @section('content')
+    {{-- Same deduction ExamAttemptService::submit() applies per wrong answer. --}}
+    @php($hasNegativeMarking = $exam->negative_marking_enabled && (float) $exam->negative_marks > 0)
+    @php($negativeMarks = rtrim(rtrim(number_format((float) $exam->negative_marks, 2), '0'), '.'))
 
     {{-- Back Button --}}
     <div class="student-profile-top-actions">
@@ -84,7 +87,25 @@
                 </strong>
             </div>
 
+
+            {{-- Negative marking — only when the exam actually deducts marks --}}
+            @if ($hasNegativeMarking)
+                <div class="info-card color-red">
+                    <div class="info-card-icon">
+                        <i class="bi bi-dash-circle-fill"></i>
+                    </div>
+                    {{-- Kept short so the card stays one line tall like the others. --}}
+                    <span>Negative</span>
+                    <strong>
+                        -{{ $negativeMarks }}
+                        <small>/ wrong</small>
+                    </strong>
+                </div>
+            @endif
+
         </div>
+
+
 
 
         {{-- Exam Warning --}}

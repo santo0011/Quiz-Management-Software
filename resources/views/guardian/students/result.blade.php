@@ -63,6 +63,15 @@
                 </div>
                 <strong>{{ $attempt->wrong_count }}</strong>
             </div>
+            @if ($attempt->showsNegativeMarks())
+                <div class="result-card color-red">
+                    <div class="result-card-left">
+                        <div class="result-card-icon"><i class="bi bi-dash-square-fill"></i></div>
+                        <span>Negative Marks</span>
+                    </div>
+                    <strong>{{ $attempt->negativeMarksLabel() }}</strong>
+                </div>
+            @endif
             <div class="result-card color-teal">
                 <div class="result-card-left">
                     <div class="result-card-icon"><i class="bi bi-dash-circle-fill"></i></div>
@@ -118,4 +127,11 @@
         'sectionClass' => 'student-section',
         'headerClass' => 'student-section-header',
     ])
+
+    @push('scripts')
+        <script>
+            window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+        </script>
+        <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    @endpush
 @endsection

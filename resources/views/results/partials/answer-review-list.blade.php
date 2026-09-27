@@ -8,12 +8,13 @@
 --}}
 @php($answersByQuestion = $attempt->answers->keyBy('question_id'))
 @php($orderedItems = $orderedItems ?? $attempt->exam->orderedItems())
+@php($questionNumbers = $attempt->exam->questionNumbers($orderedItems))
 
 <div class="question-list">
     @foreach ($orderedItems as $item)
         @if ($item['type'] === 'question')
             @php($question = $item['question'])
-            @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => $selectedLabel ?? null])
+            @include('results.partials.answer-item', ['question' => $question, 'questionNumber' => $questionNumbers[$question->id] ?? null, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => $selectedLabel ?? null])
         @else
             @php($group = $item['group'])
             @php($groupAnswers = $group->questions->map(fn ($q) => $answersByQuestion->get($q->id)))
@@ -36,7 +37,7 @@
                 <div class="passage-preview math-content">{!! \App\Support\HtmlSanitizer::sanitize($group->content) !!}</div>
                 <div class="passage-group-questions">
                     @foreach ($group->questions as $question)
-                        @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => $selectedLabel ?? null])
+                        @include('results.partials.answer-item', ['question' => $question, 'questionNumber' => $questionNumbers[$question->id] ?? null, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => $selectedLabel ?? null])
                     @endforeach
                 </div>
             </article>

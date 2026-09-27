@@ -107,6 +107,7 @@
                             'mathPlaceholder' => 'Enter the question text...',
                             'mathRows' => 3,
                             'mathClass' => $errors->has('questions.' . $qIndex . '.question_text') ? 'is-invalid' : '',
+                            'mathMode' => true,
                         ])
                         @error('questions.'.$qIndex.'.question_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
@@ -322,7 +323,7 @@
                         <div class="ckeditor-math-actions"><button type="button" class="btn btn-sm btn-primary" data-math-confirm>Insert Equation</button></div>
                     </div>
                 </div>
-                <textarea name="${name}" rows="${rows}" class="form-control" placeholder="${placeholder}" data-summary-editor></textarea>
+                <textarea name="${name}" rows="${rows}" class="form-control" placeholder="${placeholder}" data-summary-editor data-math-mode></textarea>
             </div>
         `;
 

@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\Exam;
+use App\Models\ExamAttempt;
 use App\Models\PassageGroup;
 use App\Models\Question;
 use App\Models\QuestionCategory;
 use App\Models\SchoolClass;
+use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,6 +56,42 @@ class QuestionNumberingTest extends TestCase
         $badges = $this->badgeNumbers($this->actingAs($this->admin)->get(route('admin.questions.create', $exam))->assertOk()->getContent());
 
         $this->assertSame(['1', '2', '3', '4', '5', '6', '7'], $badges);
+    }
+
+    public function test_answer_review_uses_the_same_numeric_serials(): void
+    {
+        [$exam] = $this->makeSummaryThenNormalExam();
+        $branch = Branch::create(['name' => 'Review Branch', 'email' => 'review-branch@example.com']);
+        $grade = SchoolClass::create(['branch_id' => $branch->id, 'name' => 'Grade Review']);
+        $student = Student::create([
+            'branch_id' => $branch->id,
+            'class_id' => $grade->id,
+            'student_name' => 'Review Student',
+            'guardian_name' => 'Guardian',
+            'class' => $grade->name,
+            'phone_number' => '9876543210',
+            'email' => 'review-student@example.com',
+            'is_active' => true,
+        ]);
+        $attempt = ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'branch_id' => $branch->id,
+            'school_class_id' => $grade->id,
+            'attempt_number' => 1,
+            'started_at' => now()->subMinutes(10),
+            'expires_at' => now(),
+            'submitted_at' => now(),
+            'status' => 'submitted',
+        ]);
+
+        $badges = $this->badgeNumbers($this->actingAs($this->admin)->get(route('admin.results.show', $attempt))->assertOk()->getContent());
+
+        // The page renders the review list (and the same list again inside
+        // the attempt history); each must read 1-7 with no A, B, C labels.
+        $this->assertNotEmpty($badges);
+        $this->assertSame(['1', '2', '3', '4', '5', '6', '7'], array_slice($badges, 0, 7));
+        $this->assertSame([], array_values(array_filter($badges, fn ($badge) => ! ctype_digit($badge))));
     }
 
     public function test_branch_page_shows_the_same_serials(): void

@@ -147,22 +147,21 @@ class MultipleAttemptsTest extends TestCase
         $second = $this->takeAttempt($exam, correct: true);
         $this->takeAttempt($exam, correct: false);
 
+        // The student page shows only the opened attempt — no Attempt
+        // History; every attempt is listed separately in My Results below.
         $response = $this->actingAs($this->student, 'student')
             ->get(route('student.results.show', $second))
             ->assertOk()
-            ->assertSee('Attempt History')
-            ->assertSee('3 of 3 attempts completed')
-            ->assertSeeInOrder(['1/3', '2/3', '3/3'])
+            ->assertDontSee('Attempt History')
+            ->assertDontSee('Attempt 1/3 · Answer Review')
             ->assertSee('Marks Obtained')
-            // Each attempt's own result opens inline under its row.
-            ->assertSeeInOrder(['Attempt 1/3 · Answer Review', 'Attempt 2/3 · Answer Review', 'Attempt 3/3 · Answer Review'])
             ->assertSee('What is 5 + 5?')
-            ->assertSee('Your answer:')
-            ->assertSee('data-bs-parent="#attemptHistory'.$second->id.'"', false);
+            ->assertSee('Your answer:');
 
         // Attempt-wise marks: attempt 2 scored 10, the others 0.
         $this->assertSame(['0.00', '10.00', '0.00'], ExamAttempt::orderBy('attempt_number')->pluck('obtained_marks')->all());
-        $response->assertSee('100.00%');
+        // The opened attempt's own Percentage card.
+        $response->assertSee('100.00<small>%</small>', false);
 
         $this->actingAs($this->student, 'student')
             ->get(route('student.results.index'))
@@ -256,6 +255,8 @@ class MultipleAttemptsTest extends TestCase
                 ->assertSee('Attempt 2/3')
                 ->assertSee('Attempt History')
                 ->assertSee('2 of 3 attempts completed')
+                // Each attempt's own summary cards sit inside its panel.
+                ->assertSeeInOrder(['Attempt 1/3 · Answer Review', 'Marks Obtained', 'Attempt 2/3 · Answer Review', 'Marks Obtained'])
                 // Answers are reviewed per attempt inside the history instead.
                 ->assertDontSee('Correct answers are shown for management review.');
         }

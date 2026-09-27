@@ -86,7 +86,7 @@ class MultiGradeExamVisibilityTest extends TestCase
         $this->assertEqualsCanonicalizing([$this->grade6->id, $this->grade7->id], $exam->grades->pluck('id')->all());
     }
 
-    public function test_teacher_creates_a_multi_grade_exam_for_their_own_branch(): void
+    public function test_teacher_panel_no_longer_manages_exams(): void
     {
         [$branch] = $this->makeBranch('Teacher Branch');
         $teacher = Teacher::create([
@@ -97,14 +97,12 @@ class MultiGradeExamVisibilityTest extends TestCase
             'password' => Hash::make('123456'),
         ]);
 
-        $this->actingAs($teacher, 'teacher')
-            ->post(route('teacher.exams.store'), $this->examPayload('Teacher Multi Grade', [$this->grade5->id, $this->grade7->id]))
-            ->assertRedirect(route('teacher.exams.index'))
-            ->assertSessionDoesntHaveErrors();
+        $this->actingAs($teacher, 'teacher')->get('/teacher/exams')->assertNotFound();
+        $this->actingAs($teacher, 'teacher')->post('/teacher/exams', $this->examPayload('Teacher Multi Grade', [$this->grade5->id]))->assertNotFound();
+        $this->actingAs($teacher, 'teacher')->get('/teacher/questions')->assertNotFound();
+        $this->actingAs($teacher, 'teacher')->get('/teacher/question-categories')->assertNotFound();
 
-        $exam = Exam::where('title', 'Teacher Multi Grade')->firstOrFail();
-        $this->assertSame($branch->id, $exam->branch_id);
-        $this->assertEqualsCanonicalizing([$this->grade5->id, $this->grade7->id], $exam->grades->pluck('id')->all());
+        $this->assertDatabaseMissing('exams', ['title' => 'Teacher Multi Grade']);
     }
 
     public function test_at_least_one_grade_is_required(): void
@@ -277,17 +275,6 @@ class MultiGradeExamVisibilityTest extends TestCase
         $this->actingAs($southUser)->delete(route('branch.exams.destroy', $exam))->assertForbidden();
         $this->actingAs($southUser)->get(route('branch.questions.create', $exam))->assertForbidden();
 
-        $southTeacher = Teacher::create([
-            'branch_id' => $south->id,
-            'name' => 'South Teacher',
-            'email' => 'south-teacher@example.com',
-            'phone_number' => '123',
-            'password' => Hash::make('123456'),
-        ]);
-
-        $this->actingAs($southTeacher, 'teacher')->get(route('teacher.exams.index'))->assertDontSee('North Only Exam');
-        $this->actingAs($southTeacher, 'teacher')->get(route('teacher.exams.show', $exam))->assertForbidden();
-
         $this->assertDatabaseHas('exams', ['id' => $exam->id, 'title' => 'North Only Exam']);
     }
 
@@ -326,12 +313,14 @@ class MultiGradeExamVisibilityTest extends TestCase
             ->assertSee('Branch Only')
             ->assertSee('Mathematics');
 
+        // The Branch exam list has no Scope column.
         $this->actingAs($northUser)->get(route('branch.exams.index'))
             ->assertOk()
             ->assertSee('Global Listed Exam')
             ->assertSee('Branch Listed Exam')
-            ->assertSee('All Branches')
-            ->assertSee('Branch Only');
+            ->assertSeeInOrder(['Exam Name', 'Subject', 'Grade(s)', 'Questions', 'Status', 'Actions'])
+            ->assertDontSee('<th>Scope</th>', false)
+            ->assertDontSee('scope-badge', false);
     }
 
     public function test_super_admin_can_filter_the_exam_list_by_scope(): void

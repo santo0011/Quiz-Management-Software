@@ -6,6 +6,7 @@
     @param  \Illuminate\Support\Collection  $history   submitted attempts, oldest first
     @param  \App\Models\ExamAttempt         $current   the attempt being viewed
     @param  \Closure                        $routeFor  fn (ExamAttempt $attempt): string
+    @param  bool|null                       $showSummary  also show each attempt's summary cards in its panel (staff pages)
 --}}
 @include('partials.format-time')
 @php($maxAttempts = max((int) ($current->exam?->maximum_attempts ?? 1), (int) $history->max('attempt_number')))
@@ -40,12 +41,11 @@
                 <tbody id="{{ $accordionId }}">
                     @foreach ($history as $item)
                         @php($detailId = $accordionId.'-'.$item->id)
-                        <tr class="attempt-history-row {{ $item->id === $current->id ? 'is-current' : '' }}">
+                        {{-- The attempt being viewed starts open; the rest open with the eye button. --}}
+                        @php($isCurrent = $item->id === $current->id)
+                        <tr class="attempt-history-row {{ $isCurrent ? 'is-current' : '' }}">
                             <td>
                                 <span class="attempt-chip">{{ $item->attempt_number }}/{{ $maxAttempts }}</span>
-                                @if ($item->id === $current->id)
-                                    <span class="attempt-viewing">Viewing</span>
-                                @endif
                             </td>
                             <td><strong>{{ $item->obtained_marks }}</strong> / {{ $current->exam?->total_marks }}</td>
                             <td>{{ $item->percentage }}%</td>
@@ -55,10 +55,10 @@
                             <td>{{ $item->submitted_at?->format('d-m-Y H:i:s') }}</td>
                             <td class="text-end">
                                 <button type="button"
-                                        class="btn btn-sm btn-soft attempt-open-btn collapsed"
+                                        class="btn btn-sm btn-soft attempt-open-btn {{ $isCurrent ? '' : 'collapsed' }}"
                                         data-bs-toggle="collapse"
                                         data-bs-target="#{{ $detailId }}"
-                                        aria-expanded="false"
+                                        aria-expanded="{{ $isCurrent ? 'true' : 'false' }}"
                                         aria-controls="{{ $detailId }}"
                                         title="View attempt {{ $item->attempt_number }} answer review">
                                     <i class="bi bi-eye-fill attempt-open-icon"></i>
@@ -68,7 +68,7 @@
                         </tr>
                         <tr class="attempt-detail-row">
                             <td colspan="8">
-                                <div class="collapse" id="{{ $detailId }}" data-bs-parent="#{{ $accordionId }}">
+                                <div class="collapse {{ $isCurrent ? 'show' : '' }}" id="{{ $detailId }}" data-bs-parent="#{{ $accordionId }}">
                                     <div class="attempt-detail">
                                         <div class="attempt-detail-head">
                                             <h3><i class="bi bi-list-check me-2 text-primary"></i>Attempt {{ $item->attempt_number }}/{{ $maxAttempts }} · Answer Review</h3>
@@ -76,6 +76,12 @@
                                                 {{ $item->obtained_marks }} / {{ $current->exam?->total_marks }} marks · {{ $item->percentage }}%
                                             </span>
                                         </div>
+
+                                        @if ($showSummary ?? false)
+                                            <div class="attempt-detail-summary">
+                                                @include('results.partials.attempt-summary', ['attempt' => $item])
+                                            </div>
+                                        @endif
 
                                         @include('results.partials.answer-review-list', [
                                             'attempt' => $item,

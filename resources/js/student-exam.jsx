@@ -111,17 +111,25 @@ function updateStepsWithAnswer(steps, questionId, optionId) {
 function QuestionOptions({ question, onSelect }) {
     return (
         <div className="exam-options">
-            {question.options.map((option) => (
-                <button
-                    type="button"
-                    key={option.id}
-                    className={question.selected_option_id === option.id ? 'exam-option selected' : 'exam-option'}
-                    onClick={() => onSelect(question.id, option.id)}
-                >
-                    <span></span>
-                    <div className="math-content">{option.text}</div>
-                </button>
-            ))}
+            {question.options.map((option) => {
+                const isSelected = question.selected_option_id === option.id;
+
+                // Clicking the already-selected option clears it (null), so the
+                // question goes back to Unanswered — the answer endpoint stores a
+                // null option and scoring counts it as unanswered.
+                return (
+                    <button
+                        type="button"
+                        key={option.id}
+                        className={isSelected ? 'exam-option selected' : 'exam-option'}
+                        aria-pressed={isSelected}
+                        onClick={() => onSelect(question.id, isSelected ? null : option.id)}
+                    >
+                        <span></span>
+                        <div className="math-content">{option.text}</div>
+                    </button>
+                );
+            })}
         </div>
     );
 }

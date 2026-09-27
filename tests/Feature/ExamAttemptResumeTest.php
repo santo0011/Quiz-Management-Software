@@ -58,6 +58,35 @@ class ExamAttemptResumeTest extends TestCase
         $response->assertJsonPath('items.0.question.selected_option_id', $correctOption->id);
     }
 
+    public function test_deselecting_an_answer_leaves_the_question_unanswered(): void
+    {
+        [$student, $exam, $question, $correctOption] = $this->makeFixtureWithQuestion();
+
+        $service = app(ExamAttemptService::class);
+        $attempt = $service->start($exam, $student);
+
+        // Select, then click the same option again — the exam screen sends a
+        // null option for the second click.
+        $this->actingAs($student, 'student')
+            ->postJson(route('student.attempts.answer', $attempt), ['question_id' => $question->id, 'option_id' => $correctOption->id])
+            ->assertOk()
+            ->assertJsonPath('selected_option_id', $correctOption->id);
+
+        $this->actingAs($student, 'student')
+            ->postJson(route('student.attempts.answer', $attempt), ['question_id' => $question->id, 'option_id' => null])
+            ->assertOk()
+            ->assertJsonPath('selected_option_id', null);
+
+        $this->actingAs($student, 'student')->getJson(route('student.attempts.state', $attempt))
+            ->assertJsonPath('items.0.question.selected_option_id', null);
+
+        $submitted = $service->submit($attempt, $student);
+
+        $this->assertSame(1, $submitted->unanswered_count);
+        $this->assertSame(0, $submitted->correct_count);
+        $this->assertSame(0, $submitted->wrong_count);
+    }
+
     public function test_timer_keeps_the_original_start_time_across_requests(): void
     {
         [$student, $exam] = $this->makeFixture(['duration_minutes' => 10]);
@@ -178,6 +207,27 @@ class ExamAttemptResumeTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Continue Exam');
+    }
+
+    public function test_exam_instructions_page_shows_negative_marking_only_when_it_applies(): void
+    {
+        [$student, $exam] = $this->makeFixture(['negative_marking_enabled' => true, 'negative_marks' => 0.25]);
+
+        $this->actingAs($student, 'student')->get(route('student.exams.show', $exam))
+            ->assertOk()
+            ->assertSee('-0.25')
+            ->assertSee('/ wrong');
+
+        $exam->update(['negative_marking_enabled' => false]);
+        $this->actingAs($student, 'student')->get(route('student.exams.show', $exam))
+            ->assertOk()
+            ->assertDontSee('/ wrong');
+
+        // Enabled but deducting nothing — nothing to warn about.
+        $exam->update(['negative_marking_enabled' => true, 'negative_marks' => 0]);
+        $this->actingAs($student, 'student')->get(route('student.exams.show', $exam))
+            ->assertOk()
+            ->assertDontSee('/ wrong');
     }
 
     private function makeFixture(array $examOverrides = []): array

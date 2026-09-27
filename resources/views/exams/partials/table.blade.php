@@ -1,4 +1,6 @@
 @php($prefix = $prefix ?? 'admin')
+{{-- Scope (Global / branch) is shown to Super Admin only — hidden on the Branch exam list. --}}
+@php($showScope = $prefix !== 'branch')
 
 @if ($exams->isEmpty())
     <div class="empty-state">
@@ -15,7 +17,9 @@
                     <th>Exam Name</th>
                     <th>Subject</th>
                     <th>Grade(s)</th>
-                    <th>Scope</th>
+                    @if ($showScope)
+                        <th>Scope</th>
+                    @endif
                     <th>Questions</th>
                     <th>Marks</th>
                     <th>Status</th>
@@ -32,23 +36,25 @@
                         </td>
                         <td>{{ $exam->subject?->name ?? '—' }}</td>
                         <td><span class="exam-grade-list">{{ $exam->gradeNames() ?: '—' }}</span></td>
-                        <td>
-                            @if ($exam->isGlobal())
-                                <span class="scope-badge scope-global">
-                                    <i class="bi bi-globe2"></i>
-                                    {{ $exam->visibilityLabel() }}
-                                </span>
-                            @else
-                                {{-- Hover shows which branch created this exam. --}}
-                                <span class="scope-badge scope-branch"
-                                      data-bs-toggle="tooltip"
-                                      data-bs-title="Created by {{ $exam->createdByLabel() }}"
-                                      aria-label="Created by {{ $exam->createdByLabel() }}">
-                                    <i class="bi bi-building"></i>
-                                    {{ $exam->visibilityLabel() }}
-                                </span>
-                            @endif
-                        </td>
+                        @if ($showScope)
+                            <td>
+                                @if ($exam->isGlobal())
+                                    <span class="scope-badge scope-global">
+                                        <i class="bi bi-globe2"></i>
+                                        {{ $exam->visibilityLabel() }}
+                                    </span>
+                                @else
+                                    {{-- Hover shows which branch created this exam. --}}
+                                    <span class="scope-badge scope-branch"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-title="Created by {{ $exam->createdByLabel() }}"
+                                          aria-label="Created by {{ $exam->createdByLabel() }}">
+                                        <i class="bi bi-building"></i>
+                                        {{ $exam->visibilityLabel() }}
+                                    </span>
+                                @endif
+                            </td>
+                        @endif
                         <td>{{ $exam->questions_count ?? $exam->questions->count() }}</td>
                         <td>{{ $exam->total_marks }}</td>
                         <td>

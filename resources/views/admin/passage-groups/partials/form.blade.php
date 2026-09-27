@@ -25,6 +25,7 @@
                     'mathRows' => 6,
                     'mathRequired' => true,
                     'mathClass' => $errors->has('content') ? 'is-invalid' : '',
+                    'mathMode' => true,
                 ])
                 @error('content')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>

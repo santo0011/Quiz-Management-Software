@@ -59,6 +59,15 @@
                 </div>
                 <strong>{{ $attempt->wrong_count }}</strong>
             </div>
+            @if ($attempt->showsNegativeMarks())
+                <div class="result-card color-red">
+                    <div class="result-card-left">
+                        <div class="result-card-icon"><i class="bi bi-dash-square-fill"></i></div>
+                        <span>Negative Marks</span>
+                    </div>
+                    <strong>{{ $attempt->negativeMarksLabel() }}</strong>
+                </div>
+            @endif
             <div class="result-card color-teal">
                 <div class="result-card-left">
                     <div class="result-card-icon"><i class="bi bi-dash-circle-fill"></i></div>
@@ -76,17 +85,12 @@
         </div>
     </section>
 
-    @include('results.partials.attempt-history', [
-        'history' => $history ?? collect([$attempt]),
-        'current' => $attempt,
-        'routeFor' => fn ($item) => route('student.results.show', $item),
-        'selectedLabel' => 'Your answer',
-        'sectionClass' => 'student-section',
-        'headerClass' => 'student-section-header',
-    ])
+    {{-- No Attempt History on the student page: each attempt is opened from
+         My Results, and this page shows only the opened attempt's review. --}}
 
     @php($answersByQuestion = $attempt->answers->keyBy('question_id'))
     @php($orderedItems = $attempt->exam->orderedItems())
+    @php($questionNumbers = $attempt->exam->questionNumbers($orderedItems))
 
     <section class="student-section">
         <div class="student-section-header">
@@ -103,7 +107,7 @@
             @foreach ($orderedItems as $item)
                 @if ($item['type'] === 'question')
                     @php($question = $item['question'])
-                    @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => 'Your answer'])
+                    @include('results.partials.answer-item', ['question' => $question, 'questionNumber' => $questionNumbers[$question->id] ?? null, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => 'Your answer'])
                 @else
                     @php($group = $item['group'])
                     @php($groupAnswers = $group->questions->map(fn ($q) => $answersByQuestion->get($q->id)))
@@ -131,7 +135,7 @@
                         </div>
                         <div class="passage-group-questions">
                             @foreach ($group->questions as $question)
-                                @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => 'Your answer'])
+                                @include('results.partials.answer-item', ['question' => $question, 'questionNumber' => $questionNumbers[$question->id] ?? null, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index, 'selectedLabel' => 'Your answer'])
                             @endforeach
                         </div>
                     </article>

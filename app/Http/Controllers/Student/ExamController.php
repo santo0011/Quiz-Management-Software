@@ -238,7 +238,6 @@ class ExamController extends Controller
         return view('student.results.show', [
             'student' => $student->load(['branch', 'schoolClass']),
             'attempt' => $attempt->load(['answers.question.options', 'answers.selectedOption']),
-            'history' => $attempt->submittedSiblings(),
         ]);
     }
 
