@@ -136,13 +136,38 @@ class BranchController extends Controller
             'password.confirmed' => 'Passwords do not match.',
         ]);
 
-        abort_if(! $branch->user, 404, 'This branch has no linked login account.');
+        // Branch login looks the account up by email (LoginController), so
+        // update that exact row. $branch->user (hasOne by branch_id) can
+        // resolve to a different users row when several share a branch_id,
+        // which silently left the real login account on its old password.
+        $account = User::where('email', $branch->email)->where('role', 'Branch')->first() ?? $branch->user;
 
-        $branch->user->update([
+        if ($account) {
+            $account->update([
+                'password' => Hash::make($validated['password']),
+            ]);
+
+            return redirect()->route('admin.branches.index')->with('success', 'Branch password updated successfully.');
+        }
+
+        // A branch without a login account (e.g. added outside Admin →
+        // Branches, which always creates one) used to 404 here. Setting its
+        // password creates that account — exactly as store() would have —
+        // unless the email already belongs to a non-Branch login.
+        if (User::where('email', $branch->email)->exists()) {
+            return redirect()->route('admin.branches.index')
+                ->with('error', "This branch has no login account, and its email {$branch->email} is already used by another account. Change the branch email first, then set its password.");
+        }
+
+        User::create([
+            'name' => $branch->name,
+            'email' => $branch->email,
+            'role' => 'Branch',
+            'branch_id' => $branch->id,
             'password' => Hash::make($validated['password']),
         ]);
 
-        return redirect()->route('admin.branches.index')->with('success', 'Branch password updated successfully.');
+        return redirect()->route('admin.branches.index')->with('success', 'Branch login account created with the new password.');
     }
 
     public function toggleActive(Branch $branch): RedirectResponse

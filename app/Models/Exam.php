@@ -29,7 +29,6 @@ class Exam extends Model
         'duration_minutes',
         'starts_at',
         'ends_at',
-        'passing_marks',
         'maximum_attempts',
         'randomize_questions',
         'randomize_answers',
@@ -37,6 +36,18 @@ class Exam extends Model
         'negative_marks',
         'status',
     ];
+
+    protected static function booted(): void
+    {
+        // Keep the Grades pivot in step with the primary Grade column, so an
+        // Exam created with only a school_class_id (older code paths, seeders,
+        // tests) is still assigned to that Grade for eligibility purposes.
+        static::created(function (Exam $exam): void {
+            if ($exam->school_class_id) {
+                $exam->grades()->syncWithoutDetaching([$exam->school_class_id]);
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -59,6 +70,67 @@ class Exam extends Model
     public function schoolClass()
     {
         return $this->belongsTo(SchoolClass::class);
+    }
+
+    /**
+     * Every Grade this Exam is assigned to. A Student is eligible when their
+     * own Grade is any one of these. school_class_id / schoolClass() is the
+     * primary (first selected) Grade and is always part of this set.
+     */
+    public function grades()
+    {
+        return $this->belongsToMany(SchoolClass::class, 'exam_school_class')->withTimestamps();
+    }
+
+    /**
+     * Assign the Exam to exactly the given Grades (one Exam row, never a
+     * copy per Grade) and make the first one its primary Grade.
+     *
+     * @param  array<int, int|string>  $gradeIds
+     */
+    public function syncGrades(array $gradeIds): void
+    {
+        $gradeIds = array_values(array_unique(array_map('intval', $gradeIds)));
+
+        if ($gradeIds === []) {
+            return;
+        }
+
+        if ((int) $this->school_class_id !== $gradeIds[0]) {
+            $this->update(['school_class_id' => $gradeIds[0]]);
+        }
+
+        $this->grades()->sync($gradeIds);
+        $this->unsetRelation('grades');
+    }
+
+    public function isAssignedToGrade(?int $gradeId): bool
+    {
+        return $gradeId !== null && $this->grades()->whereKey($gradeId)->exists();
+    }
+
+    /**
+     * Grade names for display, e.g. "Grade 5, Grade 6".
+     */
+    public function gradeNames(): string
+    {
+        $names = $this->grades->pluck('name')->sort(SORT_NATURAL | SORT_FLAG_CASE)->values();
+
+        if ($names->isEmpty() && $this->schoolClass) {
+            $names = collect([$this->schoolClass->name]);
+        }
+
+        return $names->join(', ');
+    }
+
+    public function createdByLabel(): string
+    {
+        return $this->isGlobal() ? 'Super Admin' : ($this->branch?->name ?? 'Branch');
+    }
+
+    public function visibilityLabel(): string
+    {
+        return $this->isGlobal() ? 'All Branches' : 'Branch Only';
     }
 
     public function category()
@@ -93,7 +165,8 @@ class Exam extends Model
 
     /**
      * Exams usable by a given branch: its own exams plus any
-     * Super-Admin-created global exams (branch_id is null).
+     * Super-Admin-created global exams (branch_id is null). Another
+     * branch's exams are never included.
      */
     public function scopeVisibleToBranch(Builder $query, int $branchId): Builder
     {
@@ -107,9 +180,10 @@ class Exam extends Model
 
     /**
      * The exam-eligibility rule: an Exam is only usable by a Student when
-     * its Grade and Subject match the Student's own Grade and assigned
-     * Subjects (a Student may have several Subjects — matching any one of
-     * them is enough). Branch scoping (own branch or a Super-Admin-created
+     * the Student's own Grade is one of the Exam's Grades (an Exam may be
+     * assigned to several) and its Subject matches one of the Student's
+     * assigned Subjects (a Student may have several Subjects — matching any
+     * one of them is enough). Branch scoping (own branch or a Super-Admin-created
      * global exam) is included since it's the same "does this Student
      * belong to this Exam" question.
      *
@@ -121,7 +195,7 @@ class Exam extends Model
     public function scopeEligibleForStudent(Builder $query, Student $student): Builder
     {
         return $query->where(fn (Builder $q) => $q->where('branch_id', $student->branch_id)->orWhereNull('branch_id'))
-            ->where('school_class_id', $student->class_id)
+            ->whereHas('grades', fn (Builder $q) => $q->whereKey($student->class_id))
             ->where(fn (Builder $q) => $q->whereNull('subject_id')->orWhereIn('subject_id', $student->subjects->pluck('id')));
     }
 
@@ -176,7 +250,7 @@ class Exam extends Model
      * - 'upcoming'   → scheduled start time has not arrived yet
      * - 'available'  → exam is currently within its allowed time window
      * - 'expired'    → exam end time has passed
-     * - 'completed'  → student has already submitted the exam (requires student)
+     * - 'completed'  → student has used every allowed attempt (requires student)
      */
     public function dynamicStatus(?Student $student = null): string
     {
@@ -186,11 +260,12 @@ class Exam extends Model
 
         $now = Carbon::now();
 
-        // If the student has already submitted this exam → completed
-        if ($student && $this->attempts()
-            ->where('student_id', $student->id)
-            ->where('status', 'submitted')
-            ->exists()) {
+        // Completed only once every allowed attempt is used up — with an
+        // Attempt Limit above 1 the student can still take it again after
+        // their first submission. (Limit 1 behaves exactly as before.)
+        if ($student
+            && $this->remainingAttemptsFor($student) <= 0
+            && $this->attempts()->where('student_id', $student->id)->where('status', 'submitted')->exists()) {
             return 'completed';
         }
 
@@ -219,17 +294,72 @@ class Exam extends Model
      */
     public function remainingAttemptsFor(Student $student): int
     {
-        $usedAttempts = $this->attempts()
-            ->where('student_id', $student->id)
-            ->where(function (Builder $query): void {
-                $query->where('status', 'submitted')
-                    ->orWhere(function (Builder $query): void {
-                        $query->where('status', 'in_progress')->where('expires_at', '<=', now());
-                    });
-            })
-            ->count();
+        return max(0, $this->maximum_attempts - $this->usedAttemptsFor($student));
+    }
 
-        return max(0, $this->maximum_attempts - $usedAttempts);
+    public function usedAttemptsFor(Student $student): int
+    {
+        return $this->attempts()
+            ->where('student_id', $student->id)
+            ->where(fn (Builder $query) => self::countedAttemptConstraint($query))
+            ->count();
+    }
+
+    /**
+     * Attempts that count against the Attempt Limit (see remainingAttemptsFor).
+     */
+    private static function countedAttemptConstraint(Builder $query): void
+    {
+        $query->where('status', 'submitted')
+            ->orWhere(function (Builder $query): void {
+                $query->where('status', 'in_progress')->where('expires_at', '<=', now());
+            });
+    }
+
+    /**
+     * A Student only sees their results for an Exam once they have finished
+     * every allowed attempt — or once no further attempt is possible anyway
+     * (the exam window has ended or it was closed), so results are never
+     * withheld forever. With an Attempt Limit of 1 this is true as soon as
+     * the single attempt is submitted, exactly as before.
+     */
+    public function resultsReleasedFor(Student $student): bool
+    {
+        return self::attemptSummaries($student, collect([$this]))[$this->id]['released'];
+    }
+
+    /**
+     * Attempt usage + result visibility for several Exams in one query.
+     *
+     * @param  Collection<int, Exam>  $exams
+     * @return array<int, array{used: int, max: int, remaining: int, released: bool}>
+     */
+    public static function attemptSummaries(Student $student, Collection $exams): array
+    {
+        $exams = $exams->filter()->unique('id');
+
+        $usedByExam = ExamAttempt::query()
+            ->where('student_id', $student->id)
+            ->whereIn('exam_id', $exams->pluck('id'))
+            ->where(fn (Builder $query) => self::countedAttemptConstraint($query))
+            ->selectRaw('exam_id, count(*) as used')
+            ->groupBy('exam_id')
+            ->pluck('used', 'exam_id');
+
+        return $exams->mapWithKeys(function (Exam $exam) use ($usedByExam): array {
+            $used = (int) ($usedByExam[$exam->id] ?? 0);
+            $max = max(1, (int) $exam->maximum_attempts);
+            $remaining = max(0, $max - $used);
+            $noFurtherAttemptPossible = $exam->status === self::STATUS_CLOSED
+                || ($exam->ends_at !== null && $exam->ends_at->isPast());
+
+            return [$exam->id => [
+                'used' => $used,
+                'max' => $max,
+                'remaining' => $remaining,
+                'released' => $remaining === 0 || $noFurtherAttemptPossible,
+            ]];
+        })->all();
     }
 
     public function recalculateTotalMarks(): void
@@ -270,6 +400,50 @@ class Exam extends Model
         return $standaloneQuestions->concat($groups)
             ->sortBy('position')
             ->values();
+    }
+
+    /**
+     * Continuous display serials for every question, in exam order:
+     * questions inside a Summary are numbered 1, 2, 3… like any other
+     * question, and the next standalone question continues from there.
+     * Purely derived from the current order, so it stays correct after
+     * adding, editing, deleting or reordering.
+     *
+     * @return array<int, int> question id => serial number
+     */
+    public function questionNumbers(?Collection $orderedItems = null): array
+    {
+        $numbers = [];
+        $serial = 0;
+
+        foreach ($orderedItems ?? $this->orderedItems() as $item) {
+            $questions = $item['type'] === 'question' ? [$item['question']] : $item['group']->questions;
+
+            foreach ($questions as $question) {
+                $numbers[$question->id] = ++$serial;
+            }
+        }
+
+        return $numbers;
+    }
+
+    /**
+     * How many questions come before the given Summary's own questions in
+     * exam order — i.e. its first question's serial minus one.
+     */
+    public function questionCountBefore(PassageGroup $group, ?Collection $orderedItems = null): int
+    {
+        $count = 0;
+
+        foreach ($orderedItems ?? $this->orderedItems() as $item) {
+            if ($item['type'] === 'passage_group' && $item['group']->id === $group->id) {
+                break;
+            }
+
+            $count += $item['type'] === 'question' ? 1 : $item['group']->questions->count();
+        }
+
+        return $count;
     }
 
     /**

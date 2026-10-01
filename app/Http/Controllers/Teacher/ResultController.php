@@ -17,9 +17,10 @@ class ResultController extends Controller
     {
         $teacher = $request->user('teacher');
 
+        // Exactly the results that belong to the teacher's own Branch (see
+        // ExamAttempt::scopeBelongingToBranch) — never another Branch's.
         $attempts = ExamAttempt::with(['student', 'exam', 'schoolClass'])
-            ->where('branch_id', $teacher->branch_id)
-            ->where('status', 'submitted')
+            ->belongingToBranch($teacher->branch_id ? (int) $teacher->branch_id : null)
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->toString();
                 $query->where(function ($query) use ($search): void {
@@ -144,6 +145,12 @@ class ResultController extends Controller
 
     private function authorizeTeacherAttempt(Request $request, ExamAttempt $attempt): void
     {
-        abort_if($attempt->branch_id !== $request->user('teacher')->branch_id || $attempt->status !== 'submitted', 403, 'This result does not belong to your branch.');
+        $teacherBranchId = $request->user('teacher')->branch_id;
+
+        abort_unless(
+            $attempt->belongsToBranch($teacherBranchId ? (int) $teacherBranchId : null),
+            403,
+            'This result does not belong to your branch.'
+        );
     }
 }

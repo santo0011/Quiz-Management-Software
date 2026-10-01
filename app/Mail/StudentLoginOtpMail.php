@@ -19,7 +19,7 @@ class StudentLoginOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your QuizCore Student Login Verification Code');
+        return new Envelope(subject: 'Your '.\App\Models\Setting::siteName().' Student Login Verification Code');
     }
 
     public function content(): Content
@@ -27,7 +27,7 @@ class StudentLoginOtpMail extends Mailable
         return new Content(
             view: 'emails.login-otp',
             with: [
-                'subject' => 'Your QuizCore Student Login Verification Code',
+                'subject' => 'Your '.\App\Models\Setting::siteName().' Student Login Verification Code',
                 'otp' => $this->otp,
                 'name' => $this->student->student_name ?? 'Student',
                 'typeLabel' => 'Student',

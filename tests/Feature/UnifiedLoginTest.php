@@ -11,6 +11,7 @@ use App\Mail\SuperAdminLoginOtpMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -832,11 +833,11 @@ class UnifiedLoginTest extends TestCase
      */
     public function test_teacher_override_auto_provisions_and_logs_in_a_student_with_no_local_record(): void
     {
-        $branch = Branch::create(['name' => 'Default Override Branch', 'email' => 'override-branch@example.com']);
-        Setting::current()->update([
-            'common_student_password' => 'override-secret',
-            'default_teacher_override_branch_id' => $branch->id,
-        ]);
+        // Branch name deliberately differs in case from the Zoho Location's
+        // first word ("Ringwood" vs "ringwood") to lock in case-insensitive
+        // matching, not just an exact-string match.
+        $branch = Branch::create(['name' => 'ringwood', 'email' => 'override-branch@example.com']);
+        Setting::current()->update(['common_student_password' => 'override-secret']);
 
         Http::fake([
             '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
@@ -850,6 +851,7 @@ class UnifiedLoginTest extends TestCase
                         ['name' => 'Science | Grade 2 (Group) | Ringwood (Head Office)', 'id' => '96867000000927309'],
                     ],
                     'Grade' => 'Grade 2',
+                    'Location' => 'Ringwood Head Office',
                 ],
                 'otp_sent_on_to_mail_address' => 'nl1405-guardian@example.com',
             ], 200),
@@ -884,14 +886,20 @@ class UnifiedLoginTest extends TestCase
         });
     }
 
-    public function test_teacher_override_fails_clearly_when_no_default_branch_is_configured(): void
+    public function test_teacher_override_fails_clearly_when_no_branch_matches_the_zoho_location(): void
     {
         Setting::current()->update(['common_student_password' => 'override-secret']);
 
         Http::fake([
             '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
-            '*zohoapis.com.au*' => Http::response(['status' => 'success', 'error' => []], 200),
+            '*zohoapis.com.au*' => Http::response([
+                'status' => 'success',
+                'error' => [],
+                'Enrolment' => ['Location' => 'Nowhere Branch'],
+            ], 200),
         ]);
+
+        Log::spy();
 
         $this->post(route('login.store'), [
             'login_type' => 'student',
@@ -900,20 +908,24 @@ class UnifiedLoginTest extends TestCase
             'password' => 'override-secret',
         ])->assertSessionHas(
             'login_error',
-            'This Student has no account in this system yet, and no default branch is configured for Teacher Override to create one. Please ask your Super Admin to set one in Settings.'
+            'This Student has no account in this system yet, and their Zoho Enrolment Location does not match any Branch in this system. Please ask your Super Admin to add a matching Branch.'
         );
 
         $this->assertGuest('student');
         $this->assertDatabaseMissing('students', ['zoho_student_id' => 'NL1405']);
+
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->with('Could not create a new Student: no Branch matches the Zoho Enrolment Location.', [
+                'nrich_student_id' => 'NL1405',
+                'zoho_location' => 'Nowhere Branch',
+            ]);
     }
 
     public function test_teacher_override_fails_without_creating_a_duplicate_when_zohos_email_is_already_used(): void
     {
-        $branch = Branch::create(['name' => 'Default Override Branch', 'email' => 'override-branch-2@example.com']);
-        Setting::current()->update([
-            'common_student_password' => 'override-secret',
-            'default_teacher_override_branch_id' => $branch->id,
-        ]);
+        $branch = Branch::create(['name' => 'Ringwood', 'email' => 'override-branch-2@example.com']);
+        Setting::current()->update(['common_student_password' => 'override-secret']);
 
         Student::create([
             'branch_id' => $branch->id,
@@ -932,6 +944,7 @@ class UnifiedLoginTest extends TestCase
                 'error' => [],
                 'Student' => ['name' => 'New Sibling'],
                 'Parent' => ['name' => 'Shared Guardian'],
+                'Enrolment' => ['Location' => 'Ringwood Head Office'],
                 'otp_sent_on_to_mail_address' => 'shared-guardian@example.com',
             ], 200),
         ]);

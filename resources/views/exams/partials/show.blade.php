@@ -18,16 +18,14 @@
                     <i class="bi {{ $exam->status === 'published' ? 'bi-check-circle-fill' : ($exam->status === 'closed' ? 'bi-x-circle-fill' : 'bi-clock-fill') }}"></i>
                     {{ ucfirst($exam->status) }}
                 </span>
-                @if ($contextBranch)
-                    <span class="exam-meta-chip">
-                        <i class="bi bi-building"></i>
-                        {{ $contextBranch->name }}
-                    </span>
-                @endif
-                @if ($exam->schoolClass)
-                    <span class="exam-meta-chip">
+                <span class="exam-meta-chip" title="Created by {{ $exam->createdByLabel() }}">
+                    <i class="bi {{ $exam->isGlobal() ? 'bi-globe2' : 'bi-building' }}"></i>
+                    {{ $exam->isGlobal() ? 'Super Admin · All Branches' : ($contextBranch?->name ?? $exam->createdByLabel()).' · Branch Only' }}
+                </span>
+                @if ($exam->gradeNames() !== '')
+                    <span class="exam-meta-chip" title="Grade(s)">
                         <i class="bi bi-people-fill"></i>
-                        {{ $exam->schoolClass->name }}
+                        {{ $exam->gradeNames() }}
                     </span>
                 @endif
                 @if ($exam->subject)
@@ -95,15 +93,6 @@
         </div>
     </div>
     <div class="exam-stat-card">
-        <div class="exam-stat-icon success">
-            <i class="bi bi-flag-fill"></i>
-        </div>
-        <div class="exam-stat-body">
-            <span>Passing Marks</span>
-            <strong>{{ $exam->passing_marks ?? '—' }}</strong>
-        </div>
-    </div>
-    <div class="exam-stat-card">
         <div class="exam-stat-icon warning">
             <i class="bi bi-stopwatch-fill"></i>
         </div>
@@ -155,7 +144,7 @@
                 <i class="bi bi-arrow-repeat"></i>
             </div>
             <div>
-                <dt>Maximum Attempts</dt>
+                <dt>Attempt Limit</dt>
                 <dd>{{ $exam->maximum_attempts }}</dd>
             </div>
         </div>

@@ -8,7 +8,7 @@
         <div class="panel-header">
             <div>
                 <h2>{{ $exam->title }}</h2>
-                <p>Create the passage/summary for {{ $exam->schoolClass?->name }}. You'll add its questions next.</p>
+                <p>Create the passage/summary for {{ $exam->gradeNames() }}. You'll add its questions next.</p>
             </div>
         </div>
         @include('branch.passage-groups.partials.form', [

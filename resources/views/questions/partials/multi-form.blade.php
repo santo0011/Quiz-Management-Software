@@ -3,8 +3,10 @@
 @php($oldQuestions = old('_form_key') === $formKey ? old('questions', [[]]) : [[]])
 @php($existingQuestions = $existingQuestions ?? collect())
 @php($existingCount = $existingQuestions->count())
+{{-- Display-only: how many exam questions come before this form's questions, so labels continue the exam-wide serial. Input name indices still use $existingCount. --}}
+@php($numberStart = (int) ($numberStart ?? 0))
 
-<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-form-id="{{ $formKey }}" data-default-marks="{{ (int) ($defaultMarks ?? 1) }}" data-existing-count="{{ $existingCount }}">
+<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-form-id="{{ $formKey }}" data-default-marks="{{ (int) ($defaultMarks ?? 1) }}" data-existing-count="{{ $existingCount }}" data-number-start="{{ $numberStart }}">
     @csrf
     <input type="hidden" name="_form_key" value="{{ $formKey }}">
 
@@ -15,7 +17,7 @@
                     <div class="question-card-header">
                         <span class="question-card-icon success"><i class="bi bi-check-circle-fill"></i></span>
                         <div class="flex-grow-1">
-                            <h3>Question {{ $loop->iteration }} <span class="badge-saved">Saved</span></h3>
+                            <h3>Question {{ $numberStart + $loop->iteration }} <span class="badge-saved">Saved</span></h3>
                             <p>This question is already saved to this exam.</p>
                         </div>
                         <a href="{{ route($prefix.'.questions.edit', $existingQuestion) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit question">
@@ -88,7 +90,7 @@
                 <div class="question-card-header">
                     <span class="question-card-icon"><i class="bi bi-patch-question-fill"></i></span>
                     <div class="flex-grow-1">
-                        <h3 data-question-number>Question {{ $existingCount + $qIndex + 1 }}</h3>
+                        <h3 data-question-number>Question {{ $numberStart + $existingCount + $qIndex + 1 }}</h3>
                         <p>Enter the question text, options, and select the correct answer.</p>
                     </div>
                     <button type="button" class="btn btn-sm btn-danger-soft" data-remove-question aria-label="Remove question">
@@ -105,6 +107,7 @@
                             'mathPlaceholder' => 'Enter the question text...',
                             'mathRows' => 3,
                             'mathClass' => $errors->has('questions.' . $qIndex . '.question_text') ? 'is-invalid' : '',
+                            'mathMode' => true,
                         ])
                         @error('questions.'.$qIndex.'.question_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
@@ -320,7 +323,7 @@
                         <div class="ckeditor-math-actions"><button type="button" class="btn btn-sm btn-primary" data-math-confirm>Insert Equation</button></div>
                     </div>
                 </div>
-                <textarea name="${name}" rows="${rows}" class="form-control" placeholder="${placeholder}" data-summary-editor></textarea>
+                <textarea name="${name}" rows="${rows}" class="form-control" placeholder="${placeholder}" data-summary-editor data-math-mode></textarea>
             </div>
         `;
 
@@ -329,11 +332,12 @@
             const list = form.querySelector('[data-multi-question-list]');
             const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             const existingCount = parseInt(form.dataset.existingCount || '0', 10);
+            const numberStart = parseInt(form.dataset.numberStart || '0', 10);
 
             // Re-number blocks and update name indices + badge letters
             const renumberAll = () => {
                 list.querySelectorAll('[data-question-block]').forEach((block, qIdx) => {
-                    block.querySelector('[data-question-number]').textContent = 'Question ' + (existingCount + qIdx + 1);
+                    block.querySelector('[data-question-number]').textContent = 'Question ' + (numberStart + existingCount + qIdx + 1);
                     const headers = ['question_text', 'marks', 'question_category_id', 'explanation'];
                     headers.forEach((field) => {
                         const el = block.querySelector('[name*="[' + field + ']"]');
@@ -416,7 +420,7 @@
                     <div class="question-card-header">
                         <span class="question-card-icon"><i class="bi bi-patch-question-fill"></i></span>
                         <div class="flex-grow-1">
-                            <h3 data-question-number>Question ${existingCount + qIdx + 1}</h3>
+                            <h3 data-question-number>Question ${numberStart + existingCount + qIdx + 1}</h3>
                             <p>Enter the question text, options, and select the correct answer.</p>
                         </div>
                         <button type="button" class="btn btn-sm btn-danger-soft" data-remove-question aria-label="Remove question">

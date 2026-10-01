@@ -4,6 +4,9 @@
 @section('page-title', 'Exam Instructions')
 
 @section('content')
+    {{-- Same deduction ExamAttemptService::submit() applies per wrong answer. --}}
+    @php($hasNegativeMarking = $exam->negative_marking_enabled && (float) $exam->negative_marks > 0)
+    @php($negativeMarks = rtrim(rtrim(number_format((float) $exam->negative_marks, 2), '0'), '.'))
 
     {{-- Back Button --}}
     <div class="student-profile-top-actions">
@@ -20,7 +23,7 @@
 
         <div class="student-section-header">
             <div>
-                <span>{{ $exam->schoolClass?->name }}</span>
+                <span>{{ $student->schoolClass?->name ?? $student->class }}</span>
                 <h2>{{ $exam->title }}</h2>
             </div>
 
@@ -49,16 +52,6 @@
             </div>
 
 
-            {{-- Passing Marks --}}
-            <div class="info-card color-green">
-                <div class="info-card-icon">
-                    <i class="bi bi-flag-fill"></i>
-                </div>
-                <span>Passing Marks</span>
-                <strong>{{ $exam->passing_marks ?? 'Not set' }}</strong>
-            </div>
-
-
             {{-- Duration --}}
             <div class="info-card color-orange">
                 <div class="info-card-icon">
@@ -82,30 +75,37 @@
             </div>
 
 
-            {{-- Start Date --}}
+            {{-- Attempts used so far, out of the exam's maximum --}}
             <div class="info-card color-teal">
                 <div class="info-card-icon">
-                    <i class="bi bi-play-circle-fill"></i>
+                    <i class="bi bi-arrow-repeat"></i>
                 </div>
-                <span>Starts</span>
+                <span>Attempted</span>
                 <strong>
-                    {{ $exam->starts_at?->format('d M Y') ?? 'Open' }}
+                    {{ max(0, $exam->maximum_attempts - $remainingAttempts) }}
+                    <small>/ {{ $exam->maximum_attempts }}</small>
                 </strong>
             </div>
 
 
-            {{-- End Date --}}
-            <div class="info-card color-red">
-                <div class="info-card-icon">
-                    <i class="bi bi-stop-circle-fill"></i>
+            {{-- Negative marking — only when the exam actually deducts marks --}}
+            @if ($hasNegativeMarking)
+                <div class="info-card color-red">
+                    <div class="info-card-icon">
+                        <i class="bi bi-dash-circle-fill"></i>
+                    </div>
+                    {{-- Kept short so the card stays one line tall like the others. --}}
+                    <span>Negative</span>
+                    <strong>
+                        -{{ $negativeMarks }}
+                        <small>/ wrong</small>
+                    </strong>
                 </div>
-                <span>Ends</span>
-                <strong>
-                    {{ $exam->ends_at?->format('d M Y') ?? 'Open' }}
-                </strong>
-            </div>
+            @endif
 
         </div>
+
+
 
 
         {{-- Exam Warning --}}
@@ -133,10 +133,9 @@
         >
             @csrf
 
-            {{-- IMPORTANT: type="button" prevents form submission --}}
             <button
                 class="btn btn-primary btn-lg"
-                type="button"
+                type="submit"
                 id="beginExamButton"
                 @disabled($remainingAttempts <= 0)
             >
@@ -147,135 +146,5 @@
         </form>
 
     </section>
-
-
-    {{-- Start Exam Modal --}}
-    <div
-        class="modal fade"
-        id="beginExamModal"
-        tabindex="-1"
-        aria-labelledby="beginExamModalLabel"
-        aria-hidden="true"
-    >
-        <div class="modal-dialog modal-dialog-centered">
-
-            <div class="modal-content confirm-modal">
-
-                {{-- Modal Header --}}
-                <div class="modal-header">
-
-                    <div>
-                        <span class="page-kicker">
-                            Exam Ready
-                        </span>
-
-                        <h2
-                            class="modal-title fs-5"
-                            id="beginExamModalLabel"
-                        >
-                            {{ $hasActiveAttempt ? 'Continue Exam' : 'Start Exam' }}
-                        </h2>
-                    </div>
-
-                    <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"
-                    ></button>
-
-                </div>
-
-
-                {{-- Modal Body --}}
-                <div class="modal-body">
-
-                    <div class="begin-exam-icon">
-                        <i class="bi bi-rocket-takeoff-fill"></i>
-                    </div>
-
-                    <p class="mb-0 text-center" id="beginExamModalBody">
-                        @if ($hasActiveAttempt)
-                            This exam is already in progress. Continue to resume your existing
-                            timer and previously saved answers — it will not restart.
-                        @else
-                            Are you ready to start this exam?
-                            Once started, the exam timer will begin.
-                        @endif
-                    </p>
-
-                </div>
-
-
-                {{-- Modal Footer --}}
-                <div class="modal-footer">
-
-                    {{-- Cancel --}}
-                    <button
-                        type="button"
-                        class="btn btn-outline-secondary"
-                        data-bs-dismiss="modal"
-                    >
-                        Cancel
-                    </button>
-
-
-                    {{-- Confirm --}}
-                    <button
-                        type="button"
-                        class="btn btn-primary"
-                        id="confirmBeginExamButton"
-                    >
-                        <i class="bi {{ $hasActiveAttempt ? 'bi-arrow-right-circle-fill' : 'bi-play-circle-fill' }}"></i>
-                        {{ $hasActiveAttempt ? 'Continue Exam' : 'Begin Exam' }}
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-    </div>
-
-
-    {{-- JavaScript --}}
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-
-                const form = document.getElementById('beginExamForm');
-                const beginButton = document.getElementById('beginExamButton');
-                const modalEl = document.getElementById('beginExamModal');
-                const confirmButton = document.getElementById('confirmBeginExamButton');
-
-                if (!form || !beginButton || !modalEl || !confirmButton) {
-                    return;
-                }
-
-
-                // ==================================================
-                // START BUTTON
-                // Only opens the modal.
-                // Does NOT submit the form.
-                // Does NOT show a loader.
-                // ==================================================
-                beginButton.addEventListener('click', function () {
-                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                    modal.show();
-                });
-
-
-                // ==================================================
-                // CONFIRM BUTTON INSIDE MODAL
-                // Submit the exam form.
-                // No spinner is added here.
-                // ==================================================
-                confirmButton.addEventListener('click', function () {
-                    form.submit();
-                });
-
-            });
-        </script>
-    @endpush
 
 @endsection

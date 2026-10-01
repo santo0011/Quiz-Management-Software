@@ -18,7 +18,7 @@ class GuardianLoginOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your QuizCore Guardian Login Verification Code');
+        return new Envelope(subject: 'Your '.\App\Models\Setting::siteName().' Guardian Login Verification Code');
     }
 
     public function content(): Content
@@ -26,7 +26,7 @@ class GuardianLoginOtpMail extends Mailable
         return new Content(
             view: 'emails.login-otp',
             with: [
-                'subject' => 'Your QuizCore Guardian Login Verification Code',
+                'subject' => 'Your '.\App\Models\Setting::siteName().' Guardian Login Verification Code',
                 'otp' => $this->otp,
                 'name' => 'Guardian',
                 'typeLabel' => 'Guardian',

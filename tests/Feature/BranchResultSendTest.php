@@ -96,12 +96,12 @@ class BranchResultSendTest extends TestCase
             'guardian_email' => 'parent-otp-email@example.com',
         ]);
 
-        $before = $attempt->only(['obtained_marks', 'percentage', 'correct_count', 'wrong_count', 'unanswered_count', 'is_passed']);
+        $before = $attempt->only(['obtained_marks', 'percentage', 'correct_count', 'wrong_count', 'unanswered_count']);
 
         $this->actingAs($branchUser)->post(route('branch.results.send', $attempt), ['review' => 'Solid performance overall.']);
 
         $attempt->refresh();
-        $this->assertSame($before, $attempt->only(['obtained_marks', 'percentage', 'correct_count', 'wrong_count', 'unanswered_count', 'is_passed']));
+        $this->assertSame($before, $attempt->only(['obtained_marks', 'percentage', 'correct_count', 'wrong_count', 'unanswered_count']));
     }
 
     public function test_live_https_request_host_is_used_for_pdf_url_when_env_base_url_is_localhost(): void
@@ -374,7 +374,6 @@ class BranchResultSendTest extends TestCase
             'duration_minutes' => 30,
             'starts_at' => now()->subMinute(),
             'ends_at' => now()->addHour(),
-            'passing_marks' => 5,
             'maximum_attempts' => 1,
             'status' => Exam::STATUS_PUBLISHED,
         ]);
@@ -402,7 +401,6 @@ class BranchResultSendTest extends TestCase
             'correct_count' => 1,
             'wrong_count' => 0,
             'unanswered_count' => 0,
-            'is_passed' => true,
             'status' => 'submitted',
         ]);
 

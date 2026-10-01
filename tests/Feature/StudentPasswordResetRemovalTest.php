@@ -30,7 +30,7 @@ class StudentPasswordResetRemovalTest extends TestCase
     public function test_admin_students_index_shows_no_reset_password_action(): void
     {
         $admin = $this->makeAdmin();
-        $this->makeStudent();
+        $student = $this->makeStudent();
 
         $response = $this->actingAs($admin)->get(route('admin.students.index'));
 

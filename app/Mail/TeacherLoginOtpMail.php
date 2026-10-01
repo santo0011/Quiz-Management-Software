@@ -18,7 +18,7 @@ class TeacherLoginOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your QuizCore Teacher Login Verification Code');
+        return new Envelope(subject: 'Your '.\App\Models\Setting::siteName().' Teacher Login Verification Code');
     }
 
     public function content(): Content
@@ -26,7 +26,7 @@ class TeacherLoginOtpMail extends Mailable
         return new Content(
             view: 'emails.login-otp',
             with: [
-                'subject' => 'Your QuizCore Teacher Login Verification Code',
+                'subject' => 'Your '.\App\Models\Setting::siteName().' Teacher Login Verification Code',
                 'otp' => $this->otp,
                 'name' => 'Teacher',
                 'typeLabel' => 'Teacher',

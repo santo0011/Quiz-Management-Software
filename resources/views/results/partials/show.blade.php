@@ -1,6 +1,13 @@
 @php($prefix = $prefix ?? 'admin')
 @include('partials.format-time')
 
+{{-- Staff always see every attempt (no waiting for the Attempt Limit).
+     Multi-attempt exams show Attempt History (same condition that partial
+     renders on): each attempt's summary and Answer Review live inside its
+     own panel there; single-attempt exams keep them on this page. --}}
+@php($attemptHistory = $attempt->submittedSiblings())
+@php($showsAttemptHistory = $attemptHistory->count() > 1 || (int) ($attempt->exam?->maximum_attempts ?? 1) > 1)
+
 @unless ($hideBack ?? false)
     <div class="student-profile-top-actions">
         <a href="{{ route($prefix.'.results.index') }}" class="btn btn-outline-secondary btn-student-back">
@@ -14,123 +21,29 @@
     <div class="panel-header">
         <div>
             <h2><i class="bi bi-award me-2 text-primary"></i>{{ $attempt->exam?->title }}</h2>
-            <p>{{ $attempt->student?->student_name }} · Attempt {{ $attempt->attempt_number }}</p>
-        </div>
-        <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
-            <i class="bi {{ $attempt->is_passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
-            {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-        </span>
-    </div>
-
-    <div class="exam-stats-grid">
-        <div class="exam-stat-card">
-            <div class="exam-stat-icon primary">
-                <i class="bi bi-trophy-fill"></i>
-            </div>
-            <div class="exam-stat-body">
-                <span>Obtained Marks</span>
-                <strong>{{ $attempt->obtained_marks }}</strong>
-            </div>
-        </div>
-        <div class="exam-stat-card">
-            <div class="exam-stat-icon accent">
-                <i class="bi bi-patch-check-fill"></i>
-            </div>
-            <div class="exam-stat-body">
-                <span>Total Marks</span>
-                <strong>{{ $attempt->exam?->total_marks }}</strong>
-            </div>
-        </div>
-        <div class="exam-stat-card">
-            <div class="exam-stat-icon success">
-                <i class="bi bi-percent"></i>
-            </div>
-            <div class="exam-stat-body">
-                <span>Percentage</span>
-                <strong>{{ $attempt->percentage }}<small>%</small></strong>
-            </div>
-        </div>
-        <div class="exam-stat-card">
-            <div class="exam-stat-icon warning">
-                <i class="bi bi-stopwatch-fill"></i>
-            </div>
-            <div class="exam-stat-body">
-                <span>Time Taken</span>
-                <strong>{{ format_time_taken($attempt) }}</strong>
-            </div>
+            <p>{{ $attempt->student?->student_name }} · Attempt {{ $attempt->attemptLabel() }}</p>
         </div>
     </div>
 
-    <div class="exam-details-grid mt-3">
-        <div class="exam-detail-item">
-            <div class="exam-detail-icon">
-                <i class="bi bi-person-fill"></i>
-            </div>
-            <div>
-                <dt>Student</dt>
-                <dd>{{ $attempt->student?->student_name }}</dd>
-            </div>
-        </div>
-        <div class="exam-detail-item">
-            <div class="exam-detail-icon">
-                <i class="bi bi-people-fill"></i>
-            </div>
-            <div>
-                <dt>Grade</dt>
-                <dd>{{ $attempt->schoolClass?->name }}</dd>
-            </div>
-        </div>
-        <div class="exam-detail-item">
-            <div class="exam-detail-icon success">
-                <i class="bi bi-check-circle-fill"></i>
-            </div>
-            <div>
-                <dt>Correct</dt>
-                <dd>{{ $attempt->correct_count }}</dd>
-            </div>
-        </div>
-        <div class="exam-detail-item">
-            <div class="exam-detail-icon danger">
-                <i class="bi bi-x-circle-fill"></i>
-            </div>
-            <div>
-                <dt>Wrong</dt>
-                <dd>{{ $attempt->wrong_count }}</dd>
-            </div>
-        </div>
-        <div class="exam-detail-item">
-            <div class="exam-detail-icon">
-                <i class="bi bi-dash-circle-fill"></i>
-            </div>
-            <div>
-                <dt>Unanswered</dt>
-                <dd>{{ $attempt->unanswered_count }}</dd>
-            </div>
-        </div>
-        <div class="exam-detail-item">
-            <div class="exam-detail-icon">
-                <i class="bi bi-flag-fill"></i>
-            </div>
-            <div>
-                <dt>Passing Marks</dt>
-                <dd>{{ $attempt->exam?->passing_marks ?? 'Not set' }}</dd>
-            </div>
-        </div>
-        <div class="exam-detail-item">
-            <div class="exam-detail-icon">
-                <i class="bi bi-calendar-check"></i>
-            </div>
-            <div>
-                <dt>Submitted</dt>
-                <dd>{{ $attempt->submitted_at?->format('d M Y') }}</dd>
-            </div>
-        </div>
-    </div>
+    {{-- Multi-attempt results show each attempt's own summary inside its
+         Attempt History panel below instead of once up here. --}}
+    @unless ($showsAttemptHistory)
+        @include('results.partials.attempt-summary', ['attempt' => $attempt])
+    @endunless
 </section>
+
+@include('results.partials.attempt-history', [
+    'history' => $attemptHistory,
+    'current' => $attempt,
+    'routeFor' => fn ($item) => route($prefix.'.results.show', $item),
+    'showSummary' => true,
+])
 
 @php($answersByQuestion = $attempt->answers->keyBy('question_id'))
 @php($orderedItems = $attempt->exam->orderedItems())
+@php($questionNumbers = $attempt->exam->questionNumbers($orderedItems))
 
+@unless ($showsAttemptHistory)
 <section class="content-panel questions-panel">
     <div class="panel-header">
         <div>
@@ -147,7 +60,7 @@
         @foreach ($orderedItems as $item)
             @if ($item['type'] === 'question')
                 @php($question = $item['question'])
-                @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index])
+                @include('results.partials.answer-item', ['question' => $question, 'questionNumber' => $questionNumbers[$question->id] ?? null, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index])
             @else
                 @php($group = $item['group'])
                 @php($groupAnswers = $group->questions->map(fn ($q) => $answersByQuestion->get($q->id)))
@@ -170,7 +83,7 @@
                     <div class="passage-preview">{!! \App\Support\HtmlSanitizer::sanitize($group->content) !!}</div>
                     <div class="passage-group-questions">
                         @foreach ($group->questions as $question)
-                            @include('results.partials.answer-item', ['question' => $question, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index])
+                            @include('results.partials.answer-item', ['question' => $question, 'questionNumber' => $questionNumbers[$question->id] ?? null, 'answer' => $answersByQuestion->get($question->id), 'itemIndex' => $loop->index])
                         @endforeach
                     </div>
                 </article>
@@ -178,6 +91,7 @@
         @endforeach
     </div>
 </section>
+@endunless
 
 @push('scripts')
     <script>

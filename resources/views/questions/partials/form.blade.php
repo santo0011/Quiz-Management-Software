@@ -27,6 +27,7 @@
                     'mathPlaceholder' => 'Enter the question text...',
                     'mathRows' => 3,
                     'mathClass' => $errors->has('question_text') ? 'is-invalid' : '',
+                    'mathMode' => true,
                 ])
                 @error('question_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Teacher;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,13 +10,15 @@ class QuestionCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        if (! in_array($this->user()?->role, ['Super Admin', 'Branch'], true)) {
+        $isBranchScoped = $this->user()?->role === 'Branch' || $this->user() instanceof Teacher;
+
+        if (! $isBranchScoped && $this->user()?->role !== 'Super Admin') {
             return false;
         }
 
         $category = $this->route('question_category');
 
-        if ($category && $this->user()?->role === 'Branch') {
+        if ($category && $isBranchScoped) {
             return $category->branch_id === $this->user()?->branch_id;
         }
 
@@ -32,7 +35,7 @@ class QuestionCategoryRequest extends FormRequest
     public function rules(): array
     {
         $category = $this->route('question_category');
-        $isBranch = $this->user()?->role === 'Branch';
+        $isBranch = $this->user()?->role === 'Branch' || $this->user() instanceof Teacher;
         $branchId = $isBranch
             ? $this->user()?->branch_id
             : ($this->input('branch_id') ?: $category?->branch_id);

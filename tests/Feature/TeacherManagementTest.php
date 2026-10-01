@@ -188,9 +188,9 @@ class TeacherManagementTest extends TestCase
         $this->assertGuest('teacher');
     }
 
-    public function test_login_page_does_not_offer_teacher_option(): void
+    public function test_login_page_offers_teacher_option(): void
     {
-        $this->get(route('login'))->assertOk()->assertDontSee('data-login-type-button="teacher"', false);
+        $this->get(route('login'))->assertOk()->assertSee('data-login-type-button="teacher"', false);
     }
 
     // --- Teacher profile & change password ---
@@ -210,7 +210,11 @@ class TeacherManagementTest extends TestCase
             ->get(route('teacher.profile'))
             ->assertOk()
             ->assertSee('Jane')
-            ->assertSee('jane@example.com');
+            ->assertSee('jane@example.com')
+            ->assertSee('Main')
+            ->assertSee('My Review Activity')
+            ->assertSee(route('teacher.profile'), false)
+            ->assertDontSee('teacher/exams', false);
 
         $this->actingAs($teacher, 'teacher')
             ->put(route('teacher.password.update'), [
@@ -268,6 +272,36 @@ class TeacherManagementTest extends TestCase
 
         Mail::assertSent(ResultRemarkMail::class, 1);
         Mail::assertSent(ResultRemarkMail::class, fn ($mail) => $mail->hasTo('solo-student@example.com'));
+    }
+
+    public function test_teacher_results_list_shows_exactly_their_own_branchs_results(): void
+    {
+        [$ownAttempt, $teacher] = $this->makeAttemptWithTeacher('own@example.com', null);
+        [$otherAttempt, $otherTeacher] = $this->makeAttemptWithTeacher('other@example.com', null);
+        $ownAttempt->student->update(['student_name' => 'Own Branch Student']);
+        $otherAttempt->student->update(['student_name' => 'Other Branch Student']);
+
+        // A stale attempt snapshot must not move a result between branches:
+        // ownership follows the student's current branch.
+        $ownAttempt->update(['branch_id' => $otherTeacher->branch_id]);
+
+        // Not submitted yet — not a result.
+        $inProgress = $ownAttempt->replicate()->fill(['status' => 'in_progress', 'attempt_number' => 2, 'submitted_at' => null]);
+        $inProgress->save();
+
+        $this->actingAs($teacher, 'teacher')->get(route('teacher.results.index'))
+            ->assertOk()
+            ->assertSee('Own Branch Student')
+            ->assertDontSee('Other Branch Student');
+
+        $this->actingAs($otherTeacher, 'teacher')->get(route('teacher.results.index'))
+            ->assertOk()
+            ->assertSee('Other Branch Student')
+            ->assertDontSee('Own Branch Student');
+
+        $this->actingAs($teacher, 'teacher')->get(route('teacher.results.show', $ownAttempt))->assertOk();
+        $this->actingAs($teacher, 'teacher')->get(route('teacher.results.show', $inProgress))->assertForbidden();
+        $this->actingAs($otherTeacher, 'teacher')->get(route('teacher.results.show', $ownAttempt))->assertForbidden();
     }
 
     public function test_teacher_cannot_view_or_remark_a_result_outside_their_branch(): void
@@ -350,7 +384,6 @@ class TeacherManagementTest extends TestCase
             'correct_count' => 4,
             'wrong_count' => 1,
             'unanswered_count' => 0,
-            'is_passed' => true,
             'status' => 'submitted',
         ]);
 

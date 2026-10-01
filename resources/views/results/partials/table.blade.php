@@ -15,9 +15,9 @@
                     <th>Student</th>
                     <th>Grade</th>
                     <th>Exam</th>
+                    <th>Attempts</th>
                     <th>Marks</th>
                     <th>Percentage</th>
-                    <th>Result</th>
                     <th>Attempt Date</th>
                     <th class="text-end">Action</th>
                 </tr>
@@ -28,14 +28,13 @@
                         <td>{{ $attempts->firstItem() + $loop->index }}</td>
                         <td>
                             <strong>{{ $attempt->student?->student_name }}</strong>
-                            <span class="table-subtext">{{ $attempt->student?->email }}</span>
                         </td>
                         <td>{{ $attempt->schoolClass?->name }}</td>
                         <td>{{ $attempt->exam?->title }}</td>
+                        <td><span class="attempt-chip" title="Attempt {{ $attempt->attempt_number }} of {{ $attempt->exam?->maximum_attempts ?? 1 }}">{{ $attempt->attemptLabel() }}</span></td>
                         <td>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</td>
                         <td>{{ $attempt->percentage }}%</td>
-                        <td><span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">{{ $attempt->is_passed ? 'Passed' : 'Failed' }}</span></td>
-                        <td>{{ $attempt->submitted_at?->format('d M Y') }}</td>
+                        <td>{{ $attempt->submitted_at?->format('d-m-Y H:i:s') }}</td>
                         <td class="text-end">
                             <a href="{{ route($prefix.'.results.show', $attempt) }}" class="btn btn-sm btn-soft"><i class="bi bi-eye-fill"></i></a>
                         </td>

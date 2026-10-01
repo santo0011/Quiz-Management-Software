@@ -30,7 +30,7 @@
             </div>
             <div>
                 <dt>Branch</dt>
-                <dd>{{ $class->branch->name }}</dd>
+                <dd>{{ $class->branch?->name ?? 'All Branches' }}</dd>
             </div>
             <div>
                 <dt>Created At</dt>

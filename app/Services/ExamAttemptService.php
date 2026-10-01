@@ -8,7 +8,6 @@ use App\Models\ExamAttempt;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\Student;
-use App\Support\ResultPdfUrl;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -158,7 +157,6 @@ class ExamAttemptService
 
             $obtained = max(0, $obtained);
             $percentage = $exam->total_marks > 0 ? round(($obtained / $exam->total_marks) * 100, 2) : 0;
-            $passingMarks = $exam->passing_marks ?? 0;
 
             $attempt->update([
                 'submitted_at' => now(),
@@ -167,7 +165,6 @@ class ExamAttemptService
                 'correct_count' => $correct,
                 'wrong_count' => $wrong,
                 'unanswered_count' => $unanswered,
-                'is_passed' => $obtained >= $passingMarks,
                 'status' => 'submitted',
             ]);
 
@@ -184,11 +181,12 @@ class ExamAttemptService
     }
 
     /**
-     * Finalize a just-submitted attempt: generate its result PDF, store it
-     * publicly, and forward it to Zoho. Wrapped so that any failure here
-     * (PDF rendering, storage, or Zoho being down) is logged and swallowed —
-     * the student must still be able to view their locally computed result
-     * regardless of what happens in this step.
+     * Finalize a just-submitted attempt: generate its result PDF and store
+     * it publicly. It is deliberately NOT sent to Zoho here — a result only
+     * goes to Zoho when the Branch reviews and sends it
+     * (Branch\ResultController::send()). Wrapped so that any failure here
+     * is logged and swallowed — the student must still be able to view
+     * their locally computed result regardless.
      */
     private function generateAndSyncResultPdf(ExamAttempt $attempt): void
     {
@@ -206,30 +204,8 @@ class ExamAttemptService
                 'result_pdf_path' => $path,
                 'result_pdf_token' => $token,
             ]);
-
-            $url = ResultPdfUrl::make($attempt, $token);
-            $student = $attempt->student;
-
-            if (! $student?->zoho_student_id || ! $attempt->zoho_class_id || ! $attempt->zoho_class_name) {
-                app(ZohoResultService::class)->sendResult($attempt, $url);
-
-                return;
-            }
-
-            $verifier = app(ResultPdfUrlVerifier::class);
-            if (! $verifier->verify($url)) {
-                Log::warning('Skipped sending result to Zoho: generated result PDF URL is not publicly reachable.', [
-                    'attempt_id' => $attempt->id,
-                    'pdf_url' => $url,
-                    'reason' => $verifier->lastFailureMessage(),
-                ]);
-
-                return;
-            }
-
-            app(ZohoResultService::class)->sendResult($attempt, $url);
         } catch (\Throwable $e) {
-            Log::error('Failed to generate/sync the result PDF for an exam attempt.', [
+            Log::error('Failed to generate the result PDF for an exam attempt.', [
                 'attempt_id' => $attempt->id,
                 'exception' => $e->getMessage(),
             ]);
@@ -253,7 +229,9 @@ class ExamAttemptService
             throw ValidationException::withMessages(['exam' => 'Your branch has been deactivated. Please contact your administrator.']);
         }
 
-        if (($exam->branch_id !== null && $exam->branch_id !== $student->branch_id) || $exam->school_class_id !== $student->class_id) {
+        // Branch exams are only for their own branch; the Student's Grade
+        // must be one of the Exam's (possibly several) Grades.
+        if (($exam->branch_id !== null && $exam->branch_id !== $student->branch_id) || ! $exam->isAssignedToGrade($student->class_id)) {
             throw ValidationException::withMessages(['exam' => 'This exam is not assigned to your class.']);
         }
 

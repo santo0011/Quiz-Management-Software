@@ -6,11 +6,13 @@ use App\Models\Setting;
 use App\Services\SingleSessionService;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -33,6 +35,26 @@ class AppServiceProvider extends ServiceProvider
         $this->applyStoredMailSettings();
         $this->registerSingleSessionOnRememberLogin();
         $this->blockDestructiveArtisanCommandsInProduction();
+        $this->shareSiteNameWithEmailViews();
+    }
+
+    /**
+     * Every "emails.*" view (the shared layout and every mail body it
+     * extends) reads the Admin-configured site name as $siteName instead of
+     * hardcoding "QuizCore", so branded mail stays in sync with Settings
+     * without each Mailable having to pass it explicitly.
+     */
+    private function shareSiteNameWithEmailViews(): void
+    {
+        View::composer('emails.*', function ($view): void {
+            try {
+                $siteName = Schema::hasTable('settings') ? Setting::siteName() : 'QuizCore';
+            } catch (\Throwable) {
+                $siteName = 'QuizCore';
+            }
+
+            $view->with('siteName', $siteName);
+        });
     }
 
     /**
@@ -119,11 +141,21 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
+        try {
+            $mailPassword = $settings->mail_password;
+        } catch (DecryptException) {
+            // Stored mail_password was encrypted with a different APP_KEY
+            // (e.g. the key was regenerated) and can no longer be read.
+            // Don't let a bad credential blow up every request in the app;
+            // fall back to no password and let an admin re-save it.
+            $mailPassword = null;
+        }
+
         Config::set('mail.default', $settings->mail_mailer ?: 'smtp');
         Config::set('mail.mailers.smtp.host', $settings->mail_host);
         Config::set('mail.mailers.smtp.port', $settings->mail_port ?: 587);
         Config::set('mail.mailers.smtp.username', $settings->mail_username);
-        Config::set('mail.mailers.smtp.password', $settings->mail_password);
+        Config::set('mail.mailers.smtp.password', $mailPassword);
         Config::set('mail.mailers.smtp.encryption', $settings->mail_encryption);
 
         if ($settings->mail_from_address) {

@@ -4,7 +4,7 @@
 @section('page-title', 'Subjects')
 
 @section('content')
-    <section class="content-panel">
+    <section class="content-panel mb-4">
         <div class="panel-header">
             <div>
                 <h2>Subjects</h2>
@@ -16,14 +16,16 @@
             </button>
         </div>
 
-        <form method="GET" action="{{ route('admin.subjects.index') }}" class="filter-bar compact-filter-bar">
+        <form method="GET" action="{{ route('admin.subjects.index') }}" class="filter-bar compact-filter-bar mb-0">
             <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="Search subject name">
             <button type="submit" class="btn btn-soft">
                 <i class="bi bi-search"></i>
                 Filter
             </button>
         </form>
+    </section>
 
+    <section class="content-panel">
         @if ($subjects->isEmpty())
             <div class="empty-state">
                 <i class="bi bi-book"></i>

@@ -64,7 +64,6 @@ class ExamApiController extends Controller
                 'title' => $exam->title,
                 'duration_minutes' => $exam->duration_minutes,
                 'total_marks' => $exam->total_marks,
-                'passing_marks' => $exam->passing_marks,
             ],
             'items' => $items->map(function (array $item) use ($mapQuestion) {
                 if ($item['type'] === 'question') {

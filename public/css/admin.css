@@ -867,6 +867,36 @@ body {
     grid-template-columns: 3fr 1fr 1fr;
 }
 
+.filter-bar.logs-filter-bar,
+.filter-bar.filter-bar-oneline {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.filter-bar.logs-filter-bar > *,
+.filter-bar.filter-bar-oneline > * {
+    flex: 1 1 0;
+    min-width: 140px;
+}
+
+.filter-bar.logs-filter-bar .filter-bar-actions,
+.filter-bar.filter-bar-oneline .filter-bar-actions {
+    display: flex;
+    gap: 10px;
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.filter-bar.logs-filter-bar .btn,
+.filter-bar.filter-bar-oneline .btn {
+    width: auto;
+    white-space: nowrap;
+    padding: 6px 22px;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
 .filter-bar.filter-bar-60-20-20 .btn {
     width: 100%;
 }
@@ -2647,6 +2677,17 @@ body {
         grid-template-columns: 1fr;
     }
 
+    .filter-bar.logs-filter-bar,
+    .filter-bar.filter-bar-oneline {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-bar.logs-filter-bar > *,
+    .filter-bar.filter-bar-oneline > * {
+        min-width: 0;
+    }
+
     .content-panel,
     .dashboard-hero {
         padding: 18px;
@@ -3343,10 +3384,75 @@ body {
     border-color: #75e0a7;
 }
 
+.exam-nav-btn.skipped {
+    color: #b42318;
+    background: #fef3f2;
+    border-color: #f97066;
+}
+
 .exam-nav-btn.active {
     color: #fff;
     background: #1d6fd8;
     border-color: #1d6fd8;
+}
+
+/* A Summary step marks all of its child questions "active" at once, so the
+   blue fill must not hide whether each one is answered: an answered question
+   on the current step stays green, with a blue ring showing it's on screen.
+   Clearing the answer drops it back to plain blue. */
+.exam-nav-btn.active.answered {
+    color: #067647;
+    background: #ecfdf3;
+    border-color: #1d6fd8;
+    box-shadow: 0 0 0 2px rgba(29, 111, 216, .35);
+}
+
+/* Submit Exam modal: which questions were attempted vs skipped. */
+.submit-summary {
+    display: grid;
+    gap: 14px;
+}
+
+.submit-summary-group {
+    padding: 12px 14px;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+    background: #f9fafb;
+}
+
+.submit-summary-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.submit-summary-title strong {
+    margin-left: auto;
+}
+
+.submit-summary-title.answered {
+    color: #067647;
+}
+
+.submit-summary-title.skipped {
+    color: #b42318;
+}
+
+.submit-summary-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.submit-summary-empty,
+.submit-summary-hint {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #667085;
 }
 
 .exam-font-control {
@@ -4886,7 +4992,7 @@ form .status-badge.status-published:hover {
 /* Info card grid - 3 cards per row */
 .student-info-card-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
     margin-top: 20px;
 }
@@ -5936,6 +6042,14 @@ form .status-badge.status-published:hover {
     .filter-bar,
     .filter-bar.compact-filter-bar {
         grid-template-columns: 1fr;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .filter-bar.logs-filter-bar,
+    .filter-bar.filter-bar-oneline {
+        flex-direction: column;
+        align-items: stretch;
         gap: 8px;
         margin-bottom: 14px;
     }
@@ -7491,6 +7605,70 @@ form .status-badge.status-published:hover {
     padding: 8px 10px 10px;
 }
 
+/* ===== Question Text: Normal Text / Math Equation mode switch ===== */
+.ckeditor-math-wrap.has-mode-switch {
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.question-mode-switch {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--soft);
+}
+
+.question-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .18s ease;
+}
+
+.question-mode-btn:hover {
+    color: var(--primary);
+}
+
+.question-mode-btn.is-active {
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 1px 4px rgba(20, 32, 54, .12);
+}
+
+.math-mode-panel {
+    position: relative;
+}
+
+/* The field is auto-focused on entering Math Equation mode — keep it calm:
+   a plain primary border instead of the thick Bootstrap focus glow. */
+.math-mode-panel .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: none;
+}
+
+@media (max-width: 576px) {
+    .question-mode-switch {
+        width: 100%;
+    }
+
+    .question-mode-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
 /* ==========================================================================
    Guardian Panel — "My Students" dashboard cards + the multi-student switcher
    shown on a Student's profile/result pages. Built from the same tokens as
@@ -7694,5 +7872,503 @@ form .status-badge.status-published:hover {
     .guardian-switcher {
         flex-direction: column;
         align-items: stretch;
+    }
+}
+
+/* Exam List: visibility scope of an exam — "All Branches" (Super Admin,
+   global) vs "Branch Only" (created by one branch). */
+.scope-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.scope-badge.scope-global {
+    background: rgba(29, 111, 216, 0.08);
+    color: #1d6fd8;
+    border-color: rgba(29, 111, 216, 0.3);
+}
+
+.scope-badge.scope-branch {
+    background: #fff7ed;
+    color: #b54708;
+    border-color: #fed7aa;
+}
+
+.exam-grade-list {
+    display: inline-block;
+    max-width: 220px;
+    white-space: normal;
+    line-height: 1.35;
+}
+
+/* Super Admin Exam List filters: search, status, scope, button. */
+.filter-bar.filter-bar-exams {
+    grid-template-columns: 3fr 1fr 1fr 1fr;
+}
+
+@media (max-width: 767.98px) {
+    .filter-bar.filter-bar-exams {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-bar.filter-bar-exams .btn {
+        width: 100%;
+    }
+}
+
+/* Exam form: compact Grade(s) multi-select — one field with chips that
+   opens a searchable checklist, instead of a wall of checkbox tiles. */
+.grade-ms {
+    position: relative;
+}
+
+.grade-ms-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    padding: 6px 12px;
+    text-align: left;
+    background: #fff;
+    cursor: pointer;
+}
+
+.grade-ms.is-open .grade-ms-field,
+.grade-ms-field:focus-visible {
+    border-color: #1d6fd8;
+    box-shadow: 0 0 0 3px rgba(29, 111, 216, 0.15);
+    outline: none;
+}
+
+.grade-ms.is-invalid .grade-ms-field {
+    border-color: #dc3545;
+}
+
+.grade-ms-value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.grade-ms-placeholder {
+    color: #8a94a6;
+}
+
+.grade-ms-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 4px 3px 10px;
+    border-radius: 999px;
+    background: rgba(29, 111, 216, 0.1);
+    color: #1d6fd8;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.grade-ms-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.grade-ms-chip-remove:hover {
+    background: rgba(29, 111, 216, 0.2);
+}
+
+.grade-ms-more {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #5b6576;
+}
+
+.grade-ms-caret {
+    flex: 0 0 auto;
+    color: #5b6576;
+    transition: transform 0.15s ease;
+}
+
+.grade-ms.is-open .grade-ms-caret {
+    transform: rotate(180deg);
+}
+
+.grade-ms-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 1060;
+    background: #fff;
+    border: 1px solid var(--line, #e3e8ef);
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(16, 24, 40, 0.14);
+    overflow: hidden;
+}
+
+.grade-ms-menu[hidden] {
+    display: none;
+}
+
+.grade-ms-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line, #e3e8ef);
+    color: #8a94a6;
+}
+
+.grade-ms-search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    font-size: 0.9rem;
+    background: transparent;
+}
+
+.grade-ms-actions {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--line, #e3e8ef);
+}
+
+.grade-ms-actions button {
+    border: 0;
+    background: none;
+    padding: 2px 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #1d6fd8;
+}
+
+.grade-ms-actions button:last-child {
+    color: #5b6576;
+}
+
+.grade-ms-options {
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.grade-ms-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.grade-ms-option[hidden] {
+    display: none;
+}
+
+.grade-ms-option:hover {
+    background: #f4f7fb;
+}
+
+.grade-ms-option input {
+    width: 16px;
+    height: 16px;
+    accent-color: #1d6fd8;
+    cursor: pointer;
+}
+
+.grade-ms-option:has(input:checked) {
+    color: #1d6fd8;
+    font-weight: 600;
+}
+
+.grade-ms-empty {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: #8a94a6;
+}
+
+@media (max-width: 767.98px) {
+    .grade-ms-field {
+        min-height: 44px;
+    }
+}
+
+/* Student exam page: compact info cards — icon beside the label/value
+   instead of stacked above it, so each card is roughly half as tall. */
+.student-info-card-grid .info-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    align-items: center;
+    align-content: center;
+    min-height: 72px;
+    padding: 12px 16px;
+}
+
+.student-info-card-grid .info-card-icon {
+    grid-row: 1 / span 2;
+    width: 38px;
+    height: 38px;
+    margin-bottom: 0;
+}
+
+.student-info-card-grid .info-card span {
+    margin-bottom: 1px;
+    font-size: 0.76rem;
+}
+
+.student-info-card-grid .info-card strong {
+    font-size: 1.25rem;
+    white-space: nowrap;
+}
+
+.student-info-card-grid .info-card-icon {
+    font-size: 1.05rem;
+}
+
+.student-info-card-grid .info-card strong small {
+    font-size: 0.85rem;
+}
+
+/* Up to five cards (with Negative Marking) share one row on wide screens
+   instead of one card wrapping onto a row of its own. */
+@media (min-width: 1200px) {
+    .student-info-card-grid {
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
+    }
+}
+
+.scope-badge[data-bs-toggle="tooltip"] {
+    cursor: help;
+}
+
+/* Submit Exam modal: Total / Attempted / Unanswered counts. */
+.submit-summary-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.submit-summary-stat {
+    padding: 10px 8px;
+    text-align: center;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.submit-summary-stat strong {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #172033;
+}
+
+.submit-summary-stat span {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #667085;
+}
+
+.submit-summary-stat.answered strong {
+    color: #067647;
+}
+
+.submit-summary-stat.skipped {
+    border-color: #fda29b;
+    background: #fef3f2;
+}
+
+.submit-summary-stat.skipped strong,
+.submit-summary-stat.skipped span {
+    color: #b42318;
+}
+
+/* Multiple attempts: "2/3" chip, per-exam Attempt History, and the
+   "result pending until all attempts are done" screen. */
+.attempt-chip,
+.student-section-header .attempt-chip,
+.performance-info .attempt-chip,
+.exam-history-info .attempt-chip {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(29, 111, 216, 0.1);
+    color: #1d6fd8;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.attempt-chip.attempt-chip-lg,
+.student-section-header .attempt-chip.attempt-chip-lg {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+}
+
+.attempt-history {
+    margin-top: 20px;
+}
+
+.attempt-history-table tr.is-current td {
+    background: rgba(29, 111, 216, 0.06);
+}
+
+.result-pending {
+    max-width: 560px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.result-pending-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 14px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: #fffaeb;
+    color: #b54708;
+    font-size: 1.6rem;
+}
+
+.result-pending h2 {
+    margin: 12px 0 8px;
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.result-pending p {
+    color: #596477;
+}
+
+.result-pending-progress {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 18px 0 22px;
+}
+
+.result-pending-progress span {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid rgba(23, 32, 51, 0.12);
+    background: #f3f6fa;
+    color: #596477;
+    font-weight: 800;
+}
+
+.result-pending-progress span.done {
+    background: #ecfdf3;
+    border-color: #75e0a7;
+    color: #067647;
+}
+
+.result-pending-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Attempt History: each attempt's Answer Review slides open under its row. */
+.attempt-history-table tr.attempt-detail-row > td {
+    padding: 0;
+    border-bottom-width: 0;
+    background: transparent;
+    white-space: normal;
+}
+
+.attempt-history-table tr.attempt-detail-row:has(.collapse.show, .collapsing) > td {
+    border-bottom-width: 1px;
+}
+
+.attempt-history .collapsing {
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.attempt-open-btn .attempt-close-icon,
+.attempt-open-btn:not(.collapsed) .attempt-open-icon {
+    display: none;
+}
+
+.attempt-open-btn:not(.collapsed) .attempt-close-icon {
+    display: inline-block;
+}
+
+.attempt-open-btn:not(.collapsed) {
+    background: #1d6fd8;
+    color: #fff;
+}
+
+.attempt-detail {
+    margin: 4px 0 16px;
+    padding: 16px 18px;
+    border: 1px solid rgba(29, 111, 216, 0.18);
+    border-radius: 12px;
+    background: #f8fbff;
+}
+
+.attempt-detail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+/* An attempt's own summary cards, above its Answer Review in the panel. */
+.attempt-detail-summary {
+    margin-bottom: 18px;
+}
+
+.attempt-detail-head h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #172033;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .attempt-history .collapsing {
+        transition: none;
     }
 }

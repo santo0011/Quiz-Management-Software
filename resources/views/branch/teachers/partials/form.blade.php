@@ -32,16 +32,6 @@
         @endif
     </div>
 
-    <div class="mb-4">
-        <label for="phone_number{{ $fieldSuffix ?? '' }}" class="form-label">Phone Number <span class="required-mark">*</span></label>
-        <input id="phone_number{{ $fieldSuffix ?? '' }}" type="text" name="phone_number" value="{{ $useOldInput ? old('phone_number', $teacher->phone_number) : $teacher->phone_number }}" class="form-control{{ $useOldInput && $errors->has('phone_number') ? ' is-invalid' : '' }}" required maxlength="30">
-        @if ($useOldInput)
-            @error('phone_number')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-        @endif
-    </div>
-
     <div class="d-flex gap-2 flex-wrap">
         <button type="submit" class="btn btn-primary">
             <i class="bi bi-check-circle-fill"></i>

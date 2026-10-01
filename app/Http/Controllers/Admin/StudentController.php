@@ -32,7 +32,7 @@ class StudentController extends Controller
             'selectedBranchId' => $branchId,
             'student' => new Student,
             'students' => $students,
-            'classes' => SchoolClass::when($branchId, fn ($query) => $query->visibleToBranch($branchId))->orderBy('name')->get(),
+            'classes' => $branchId ? SchoolClass::visibleToBranch($branchId)->orderBy('name')->get() : collect(),
             'filters' => $request->only(['search', 'class', 'branch_id']),
         ]);
     }
@@ -41,7 +41,6 @@ class StudentController extends Controller
     {
         return view('admin.students.create', [
             'branches' => Branch::orderBy('name')->get(),
-            'classes' => collect(),
             'subjects' => Subject::orderBy('name')->get(),
             'student' => new Student,
         ]);
@@ -49,12 +48,13 @@ class StudentController extends Controller
 
     public function store(StudentRequest $request): RedirectResponse
     {
+        $branch = Branch::findOrFail($request->validated()['branch_id']);
+
         $validated = GuardianResolver::resolve($request->validated());
         $subjectIds = $validated['subject_ids'] ?? [];
         unset($validated['subject_ids']);
-        $branchId = (int) $validated['branch_id'];
-        $schoolClass = $this->resolveSchoolClass($validated, $branchId);
-        $validated['branch_id'] = $branchId;
+        $schoolClass = $this->resolveSchoolClass($validated, $branch->id);
+        $validated['branch_id'] = $branch->id;
         $validated['class_id'] = $schoolClass->id;
         $validated['class'] = $schoolClass->name;
 

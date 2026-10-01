@@ -13,7 +13,8 @@ use Tests\TestCase;
 /**
  * The Student's Grade used for Exam eligibility (`class_id`) must track
  * Zoho's `Enrolment.Grade` on every login — resolved against existing
- * Super-Admin-managed Grade (SchoolClass) records, never auto-created.
+ * Grade (SchoolClass) records case/whitespace-insensitively, auto-creating
+ * one under the Student's branch when no match exists.
  */
 class StudentGradeSyncTest extends TestCase
 {
@@ -136,11 +137,11 @@ class StudentGradeSyncTest extends TestCase
     }
 
     /**
-     * No Grade record exists yet matching "Grade 9" — this must NOT create
-     * one automatically ("avoid creating duplicate Grade values from
-     * Zoho"), and must leave the Student's existing class_id untouched.
+     * No Grade record exists yet matching "Grade 9" — sync must
+     * auto-create one (scoped to the Student's own branch) and move the
+     * Student onto it, rather than leaving them unresolved.
      */
-    public function test_sync_never_creates_a_new_grade_and_leaves_class_id_untouched_when_unmatched(): void
+    public function test_sync_auto_creates_a_new_grade_under_the_students_branch_when_unmatched(): void
     {
         $branch = Branch::create(['name' => 'Branch A', 'email' => 'branch-a@example.com']);
         $existingGrade = SchoolClass::create(['branch_id' => null, 'name' => 'Grade 1']);
@@ -161,9 +162,40 @@ class StudentGradeSyncTest extends TestCase
         ]);
 
         $student->refresh();
-        $this->assertSame($existingGrade->id, $student->class_id);
+        $newGrade = SchoolClass::where('name', 'Grade 9')->where('branch_id', $branch->id)->first();
+
+        $this->assertNotNull($newGrade, 'Expected a new Grade 9 to be auto-created for the branch.');
+        $this->assertSame($newGrade->id, $student->class_id);
+        $this->assertSame('Grade 9', $student->class);
         $this->assertSame('Grade 9', $student->zoho_grade);
-        $this->assertSame(1, SchoolClass::count());
+        $this->assertSame(2, SchoolClass::count());
+    }
+
+    /**
+     * A second Student (or the same one on a later login) reporting the
+     * same Grade in a different case/whitespace must reuse the Grade just
+     * auto-created, never spawn a duplicate.
+     */
+    public function test_sync_reuses_an_auto_created_grade_on_a_case_insensitive_rematch(): void
+    {
+        $branch = Branch::create(['name' => 'Branch A', 'email' => 'branch-a@example.com']);
+        $student = Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => 'Test Student',
+            'guardian_name' => 'Guardian',
+            'class' => 'Unassigned',
+            'phone_number' => '123',
+            'email' => 'student-'.uniqid().'@example.com',
+            'zoho_student_id' => 'NL9',
+            'is_active' => true,
+        ]);
+
+        $service = app(ZohoStudentService::class);
+        $service->syncStudentFromZoho($student, ['Enrolment' => ['Grade' => 'Grade 7']]);
+        $service->syncStudentFromZoho($student->fresh(), ['Enrolment' => ['Grade' => '  GRADE 7  ']]);
+
+        $this->assertSame(1, SchoolClass::where('branch_id', $branch->id)->count());
+        $this->assertSame('Grade 7', SchoolClass::where('branch_id', $branch->id)->first()->name);
     }
 
     /**

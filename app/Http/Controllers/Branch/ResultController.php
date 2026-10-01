@@ -41,7 +41,6 @@ class ResultController extends Controller
                         ->orWhereHas('exam', fn ($examQuery) => $examQuery->where('title', 'like', "%{$search}%"));
                 });
             })
-            ->when($request->filled('result'), fn ($query) => $query->where('is_passed', $request->string('result')->toString() === 'passed'))
             ->latest('submitted_at')
             ->paginate(20)
             ->withQueryString();
@@ -49,7 +48,7 @@ class ResultController extends Controller
         return view('branch.results.index', [
             'branch' => $branch,
             'attempts' => $attempts,
-            'filters' => $request->only(['search', 'result']),
+            'filters' => $request->only(['search']),
         ]);
     }
 
@@ -80,6 +79,15 @@ class ResultController extends Controller
     public function send(Request $request, ExamAttempt $attempt): RedirectResponse
     {
         abort_if($attempt->status !== 'submitted', 404);
+
+        // A result (and its review) goes out exactly once; a failed attempt
+        // never sets branch_result_sent_at, so it can still be retried.
+        // (Not zoho_result_synced_at: the automatic sync on exam submission
+        // sets that too, before the Branch has sent anything.)
+        if ($attempt->branch_result_sent_at) {
+            return redirect()->route('branch.results.show', $attempt)
+                ->with('error', 'This result has already been sent and cannot be sent again.');
+        }
 
         $validated = $request->validate([
             'review' => ['required', 'string', 'max:2000'],
@@ -149,6 +157,10 @@ class ResultController extends Controller
         $zohoService = app(ZohoResultService::class);
         $zohoSent = $zohoService->sendResult($attempt, $pdfUrl);
         $zohoFailureMessage = $zohoService->lastFailureMessage();
+
+        if ($zohoSent) {
+            $attempt->update(['branch_result_sent_at' => now()]);
+        }
 
         return redirect()->route('branch.results.show', $attempt)
             ->with($this->sendStatusFlash($zohoSent, $otpEmail, $zohoFailureMessage));

@@ -340,7 +340,6 @@ class QuestionCkeditorTest extends TestCase
             'correct_count' => 1,
             'wrong_count' => 0,
             'unanswered_count' => 0,
-            'is_passed' => true,
             'status' => 'submitted',
         ]);
 

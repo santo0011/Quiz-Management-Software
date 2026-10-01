@@ -4,7 +4,7 @@
     <h2 class="greeting" style="margin:0 0 12px; font-size:18px; font-weight:600; color:#1e293b;">Welcome, {{ $teacher->name }}!</h2>
 
     <div class="message" style="color:#475569; margin-bottom:20px;">
-        <p style="margin:0 0 10px;">Your Teacher Panel account has been created for <strong>QuizCore</strong> — Quiz Management Software.</p>
+        <p style="margin:0 0 10px;">Your Teacher Panel account has been created for <strong>{{ $siteName }}</strong> — Quiz Management Software.</p>
         <p style="margin:0;">Please use the credentials below to access your teacher dashboard.</p>
     </div>
 

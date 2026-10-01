@@ -24,38 +24,34 @@ class ModuleAccessTest extends TestCase
         }
     }
 
-    public function test_super_admin_branch_modules_require_selected_branch(): void
+    /**
+     * Super Admin manages every branch at once — Exams, Questions, Results,
+     * and Students all show data across every branch directly, with no
+     * branch-selection step required first (that gate was removed).
+     */
+    public function test_super_admin_can_open_branch_modules_without_selecting_a_branch(): void
     {
         $admin = $this->makeSuperAdmin();
 
-        foreach (['admin.exams.index', 'admin.questions.index', 'admin.results.index'] as $route) {
+        foreach (['admin.exams.index', 'admin.questions.index', 'admin.results.index', 'admin.students.index', 'admin.students.create'] as $route) {
             $this->actingAs($admin)
                 ->get(route($route))
-                ->assertRedirect(route('admin.branch-selection.index'))
-                ->assertSessionHas('success', 'Please select a branch first to manage branch-related data.');
+                ->assertOk();
         }
     }
 
     /**
-     * These pages don't actually gate on `admin_selected_branch_id` (only
-     * on the `branch_id` query-string filter, which is unrelated) — this
-     * previously asserted the branch's name only because it happened to
-     * appear as an <option> in a Branch filter dropdown these pages used to
-     * have. That dropdown was deliberately removed (Exams/Question
-     * Categories/Grades no longer filter by branch), so this now only
-     * confirms the pages still load successfully for a Super Admin.
+     * The optional ?branch_id= filter still narrows Students to one branch
+     * when a Super Admin wants that, without being required to see anything.
      */
-    public function test_super_admin_can_open_branch_modules_after_selecting_branch(): void
+    public function test_super_admin_can_filter_students_by_branch(): void
     {
         $branch = Branch::create(['name' => 'Kolkata Branch', 'email' => 'kolkata@example.com']);
         $admin = $this->makeSuperAdmin();
 
-        foreach (['admin.exams.index', 'admin.questions.index', 'admin.results.index'] as $route) {
-            $this->actingAs($admin)
-                ->withSession(['admin_selected_branch_id' => $branch->id])
-                ->get(route($route))
-                ->assertOk();
-        }
+        $this->actingAs($admin)
+            ->get(route('admin.students.index', ['branch_id' => $branch->id]))
+            ->assertOk();
     }
 
     private function makeBranchUser(): array

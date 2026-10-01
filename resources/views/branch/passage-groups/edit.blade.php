@@ -8,7 +8,7 @@
         <div class="panel-header">
             <div>
                 <h2>{{ $exam->title }}</h2>
-                <p>Update the passage/summary for {{ $exam->schoolClass?->name }}.</p>
+                <p>Update the passage/summary for {{ $exam->gradeNames() }}.</p>
             </div>
         </div>
         @include('branch.passage-groups.partials.form', [

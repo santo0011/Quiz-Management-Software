@@ -1,4 +1,5 @@
-@php($numberLabel = $question->passage_group_id ? chr(65 + $itemIndex) : $itemIndex + 1)
+{{-- $questionNumber: the question's exam-wide serial (Exam::questionNumbers()), numbering Summary child questions 1, 2, 3... in line with standalone ones, exactly as on the exam's question list. --}}
+@php($numberLabel = $questionNumber ?? ($question->passage_group_id ? chr(65 + $itemIndex) : $itemIndex + 1))
 
 <article class="question-admin-item {{ $question->passage_group_id ? 'passage-child-item' : '' }}">
     <div class="question-item-header">

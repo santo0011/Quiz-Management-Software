@@ -24,7 +24,7 @@ class QuestionController extends Controller
         return view('admin.questions.index', [
             'branches' => Branch::orderBy('name')->get(),
             'selectedBranchId' => $branchId,
-            'exams' => Exam::withCount('questions')->with('schoolClass')
+            'exams' => Exam::withCount('questions')->with(['schoolClass', 'grades'])
                 ->when($branchId, fn ($query) => $query->visibleToBranch($branchId))
                 ->latest()->paginate(20),
             'filters' => $request->only(['branch_id']),

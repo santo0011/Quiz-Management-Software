@@ -18,15 +18,15 @@
             </div>
         </div>
 
-        @if ($attempt->result_email_sent_at || $attempt->zoho_result_synced_at)
+        @if ($attempt->result_email_sent_at || $attempt->branch_result_sent_at)
             <div class="alert alert-info d-flex flex-wrap gap-3 align-items-center mb-3">
                 <i class="bi bi-info-circle-fill"></i>
                 <div>
                     @if ($attempt->result_email_sent_at)
                         <div>Emailed to <strong>{{ $attempt->student?->guardian_email }}</strong> on {{ $attempt->result_email_sent_at->format('d M Y') }}{{ $attempt->resultEmailSentBy ? ' by '.$attempt->resultEmailSentBy->name : '' }}.</div>
                     @endif
-                    @if ($attempt->zoho_result_synced_at)
-                        <div>Sent to Zoho on {{ $attempt->zoho_result_synced_at->format('d M Y') }}.</div>
+                    @if ($attempt->branch_result_sent_at)
+                        <div>Result sent on {{ $attempt->branch_result_sent_at->format('d M Y') }}.</div>
                     @endif
                 </div>
             </div>
@@ -42,13 +42,15 @@
             </p>
         @endif
 
-        @if (! $attempt->student?->guardian_email)
+        @if ($attempt->branch_result_sent_at)
+            {{-- Already sent: the review shown above is final. --}}
+        @elseif (! $attempt->student?->guardian_email)
             <div class="alert alert-warning">
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 This student has no email on file from their OTP/Zoho verification yet, so the result cannot be sent until they log in at least once.
             </div>
         @else
-            <form method="POST" action="{{ route('branch.results.send', $attempt) }}" class="admin-form" data-confirm-send-result data-confirm-message="Send this result to {{ $attempt->student?->guardian_email }} and submit it to Zoho?">
+            <form method="POST" action="{{ route('branch.results.send', $attempt) }}" class="admin-form" data-confirm-send-result data-confirm-message="Send this result to {{ $attempt->student?->guardian_email }} and submit it to Zoho? A result can only be sent once and the review cannot be changed afterwards.">
                 @csrf
 
                 <div class="mb-3">
@@ -62,7 +64,7 @@
 
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-send-check-fill"></i>
-                    {{ $attempt->zoho_result_synced_at ? 'Resend Result' : 'Review & Send Result' }}
+                    Send Result
                 </button>
             </form>
         @endif

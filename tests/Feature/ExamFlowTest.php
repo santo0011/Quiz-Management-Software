@@ -130,7 +130,6 @@ class ExamFlowTest extends TestCase
             'duration_minutes' => 30,
             'starts_at' => now()->subMinute(),
             'ends_at' => now()->addHour(),
-            'passing_marks' => 5,
             'maximum_attempts' => 1,
             'status' => Exam::STATUS_PUBLISHED,
         ], $examOverrides));
@@ -175,7 +174,6 @@ class ExamFlowTest extends TestCase
             'correct_count' => 1,
             'wrong_count' => 0,
             'unanswered_count' => 0,
-            'is_passed' => true,
             'status' => 'submitted',
         ]);
     }

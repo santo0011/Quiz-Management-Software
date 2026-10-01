@@ -5,6 +5,9 @@
     $mathRows = $mathRows ?? 6;
     $mathName = $mathName ?? null;
     $mathClass = $mathClass ?? '';
+    // Opt-in "Normal Text / Math Equation" switch (question text and Summary
+    // content); without it the editor keeps its "+ Insert Math" popover.
+    $mathMode = $mathMode ?? false;
 @endphp
 
 <div class="ckeditor-field-wrap" data-ckeditor-field-wrap>
@@ -47,8 +50,27 @@
         class="form-control {{ $mathClass }}"
         placeholder="{{ $mathPlaceholder }}"
         data-summary-editor
+        @if ($mathMode) data-math-mode @endif
     >{{ $mathValue }}</textarea>
 </div>
+
+@if ($mathMode)
+    @once
+        {{--
+            The Math Equation mode field is the exact Answer Options Math Tool
+            (partials.math-editor + math-editor-init), rendered once here and
+            cloned per question — including the JS-built "Add Another Question"
+            cards — so both tools share the same symbols and insert behaviour.
+        --}}
+        <template data-math-mode-template>
+            @include('partials.math-editor', [
+                'mathId' => 'math_mode_template',
+                'mathRows' => 2,
+                'mathPlaceholder' => 'Enter math equation (e.g. x² + 2x + 1)',
+            ])
+        </template>
+    @endonce
+@endif
 
 @once
     @push('scripts')
@@ -82,6 +104,57 @@
                     editor.plugins.get('FileRepository').createUploadAdapter = function (loader) {
                         return new Base64UploadAdapter(loader);
                     };
+                }
+
+                // Inserts a math-tool button's snippet into a staging input at the
+                // cursor (used by the Insert Math popover's staging input).
+                function insertMathSnippet(stagingInput, snippet) {
+                    var selectionStart = stagingInput.selectionStart ?? stagingInput.value.length;
+                    var selectionEnd = stagingInput.selectionEnd ?? stagingInput.value.length;
+                    var value = stagingInput.value;
+                    var selected = value.slice(selectionStart, selectionEnd);
+                    var placeholderIndex = snippet.indexOf('{}');
+
+                    // Where the snippet gets inserted, and what (if anything) it
+                    // replaces in the input's current value.
+                    var replaceFrom = selectionStart;
+                    var replaceTo = selectionEnd;
+                    var insertText = snippet;
+
+                    // Cursor position after inserting, as an offset into insertText —
+                    // defaults to the end (right after the whole snippet).
+                    var cursorOffset = insertText.length;
+
+                    if (selected !== '') {
+                        if (placeholderIndex !== -1) {
+                            // A template button (^{}, _{}, \sqrt{}, \frac{}{}, ...) has an
+                            // empty {} placeholder. The user selected text first (e.g.
+                            // typed "x2", selected "2", then clicked Superscript) — wrap
+                            // that selection inside the first placeholder ("^{2}") instead
+                            // of blindly inserting the bare template and deleting it.
+                            insertText = snippet.slice(0, placeholderIndex + 1) + selected + snippet.slice(placeholderIndex + 1);
+                            cursorOffset = insertText.length;
+                        } else {
+                            // A plain symbol (\pi, \times, ...) has nothing to wrap into —
+                            // keep the selection and insert the symbol right after it
+                            // instead of overwriting it.
+                            replaceFrom = replaceTo = selectionEnd;
+                            cursorOffset = insertText.length;
+                        }
+                    } else if (placeholderIndex !== -1) {
+                        // Nothing was selected and this is a template with an empty {}
+                        // placeholder (e.g. clicking Superscript with no prior selection
+                        // produces bare "^{}") — land the cursor INSIDE that first pair of
+                        // braces so the user can type the exponent/argument immediately,
+                        // instead of after the closing brace where a repeat click of the
+                        // same button would just append another empty "^{}" right next to
+                        // it with no visible difference.
+                        cursorOffset = placeholderIndex + 1;
+                    }
+
+                    stagingInput.value = value.slice(0, replaceFrom) + insertText + value.slice(replaceTo);
+                    stagingInput.selectionStart = stagingInput.selectionEnd = replaceFrom + cursorOffset;
+                    stagingInput.focus();
                 }
 
                 // Wires the "Insert Math" popover that sits above a CKEditor
@@ -226,53 +299,7 @@
                         btn.addEventListener('click', function (e) {
                             e.preventDefault();
                             e.stopPropagation();
-                            var snippet = btn.dataset.mathInsert;
-                            var selectionStart = stagingInput.selectionStart ?? stagingInput.value.length;
-                            var selectionEnd = stagingInput.selectionEnd ?? stagingInput.value.length;
-                            var value = stagingInput.value;
-                            var selected = value.slice(selectionStart, selectionEnd);
-                            var placeholderIndex = snippet.indexOf('{}');
-
-                            // Where the snippet gets inserted, and what (if anything) it
-                            // replaces in the input's current value.
-                            var replaceFrom = selectionStart;
-                            var replaceTo = selectionEnd;
-                            var insertText = snippet;
-
-                            // Cursor position after inserting, as an offset into insertText —
-                            // defaults to the end (right after the whole snippet).
-                            var cursorOffset = insertText.length;
-
-                            if (selected !== '') {
-                                if (placeholderIndex !== -1) {
-                                    // A template button (^{}, _{}, \sqrt{}, \frac{}{}, ...) has an
-                                    // empty {} placeholder. The user selected text first (e.g.
-                                    // typed "x2", selected "2", then clicked Superscript) — wrap
-                                    // that selection inside the first placeholder ("^{2}") instead
-                                    // of blindly inserting the bare template and deleting it.
-                                    insertText = snippet.slice(0, placeholderIndex + 1) + selected + snippet.slice(placeholderIndex + 1);
-                                    cursorOffset = insertText.length;
-                                } else {
-                                    // A plain symbol (\pi, \times, ...) has nothing to wrap into —
-                                    // keep the selection and insert the symbol right after it
-                                    // instead of overwriting it.
-                                    replaceFrom = replaceTo = selectionEnd;
-                                    cursorOffset = insertText.length;
-                                }
-                            } else if (placeholderIndex !== -1) {
-                                // Nothing was selected and this is a template with an empty {}
-                                // placeholder (e.g. clicking Superscript with no prior selection
-                                // produces bare "^{}") — land the cursor INSIDE that first pair of
-                                // braces so the user can type the exponent/argument immediately,
-                                // instead of after the closing brace where a repeat click of the
-                                // same button would just append another empty "^{}" right next to
-                                // it with no visible difference.
-                                cursorOffset = placeholderIndex + 1;
-                            }
-
-                            stagingInput.value = value.slice(0, replaceFrom) + insertText + value.slice(replaceTo);
-                            stagingInput.selectionStart = stagingInput.selectionEnd = replaceFrom + cursorOffset;
-                            stagingInput.focus();
+                            insertMathSnippet(stagingInput, btn.dataset.mathInsert);
                         });
                     });
 
@@ -318,6 +345,167 @@
                     });
                 }
 
+                // "Normal Text / Math Equation" switch for question text (opt-in via
+                // data-math-mode). Normal Text is the regular CKEditor. Math Equation
+                // temporarily swaps the editor for the exact Answer Options Math Tool
+                // field (cloned from the <template data-math-mode-template> rendered
+                // by partials.math-editor, and wired by math-editor-init like every
+                // option field). The editor is only hidden, never destroyed, so
+                // switching back and forth keeps the question content intact.
+                var mathModeTemplateHtml = null;
+                function mathModeFieldHtml() {
+                    // Cached on first use: the <template> lives inside the first
+                    // question card, which the user may later remove.
+                    if (mathModeTemplateHtml === null) {
+                        var template = document.querySelector('template[data-math-mode-template]');
+                        mathModeTemplateHtml = template ? template.innerHTML : '';
+                    }
+                    return mathModeTemplateHtml;
+                }
+
+                function initMathModeFor(textarea, editor, form) {
+                    var container = textarea.closest('[data-ckeditor-field-wrap]');
+                    var mathWrap = container ? container.querySelector('[data-ckeditor-math-wrap]') : null;
+                    var fieldHtml = mathModeFieldHtml();
+
+                    if (! mathWrap || fieldHtml === '' || container.querySelector('[data-math-mode-switch]')) {
+                        return;
+                    }
+
+                    // Math Equation mode replaces the "+ Insert Math" popover for
+                    // question text.
+                    mathWrap.querySelectorAll('[data-math-toggle], [data-math-toolbar]').forEach(function (el) {
+                        el.remove();
+                    });
+
+                    var switcher = document.createElement('div');
+                    switcher.className = 'question-mode-switch';
+                    switcher.setAttribute('data-math-mode-switch', '');
+                    switcher.setAttribute('role', 'group');
+                    switcher.setAttribute('aria-label', 'Question input mode');
+                    switcher.innerHTML =
+                        '<button type="button" class="question-mode-btn is-active" data-mode="text" aria-pressed="true"><i class="bi bi-fonts"></i> Normal Text</button>' +
+                        '<button type="button" class="question-mode-btn" data-mode="math" aria-pressed="false"><i class="bi bi-calculator"></i> Math Equation</button>';
+                    mathWrap.classList.add('has-mode-switch');
+                    mathWrap.insertBefore(switcher, mathWrap.firstChild);
+
+                    var panel = document.createElement('div');
+                    panel.className = 'math-mode-panel';
+                    panel.hidden = true;
+                    panel.innerHTML = fieldHtml;
+
+                    var input = panel.querySelector('[data-math-textarea]');
+                    // The clone must not submit or duplicate the template's id.
+                    input.removeAttribute('id');
+                    input.removeAttribute('name');
+                    panel.querySelector('[data-math-input-wrap]').removeAttribute('data-math-id');
+
+                    // Appending it lets math-editor-init's MutationObserver wire the
+                    // 123 toggle and symbol buttons, exactly as for an Answer Option.
+                    container.appendChild(panel);
+
+                    // Until the user has actually placed a cursor in the question, the
+                    // editor's selection sits at the very start — append there instead
+                    // so an equation added to existing text lands after it.
+                    var editorTouched = false;
+                    editor.editing.view.document.on('change:isFocused', function (evt, name, isFocused) {
+                        if (isFocused) {
+                            editorTouched = true;
+                        }
+                    });
+
+                    // Moves whatever is typed in the math field into the question. Runs
+                    // on Enter, when switching back to Normal Text, and on Save, so a
+                    // typed equation always ends up in the question. Plain symbol text
+                    // (x², ½, √, π — what the Math Tool buttons insert) goes in as-is,
+                    // exactly like an Answer Option; anything typed as LaTeX (\frac,
+                    // x^2, a_1) is wrapped in \( \) so MathJax typesets it on the
+                    // Student Exam and result screens.
+                    var commitEquation = function () {
+                        // Keep it on one line — fold any newlines into spaces.
+                        var value = input.value.replace(/\s*\n\s*/g, ' ').trim();
+
+                        if (value === '') {
+                            return;
+                        }
+
+                        var text = /[\\^_]/.test(value) ? '\\(' + value + '\\)' : value;
+
+                        editor.model.change(function (writer) {
+                            if (! editorTouched) {
+                                var root = editor.model.document.getRoot();
+                                var last = root.getChild(root.childCount - 1);
+                                var target = last;
+
+                                if (! last || ! last.is('element', 'paragraph')) {
+                                    target = writer.createElement('paragraph');
+                                    writer.insert(target, root, 'end');
+                                }
+                                writer.setSelection(target, 'end');
+                            }
+
+                            // insertContent() respects the schema (e.g. an image that is
+                            // currently selected is kept and the text goes beside it) and
+                            // leaves the cursor right after the inserted equation.
+                            editor.model.insertContent(writer.createText(text));
+                        });
+
+                        editorTouched = true;
+                        input.value = '';
+                    };
+
+                    var setMode = function (mode) {
+                        var isMath = mode === 'math';
+
+                        if (! isMath && ! panel.hidden) {
+                            commitEquation();
+                        }
+
+                        switcher.querySelectorAll('[data-mode]').forEach(function (btn) {
+                            var active = btn.dataset.mode === mode;
+                            btn.classList.toggle('is-active', active);
+                            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                        });
+
+                        editor.ui.element.style.display = isMath ? 'none' : '';
+                        panel.hidden = ! isMath;
+                        panel.querySelector('[data-math-toolbar]').hidden = true;
+
+                        if (isMath) {
+                            input.focus();
+                        } else {
+                            editor.editing.view.focus();
+                            editor.editing.view.scrollToTheSelection();
+                        }
+                    };
+
+                    switcher.addEventListener('click', function (e) {
+                        var btn = e.target.closest('[data-mode]');
+                        if (btn) {
+                            e.preventDefault();
+                            setMode(btn.dataset.mode);
+                        }
+                    });
+
+                    input.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' && ! e.shiftKey) {
+                            e.preventDefault();
+                            setMode('text');
+                        }
+                    });
+
+                    // Registered before the updateSourceElement() submit listener in
+                    // initSummaryEditors, so an equation still sitting in the math
+                    // field is added to the question before the textarea is synced.
+                    if (form) {
+                        form.addEventListener('submit', function () {
+                            if (panel.isConnected) {
+                                commitEquation();
+                            }
+                        });
+                    }
+                }
+
                 function initSummaryEditors(scope) {
                     var root = (scope && typeof scope.querySelectorAll === 'function') ? scope : document;
 
@@ -340,6 +528,10 @@
                             .then(function (editor) {
                                 textarea.ckeditorInstance = editor;
                                 initMathToolFor(textarea, editor);
+
+                                if (textarea.hasAttribute('data-math-mode')) {
+                                    initMathModeFor(textarea, editor, form);
+                                }
 
                                 if (! form) {
                                     return;

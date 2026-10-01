@@ -46,16 +46,44 @@
                 <h3>Grade & Exam Settings</h3>
             </div>
             <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="school_class_id" class="form-label">Grade <span class="required-mark">*</span></label>
-                    <select id="school_class_id" name="school_class_id" class="form-select form-control @error('school_class_id') is-invalid @enderror" required data-class-select data-selected-class="{{ old('school_class_id', $exam->school_class_id) }}">
-                        <option value="">Select grade</option>
-                        @foreach ($classes as $schoolClass)
-                            <option value="{{ $schoolClass->id }}" @selected(old('school_class_id', $exam->school_class_id) == $schoolClass->id)>{{ $schoolClass->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('school_class_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <div class="form-text empty-class-hint d-none">No grades found for this branch.</div>
+                @php($selectedGradeIds = array_map('intval', (array) old('school_class_ids', $exam->exists ? $exam->grades->pluck('id')->all() : [])))
+                @php($sortedClasses = $classes->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values())
+                <div class="col-md-6" data-grade-picker>
+                    <label class="form-label">Grade(s) <span class="required-mark">*</span></label>
+                    @if ($sortedClasses->isEmpty())
+                        <div class="form-text">No grades found. Add one from Grades first.</div>
+                    @else
+                        <div class="grade-ms @error('school_class_ids') is-invalid @enderror">
+                            <button type="button" class="grade-ms-field form-control" data-grade-field aria-haspopup="listbox" aria-expanded="false">
+                                <span class="grade-ms-value" data-grade-value>
+                                    <span class="grade-ms-placeholder">Select grades</span>
+                                </span>
+                                <i class="bi bi-chevron-down grade-ms-caret"></i>
+                            </button>
+                            <div class="grade-ms-menu" data-grade-menu hidden>
+                                <div class="grade-ms-search">
+                                    <i class="bi bi-search"></i>
+                                    <input type="text" placeholder="Search grades" data-grade-search autocomplete="off">
+                                </div>
+                                <div class="grade-ms-actions">
+                                    <button type="button" data-grade-select-all>Select all</button>
+                                    <button type="button" data-grade-clear>Clear</button>
+                                </div>
+                                <div class="grade-ms-options" role="listbox" aria-multiselectable="true">
+                                    @foreach ($sortedClasses as $schoolClass)
+                                        <label class="grade-ms-option" data-grade-option data-name="{{ strtolower($schoolClass->name) }}">
+                                            <input type="checkbox" name="school_class_ids[]" value="{{ $schoolClass->id }}" data-label="{{ $schoolClass->name }}" @checked(in_array($schoolClass->id, $selectedGradeIds, true))>
+                                            <span>{{ $schoolClass->name }}</span>
+                                        </label>
+                                    @endforeach
+                                    <div class="grade-ms-empty" data-grade-empty hidden>No matching grades</div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                    @error('school_class_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    @error('school_class_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    <div class="invalid-feedback d-none" data-grade-required>Please select at least one grade for this exam.</div>
                 </div>
                 <div class="col-md-6">
                     <label for="subject_id" class="form-label">Subject <span class="required-mark">*</span></label>
@@ -79,17 +107,12 @@
                 <h3>Marks & Duration</h3>
             </div>
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label for="total_marks" class="form-label">Total Marks</label>
                     <input id="total_marks" type="number" min="0" name="total_marks" value="{{ old('total_marks', $exam->total_marks ?? 0) }}" class="form-control @error('total_marks') is-invalid @enderror" data-strip-leading-zero>
                     @error('total_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="col-md-4">
-                    <label for="passing_marks" class="form-label">Pass Marks</label>
-                    <input id="passing_marks" type="number" min="0" name="passing_marks" value="{{ old('passing_marks', $exam->passing_marks) }}" class="form-control @error('passing_marks') is-invalid @enderror">
-                    @error('passing_marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label for="duration_minutes" class="form-label">Exam Time (minutes) <span class="required-mark">*</span></label>
                     <input id="duration_minutes" type="number" min="1" max="1440" name="duration_minutes" value="{{ old('duration_minutes', $exam->duration_minutes ?? 30) }}" class="form-control @error('duration_minutes') is-invalid @enderror" required>
                     @error('duration_minutes')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -123,9 +146,10 @@
             </div>
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="maximum_attempts" class="form-label">Maximum Attempts <span class="required-mark">*</span></label>
-                    <input id="maximum_attempts" type="number" min="1" name="maximum_attempts" value="{{ old('maximum_attempts', $exam->maximum_attempts ?? 1) }}" class="form-control @error('maximum_attempts') is-invalid @enderror" required>
+                    <label for="maximum_attempts" class="form-label">Attempt Limit <span class="required-mark">*</span></label>
+                    <input id="maximum_attempts" type="number" min="1" max="20" name="maximum_attempts" value="{{ old('maximum_attempts', $exam->maximum_attempts ?? 1) }}" class="form-control @error('maximum_attempts') is-invalid @enderror" required>
                     @error('maximum_attempts')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div class="form-text">How many times a student can take this exam. Results are shown to the student after all attempts are completed.</div>
                 </div>
                 <div class="col-md-6">
                     <label for="negative_marks" class="form-label">Negative Marks Per Wrong Answer</label>
@@ -161,6 +185,141 @@
     // as the user types a real digit, so "10" doesn't become "010" — purely
     // a display/input fix, the submitted value and its validation are
     // untouched.
+    // Grade(s) multi-select: a compact field showing the picked grades as
+    // chips, opening a searchable checklist. The checkboxes inside are the
+    // real school_class_ids[] inputs, so the server contract is unchanged.
+    document.querySelectorAll('[data-grade-picker]').forEach(function (picker) {
+        var field = picker.querySelector('[data-grade-field]');
+        var menu = picker.querySelector('[data-grade-menu]');
+
+        if (! field || ! menu) {
+            return;
+        }
+
+        var wrapper = field.closest('.grade-ms');
+        var valueEl = picker.querySelector('[data-grade-value]');
+        var search = picker.querySelector('[data-grade-search]');
+        var emptyEl = picker.querySelector('[data-grade-empty]');
+        var requiredHint = picker.querySelector('[data-grade-required]');
+        var options = Array.prototype.slice.call(picker.querySelectorAll('[data-grade-option]'));
+        var boxes = options.map(function (option) { return option.querySelector('input'); });
+        var maxChips = 3;
+
+        var render = function () {
+            var checked = boxes.filter(function (box) { return box.checked; });
+            valueEl.innerHTML = '';
+
+            if (checked.length === 0) {
+                var placeholder = document.createElement('span');
+                placeholder.className = 'grade-ms-placeholder';
+                placeholder.textContent = 'Select grades';
+                valueEl.appendChild(placeholder);
+                return;
+            }
+
+            checked.slice(0, maxChips).forEach(function (box) {
+                var chip = document.createElement('span');
+                chip.className = 'grade-ms-chip';
+                chip.textContent = box.dataset.label;
+
+                var remove = document.createElement('span');
+                remove.className = 'grade-ms-chip-remove';
+                remove.setAttribute('role', 'button');
+                remove.setAttribute('aria-label', 'Remove ' + box.dataset.label);
+                remove.innerHTML = '&times;';
+                remove.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    box.checked = false;
+                    render();
+                });
+
+                chip.appendChild(remove);
+                valueEl.appendChild(chip);
+            });
+
+            if (checked.length > maxChips) {
+                var more = document.createElement('span');
+                more.className = 'grade-ms-more';
+                more.textContent = '+' + (checked.length - maxChips) + ' more';
+                valueEl.appendChild(more);
+            }
+
+            requiredHint?.classList.add('d-none');
+            wrapper.classList.remove('is-invalid');
+        };
+
+        var open = function () {
+            menu.hidden = false;
+            wrapper.classList.add('is-open');
+            field.setAttribute('aria-expanded', 'true');
+            search?.focus();
+        };
+
+        var close = function () {
+            menu.hidden = true;
+            wrapper.classList.remove('is-open');
+            field.setAttribute('aria-expanded', 'false');
+        };
+
+        var visibleBoxes = function () {
+            return options.filter(function (option) { return ! option.hidden; })
+                .map(function (option) { return option.querySelector('input'); });
+        };
+
+        field.addEventListener('click', function () {
+            menu.hidden ? open() : close();
+        });
+
+        search?.addEventListener('input', function () {
+            var term = search.value.trim().toLowerCase();
+            var shown = 0;
+
+            options.forEach(function (option) {
+                option.hidden = term !== '' && option.dataset.name.indexOf(term) === -1;
+                shown += option.hidden ? 0 : 1;
+            });
+
+            emptyEl.hidden = shown > 0;
+        });
+
+        picker.querySelector('[data-grade-select-all]')?.addEventListener('click', function () {
+            visibleBoxes().forEach(function (box) { box.checked = true; });
+            render();
+        });
+
+        picker.querySelector('[data-grade-clear]')?.addEventListener('click', function () {
+            visibleBoxes().forEach(function (box) { box.checked = false; });
+            render();
+        });
+
+        boxes.forEach(function (box) { box.addEventListener('change', render); });
+
+        document.addEventListener('click', function (event) {
+            if (! picker.contains(event.target)) {
+                close();
+            }
+        });
+
+        picker.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && ! menu.hidden) {
+                event.stopPropagation();
+                close();
+                field.focus();
+            }
+        });
+
+        picker.closest('form')?.addEventListener('submit', function (event) {
+            if (! boxes.some(function (box) { return box.checked; })) {
+                event.preventDefault();
+                requiredHint?.classList.remove('d-none');
+                wrapper.classList.add('is-invalid');
+                picker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+
+        render();
+    });
+
     document.querySelectorAll('[data-strip-leading-zero]').forEach(function (input) {
         input.addEventListener('input', function () {
             if (/^0+(?=\d)/.test(this.value)) {

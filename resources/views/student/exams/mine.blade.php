@@ -21,28 +21,42 @@
         @else
             <div class="exam-history-list">
                 @foreach ($attempts as $attempt)
+                    @php($summary = $summaries[$attempt->exam_id] ?? ['released' => true, 'used' => 1, 'max' => 1])
                     <div class="exam-history-item">
                         <div class="exam-history-icon">
                             <i class="bi bi-journal-check"></i>
                         </div>
                         <div class="exam-history-info">
-                            <h4>{{ $attempt->exam?->title }}</h4>
+                            <h4>
+                                {{ $attempt->exam?->title }}
+                                @if ($summary['max'] > 1)
+                                    <span class="attempt-chip">Attempt {{ $attempt->attemptLabel() }}</span>
+                                @endif
+                            </h4>
                             <span class="exam-history-date">
                                 <i class="bi bi-calendar3"></i>
                                 {{ $attempt->submitted_at?->format('d M Y') }}
                             </span>
                         </div>
-                        <div class="exam-history-score">
-                            <span>Score</span>
-                            <strong>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</strong>
-                        </div>
-                        <div class="exam-history-status">
-                            <span class="status-badge {{ $attempt->is_passed ? 'status-published' : 'status-closed' }}">
-                                {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-                            </span>
-                        </div>
+                        @if ($summary['released'])
+                            <div class="exam-history-score">
+                                <span>Score</span>
+                                <strong>{{ $attempt->obtained_marks }} / {{ $attempt->exam?->total_marks }}</strong>
+                            </div>
+                            <div class="exam-history-status">
+                                <span class="status-badge status-published">{{ $attempt->percentage }}%</span>
+                            </div>
+                        @else
+                            <div class="exam-history-score">
+                                <span>Result Pending</span>
+                                <strong>{{ $summary['used'] }}/{{ $summary['max'] }} done</strong>
+                            </div>
+                            <div class="exam-history-status">
+                                <span class="status-badge status-upcoming">Pending</span>
+                            </div>
+                        @endif
                         <a href="{{ route('student.results.show', $attempt) }}" class="btn btn-sm btn-soft exam-history-action">
-                            <i class="bi bi-eye-fill"></i> View Result
+                            <i class="bi bi-eye-fill"></i> {{ $summary['released'] ? 'View Result' : 'View Status' }}
                         </a>
                     </div>
                 @endforeach

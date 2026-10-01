@@ -69,21 +69,6 @@
             font-size: 10px;
             letter-spacing: 0.5px;
         }
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 11px;
-        }
-        .badge-pass {
-            background: #dcfce7;
-            color: #166534;
-        }
-        .badge-fail {
-            background: #fee2e2;
-            color: #991b1b;
-        }
         .remark-box {
             background: #f0f9ff;
             border: 1px solid #38bdf8;
@@ -102,12 +87,16 @@
             color: #94a3b8;
             text-align: center;
         }
+        .brand-row { width: 100%; border-collapse: collapse; }
+        .brand-row td { vertical-align: middle; padding: 0; }
+        .brand-logo-cell { width: 76px; padding-right: 14px !important; }
+        .brand-logo-box { background: #ffffff; border-radius: 8px; padding: 6px; text-align: center; }
+        .brand-logo { max-width: 60px; max-height: 48px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>QuizCore</h1>
-        <p>Exam Result Report</p>
+        @include('pdf.partials.brand', ['subtitle' => 'Exam Result Report'])
     </div>
 
     <div class="section-title">Student & Exam Details</div>
@@ -143,7 +132,6 @@
             <th>Correct</th>
             <th>Wrong</th>
             <th>Unanswered</th>
-            <th>Status</th>
         </tr>
         <tr>
             <td>{{ $attempt->exam?->total_marks }}</td>
@@ -152,11 +140,6 @@
             <td>{{ $attempt->correct_count }}</td>
             <td>{{ $attempt->wrong_count }}</td>
             <td>{{ $attempt->unanswered_count }}</td>
-            <td>
-                <span class="badge {{ $attempt->is_passed ? 'badge-pass' : 'badge-fail' }}">
-                    {{ $attempt->is_passed ? 'Passed' : 'Failed' }}
-                </span>
-            </td>
         </tr>
     </table>
 
@@ -176,7 +159,7 @@
     </table>
 
     <div class="footer">
-        &copy; {{ date('Y') }} QuizCore &middot; Quiz Management Software &middot; This is a system-generated report.
+        &copy; {{ date('Y') }} {{ \App\Models\Setting::siteName() }} &middot; Quiz Management Software &middot; This is a system-generated report.
     </div>
 </body>
 </html>

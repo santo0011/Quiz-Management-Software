@@ -19,7 +19,7 @@ class BranchLoginOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your QuizCore Branch Login Verification Code');
+        return new Envelope(subject: 'Your '.\App\Models\Setting::siteName().' Branch Login Verification Code');
     }
 
     public function content(): Content
@@ -27,7 +27,7 @@ class BranchLoginOtpMail extends Mailable
         return new Content(
             view: 'emails.login-otp',
             with: [
-                'subject' => 'Your QuizCore Branch Login Verification Code',
+                'subject' => 'Your '.\App\Models\Setting::siteName().' Branch Login Verification Code',
                 'otp' => $this->otp,
                 'name' => $this->branch->name ?? 'Branch',
                 'typeLabel' => 'Branch',
