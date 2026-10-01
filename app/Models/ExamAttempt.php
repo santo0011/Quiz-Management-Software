@@ -161,6 +161,16 @@ class ExamAttempt extends Model
             ->get();
     }
 
+    /**
+     * The student's most recent submitted attempt at this exam (this one if
+     * it is the latest, or the exam allows a single attempt) — the attempt
+     * the Branch's "Review & Send Result" always sends.
+     */
+    public function latestSubmittedAttempt(): self
+    {
+        return $this->submittedSiblings()->last() ?? $this;
+    }
+
     public function teacherRemarkBy()
     {
         return $this->belongsTo(Teacher::class, 'teacher_remark_by');

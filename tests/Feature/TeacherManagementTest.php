@@ -256,6 +256,29 @@ class TeacherManagementTest extends TestCase
         Mail::assertSent(ResultRemarkMail::class, fn ($mail) => $mail->hasTo('guardian@example.com'));
     }
 
+    public function test_multi_attempt_remark_always_goes_on_the_latest_attempt(): void
+    {
+        Mail::fake();
+
+        [$first, $teacher] = $this->makeAttemptWithTeacher('student@example.com', null);
+        $first->exam->update(['maximum_attempts' => 2]);
+        $latest = $first->replicate()->fill(['attempt_number' => 2, 'submitted_at' => now()->addMinute(), 'obtained_marks' => 5]);
+        $latest->save();
+
+        // Remark card sits above the result, and points at the latest attempt.
+        $this->actingAs($teacher, 'teacher')->get(route('teacher.results.show', $first))
+            ->assertOk()
+            ->assertSeeInOrder(['Teacher Remark', 'Sending from here adds the remark to the latest attempt', 'Marks Obtained']);
+
+        $this->actingAs($teacher, 'teacher')
+            ->post(route('teacher.results.remark.store', $first), ['remark' => 'Remark for the latest attempt.'])
+            ->assertRedirect(route('teacher.results.show', $latest));
+
+        $this->assertSame('Remark for the latest attempt.', $latest->fresh()->teacher_remark);
+        $this->assertNull($first->fresh()->teacher_remark);
+        Mail::assertSent(ResultRemarkMail::class, fn ($mail) => $mail->attempt->is($latest));
+    }
+
     public function test_remark_email_only_goes_to_student_when_guardian_email_is_missing(): void
     {
         Mail::fake();

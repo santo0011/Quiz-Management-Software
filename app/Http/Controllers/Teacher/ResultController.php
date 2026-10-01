@@ -50,14 +50,29 @@ class ResultController extends Controller
     {
         $this->authorizeTeacherAttempt($request, $attempt);
 
+        $attempt->load(['student', 'exam', 'schoolClass', 'answers.question.options', 'answers.selectedOption', 'teacherRemarkBy']);
+
+        // The Teacher Remark always works on the latest attempt — see storeRemark().
+        $remarkAttempt = $attempt->latestSubmittedAttempt();
+        $remarkAttempt = $remarkAttempt->is($attempt)
+            ? $attempt
+            : $remarkAttempt->load(['student', 'exam', 'teacherRemarkBy']);
+
         return view('teacher.results.show', [
             'teacher' => $request->user('teacher'),
-            'attempt' => $attempt->load(['student', 'exam', 'schoolClass', 'answers.question.options', 'answers.selectedOption', 'teacherRemarkBy']),
+            'attempt' => $attempt,
+            'remarkAttempt' => $remarkAttempt,
         ]);
     }
 
     public function storeRemark(Request $request, ExamAttempt $attempt): RedirectResponse
     {
+        $this->authorizeTeacherAttempt($request, $attempt);
+
+        // Multi-attempt exams: whichever attempt's page this was sent from,
+        // the remark (and its result email) goes on the student's latest
+        // submitted attempt — same rule as the Branch's Send Result.
+        $attempt = $attempt->latestSubmittedAttempt();
         $this->authorizeTeacherAttempt($request, $attempt);
 
         $validated = $request->validate([

@@ -60,9 +60,18 @@ class ResultController extends Controller
     {
         abort_if($attempt->status !== 'submitted', 404);
 
+        $attempt->load(['student', 'exam.subject', 'schoolClass', 'branch', 'answers.question.options', 'answers.selectedOption', 'resultEmailSentBy', 'branchReviewBy']);
+
+        // "Review & Send Result" always works on the latest attempt — see send().
+        $sendAttempt = $attempt->latestSubmittedAttempt();
+        $sendAttempt = $sendAttempt->is($attempt)
+            ? $attempt
+            : $sendAttempt->load(['student', 'exam', 'resultEmailSentBy', 'branchReviewBy']);
+
         return view('branch.results.show', [
             'branch' => $request->user()->branch,
-            'attempt' => $attempt->load(['student', 'exam.subject', 'schoolClass', 'branch', 'answers.question.options', 'answers.selectedOption', 'resultEmailSentBy', 'branchReviewBy']),
+            'attempt' => $attempt,
+            'sendAttempt' => $sendAttempt,
         ]);
     }
 
@@ -79,6 +88,11 @@ class ResultController extends Controller
     public function send(Request $request, ExamAttempt $attempt): RedirectResponse
     {
         abort_if($attempt->status !== 'submitted', 404);
+
+        // Multi-attempt exams: whichever attempt's page this was sent from,
+        // the student's latest submitted attempt is what gets reviewed and
+        // sent (review, PDF, email and Zoho all use it below).
+        $attempt = $attempt->latestSubmittedAttempt();
 
         // A result (and its review) goes out exactly once; a failed attempt
         // never sets branch_result_sent_at, so it can still be retried.

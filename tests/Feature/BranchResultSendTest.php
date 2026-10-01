@@ -86,6 +86,46 @@ class BranchResultSendTest extends TestCase
             && $request['Email'] === 'parent-otp-email@example.com');
     }
 
+    public function test_multi_attempt_exam_always_sends_the_latest_attempt(): void
+    {
+        Storage::fake('public');
+        Mail::fake();
+        $this->fakeSuccessfulZohoFlow();
+
+        [, $branchUser, $first] = $this->makeSubmittedAttemptFixture(['guardian_email' => 'parent@example.com']);
+        $first->exam->update(['maximum_attempts' => 2]);
+        $latest = $first->replicate()->fill([
+            'attempt_number' => 2,
+            'submitted_at' => now()->addMinute(),
+            'obtained_marks' => 0,
+            'percentage' => 0,
+            'correct_count' => 0,
+            'wrong_count' => 1,
+        ]);
+        $latest->save();
+
+        // The Branch is on attempt 1's page, but the latest attempt (2/2) goes out.
+        $this->actingAs($branchUser)->get(route('branch.results.show', $first))
+            ->assertOk()
+            ->assertSee('Sending from here sends the latest attempt');
+
+        $this->actingAs($branchUser)->post(route('branch.results.send', $first), ['review' => 'Latest attempt review.'])
+            ->assertRedirect(route('branch.results.show', $latest))
+            ->assertSessionHas('success');
+
+        $latest->refresh();
+        $this->assertSame('Latest attempt review.', $latest->branch_review);
+        $this->assertNotNull($latest->branch_result_sent_at);
+        $this->assertNotNull($latest->branch_result_pdf_path);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'receive_results_data_from_portal')
+            && str_contains($request['Result_PDF_URL'], (string) $latest->id));
+
+        $first->refresh();
+        $this->assertNull($first->branch_review);
+        $this->assertNull($first->branch_result_sent_at);
+        $this->assertNull($first->branch_result_pdf_path);
+    }
+
     public function test_sending_does_not_change_any_calculated_result_value(): void
     {
         Storage::fake('public');
