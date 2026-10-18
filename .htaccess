@@ -1,0 +1,28 @@
+# Lets the app run from the project root (no /public in the URL) on hosts
+# where the document root cannot be pointed at public/.
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Serve real files (css, build, favicon...) straight from public/
+    RewriteCond $1 !^public/
+    RewriteCond $1#%{REQUEST_URI} ^(.+)#(.*)\1$
+    RewriteCond %{DOCUMENT_ROOT}%2public/%1 -f
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Everything else goes to the Laravel front controller
+    RewriteCond $1 !^public/
+    RewriteCond $1 !^index\.php$
+    RewriteRule ^(.*)$ index.php [L]
+</IfModule>
