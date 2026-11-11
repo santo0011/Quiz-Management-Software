@@ -166,7 +166,7 @@
                     </div>
 
                     <div class="question-explanation-field">
-                        <label class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
+                        <label class="form-label">Explanation <span class="text-muted fw-normal">(optional · only Branch &amp; Teacher can see this)</span></label>
                         @include('partials.math-editor', [
                             'mathId' => $formKey . '_q' . $qIndex . '_explanation',
                             'mathName' => 'questions[' . $qIndex . '][explanation]',
@@ -465,7 +465,7 @@
                             </button>
                         </div>
                         <div class="question-explanation-field">
-                            <label class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
+                            <label class="form-label">Explanation <span class="text-muted fw-normal">(optional · only Branch &amp; Teacher can see this)</span></label>
                             ${mathFieldHtml(`questions[${qIdx}][explanation]`, { rows: 1, placeholder: 'Enter explanation text or math expression...' })}
                         </div>
                     </div>

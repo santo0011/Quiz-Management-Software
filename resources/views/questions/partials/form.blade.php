@@ -103,11 +103,11 @@
             <span class="question-card-icon success"><i class="bi bi-lightbulb-fill"></i></span>
             <div>
                 <h3>Explanation</h3>
-                <p>Optional explanation shown after the exam.</p>
+                <p>Optional. Only Branch and Teacher can see this explanation on result pages. Students and Guardians never see it.</p>
             </div>
         </div>
         <div class="question-card-body">
-            <label for="explanation" class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
+            <label for="explanation" class="form-label">Explanation <span class="text-muted fw-normal">(optional · only Branch &amp; Teacher can see this)</span></label>
             @include('partials.math-editor', [
                 'mathId' => 'explanation',
                 'mathName' => 'explanation',
