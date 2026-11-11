@@ -19,10 +19,22 @@
     </section>
 
     <section class="student-stat-grid">
-        <div class="student-stat"><span>Available</span><strong>{{ $availableExams->count() }}</strong></div>
-        <div class="student-stat"><span>Upcoming</span><strong>{{ $upcomingExams->count() }}</strong></div>
-        <div class="student-stat"><span>Completed</span><strong>{{ $completedExams }}</strong></div>
-        <div class="student-stat"><span>Average Score</span><strong>{{ $averageScore }}%</strong></div>
+        <a href="{{ route('student.exams.available') }}" class="student-stat student-stat-link" aria-label="View available exams">
+            <span>Available</span><strong>{{ $availableExams->count() }}</strong>
+            <small>View exams <i class="bi bi-arrow-right"></i></small>
+        </a>
+        <a href="{{ route('student.exams.upcoming') }}" class="student-stat student-stat-link" aria-label="View upcoming exams">
+            <span>Upcoming</span><strong>{{ $upcomingExams->count() }}</strong>
+            <small>View exams <i class="bi bi-arrow-right"></i></small>
+        </a>
+        <a href="{{ route('student.results.index') }}" class="student-stat student-stat-link" aria-label="View completed exams">
+            <span>Completed</span><strong>{{ $completedExams }}</strong>
+            <small>View results <i class="bi bi-arrow-right"></i></small>
+        </a>
+        <a href="{{ route('student.results.index') }}" class="student-stat student-stat-link" aria-label="View my results">
+            <span>Average Score</span><strong>{{ $averageScore }}%</strong>
+            <small>View results <i class="bi bi-arrow-right"></i></small>
+        </a>
     </section>
 
     <section class="student-section" id="performance-charts">
