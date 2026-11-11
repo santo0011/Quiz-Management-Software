@@ -70,5 +70,5 @@
         @endif
     </section>
 
-    @include('results.partials.show', ['prefix' => 'branch', 'hideBack' => true])
+    @include('results.partials.show', ['prefix' => 'branch', 'hideBack' => true, 'showExplanation' => true])
 @endsection

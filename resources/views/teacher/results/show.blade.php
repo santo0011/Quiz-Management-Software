@@ -4,7 +4,7 @@
 @section('page-title', 'Result Details')
 
 @section('content')
-    @include('results.partials.show', ['prefix' => 'teacher'])
+    @include('results.partials.show', ['prefix' => 'teacher', 'showExplanation' => true])
 
     <section class="content-panel narrow-panel mt-4">
         <div class="panel-header">

@@ -8412,3 +8412,10 @@ form .status-badge.status-published:hover {
         transition: none;
     }
 }
+
+/* Question category label on result answer reviews */
+.question-marks-badge.question-category-badge {
+    background: #eef2ff;
+    color: #4338ca;
+    border-color: rgba(67, 56, 202, 0.18);
+}
