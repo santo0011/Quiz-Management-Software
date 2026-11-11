@@ -34,9 +34,9 @@
 
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="question_category_id" class="form-label">Category <span class="required-mark">*</span></label>
-                    <select id="question_category_id" name="question_category_id" class="form-select form-control @error('question_category_id') is-invalid @enderror" required>
-                        <option value="">Select category</option>
+                    <label for="question_category_id" class="form-label">Category <span class="text-muted small">(optional)</span></label>
+                    <select id="question_category_id" name="question_category_id" class="form-select form-control @error('question_category_id') is-invalid @enderror">
+                        <option value="">No category</option>
                         @foreach ($categories ?? [] as $categoryOption)
                             <option value="{{ $categoryOption->id }}" @selected(old('question_category_id', $question->question_category_id) == $categoryOption->id)>{{ $categoryOption->name }}</option>
                         @endforeach

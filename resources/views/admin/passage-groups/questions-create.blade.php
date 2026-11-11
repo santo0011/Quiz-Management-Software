@@ -29,19 +29,6 @@
             </div>
         </section>
 
-        @if ($categories->isEmpty())
-            <div class="feedback-alert mb-0">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <div>
-                    <strong>A question category is required before adding questions.</strong>
-                    <p class="mb-2">Create at least one category on the Question Category page, then come back here to add questions.</p>
-                    <a href="{{ route('admin.question-categories.index', ['branch_id' => $exam->branch_id]) }}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-tags-fill"></i>
-                        Go to Question Categories
-                    </a>
-                </div>
-            </div>
-        @else
             @include('questions.partials.multi-form', [
                 'prefix' => 'admin',
                 'action' => route('admin.passage-groups.questions.store', [$exam, $passageGroup]),
@@ -51,6 +38,5 @@
                 'numberStart' => $exam->questionCountBefore($passageGroup),
                 'categories' => $categories,
             ])
-        @endif
     </section>
 @endsection

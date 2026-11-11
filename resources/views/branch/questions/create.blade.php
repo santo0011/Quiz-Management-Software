@@ -41,7 +41,7 @@
                 <div class="exam-summary-category">
                     <span class="category-status-pill warning">
                         <i class="bi bi-exclamation-triangle-fill"></i>
-                        No categories yet
+                        No categories yet (optional)
                     </span>
                     <a href="{{ route('branch.question-categories.index') }}" class="btn btn-sm btn-primary">
                         <i class="bi bi-tags-fill"></i>
@@ -62,8 +62,7 @@
         </div>
     @endif
 
-    @if ($categories->isNotEmpty())
-        <section class="content-panel add-item-panel" id="add-question-section">
+    <section class="content-panel add-item-panel" id="add-question-section">
             <div class="panel-header">
                 <div>
                     <h2><i class="bi bi-plus-circle-fill me-2 text-primary"></i>Add New Item</h2>
@@ -131,14 +130,12 @@
                 </div>
             </div>
         </section>
-    @endif
 
     @include('exams.partials.questions-panel-header', ['exam' => $exam, 'prefix' => 'branch'])
 
     @include('exams.partials.questions-panel', ['exam' => $exam, 'prefix' => 'branch', 'categories' => $categories])
 
-    @if ($categories->isNotEmpty())
-        @php($hasQuestions = $exam->questions->count() > 0)
+    @php($hasQuestions = $exam->questions->count() > 0)
         <section class="content-panel submit-panel">
             @if ($hasQuestions)
                 <a href="{{ route('branch.exams.show', $exam) }}" class="btn btn-success btn-lg">
@@ -154,7 +151,6 @@
                 <p class="text-danger">Add at least one question before you can finish this exam.</p>
             @endif
         </section>
-    @endif
 
     @push('scripts')
         @include('questions.partials.default-category-script')
