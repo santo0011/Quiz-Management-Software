@@ -121,6 +121,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::delete('/settings/exam-data', [SettingsController::class, 'clearExamData'])->name('settings.exam-data.clear');
     Route::get('/logs', [AdminLogController::class, 'index'])->name('logs.index');
+    Route::view('/manual', 'admin.manual.index')->name('manual');
 });
 
 Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('branch')->name('branch.')->group(function () {
