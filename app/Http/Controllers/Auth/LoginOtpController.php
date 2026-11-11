@@ -251,39 +251,38 @@ class LoginOtpController extends Controller
             return redirect()->route('login.otp')->with('otp_error', $result['message']);
         }
 
-        // Zoho has now verified both the ID and the OTP. This is the actual
-        // point at which a local Student record is required — resolve it
-        // here (by NRICH ID, not a student_id stashed earlier) rather than
-        // at the initial identify step, so an ID Zoho recognizes but this
-        // app has never seen still reaches this point instead of being
-        // rejected before the student ever had a chance to prove who they are.
+        // Zoho has now verified both the ID and the OTP. If this app has
+        // never seen the ID before, create the local Student from Zoho's
+        // data right here (same as Teacher Override) so a genuine Student
+        // can log in on their own without an admin adding them first.
         $student = Student::where('zoho_student_id', $pending['nrich_student_id'])->first();
 
         if (! $student) {
-            LoginLogger::failed('Student', 'OTP', 'No matching student account exists.', identifier: $pending['nrich_student_id']);
-            $request->session()->forget(self::SESSION_KEY);
+            [$student, $provisionError] = $zohoStudentService->provisionStudent($pending['nrich_student_id'], $result['data']);
 
-            return redirect()->route('login')->with(
-                'login_error',
-                'Your Student ID was verified, but no matching account exists in this system yet. Please contact your administrator.'
-            );
+            if (! $student) {
+                LoginLogger::failed('Student', 'OTP', $provisionError, identifier: $pending['nrich_student_id']);
+                $request->session()->forget(self::SESSION_KEY);
+
+                return redirect()->route('login')->with('login_error', $provisionError);
+            }
+        } else {
+            if (! $student->isActive()) {
+                LoginLogger::failed('Student', 'OTP', 'Student account is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
+                $request->session()->forget(self::SESSION_KEY);
+
+                return redirect()->route('login')->with('login_error', 'This student account has been deactivated. Please contact your administrator.');
+            }
+
+            if ($student->branch && ! $student->branch->isActive()) {
+                LoginLogger::failed('Student', 'OTP', 'Branch is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
+                $request->session()->forget(self::SESSION_KEY);
+
+                return redirect()->route('login')->with('login_error', 'This branch has been deactivated. Please contact your administrator.');
+            }
+
+            $zohoStudentService->syncStudentFromZoho($student, $result['data']);
         }
-
-        if (! $student->isActive()) {
-            LoginLogger::failed('Student', 'OTP', 'Student account is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
-            $request->session()->forget(self::SESSION_KEY);
-
-            return redirect()->route('login')->with('login_error', 'This student account has been deactivated. Please contact your administrator.');
-        }
-
-        if ($student->branch && ! $student->branch->isActive()) {
-            LoginLogger::failed('Student', 'OTP', 'Branch is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
-            $request->session()->forget(self::SESSION_KEY);
-
-            return redirect()->route('login')->with('login_error', 'This branch has been deactivated. Please contact your administrator.');
-        }
-
-        $zohoStudentService->syncStudentFromZoho($student, $result['data']);
 
         $request->session()->forget(self::SESSION_KEY);
 

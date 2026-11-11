@@ -881,4 +881,54 @@ class ZohoStudentService
             'grade' => $this->extractGrade($data),
         ];
     }
+
+    /**
+     * Create a local Student from real Zoho data when Zoho has verified an
+     * NRICH ID this app has never seen (used by both the normal Student OTP
+     * login and Teacher Override). Every field is a genuine Zoho value; when
+     * something essential is missing, provisioning fails with a clear reason
+     * rather than inventing placeholders.
+     *
+     * @return array{0: ?Student, 1: ?string} [created student, or null with an error message]
+     */
+    public function provisionStudent(string $nrichStudentId, array $zohoData): array
+    {
+        $location = $this->extractLocation($zohoData);
+        $branch = $this->resolveBranchFromLocation($location);
+
+        if (! $branch) {
+            Log::warning('Could not create a new Student: no Branch matches the Zoho Enrolment Location.', [
+                'nrich_student_id' => $nrichStudentId,
+                'zoho_location' => $location,
+            ]);
+
+            return [null, 'This Student has no account in this system yet, and their Zoho Enrolment Location does not match any Branch in this system. Please ask your Super Admin to add a matching Branch.'];
+        }
+
+        $info = $this->extractProvisioningData($zohoData);
+
+        if (! $info['guardian_email']) {
+            return [null, 'This Student has no account in this system yet, and Zoho did not return a registered email to create one with. Please contact your administrator.'];
+        }
+
+        if (Student::where('email', $info['guardian_email'])->exists()) {
+            return [null, 'This Student\'s registered email is already used by a different account in this system. Please ask your administrator to resolve this before continuing.'];
+        }
+
+        $student = Student::create([
+            'branch_id' => $branch->id,
+            'student_name' => $info['student_name'] ?: $nrichStudentId,
+            'guardian_name' => $info['guardian_name'] ?: ($info['student_name'] ?: $nrichStudentId),
+            'guardian_email' => $info['guardian_email'],
+            'class' => $info['grade'] ?: ($info['class_name'] ?: 'Unassigned'),
+            'phone_number' => '',
+            'email' => $info['guardian_email'],
+            'zoho_student_id' => $nrichStudentId,
+            'is_active' => true,
+        ]);
+
+        $this->syncStudentFromZoho($student, $zohoData);
+
+        return [$student, null];
+    }
 }

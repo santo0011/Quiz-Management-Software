@@ -465,11 +465,57 @@ class UnifiedLoginTest extends TestCase
         $this->assertGuest('student');
     }
 
-    public function test_otp_verification_shows_a_distinct_error_when_zoho_confirms_but_no_local_account_exists(): void
+    public function test_student_otp_login_auto_provisions_a_student_with_no_local_record(): void
+    {
+        $branch = Branch::create(['name' => 'ringwood', 'email' => 'otp-branch@example.com']);
+
+        Http::fake([
+            '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
+            '*zohoapis.com.au*' => Http::response([
+                'status' => 'success',
+                'error' => [],
+                'Student' => ['name' => 'avsbera', 'id' => '96867000007369018'],
+                'Parent' => ['name' => 'Laravel Portal', 'id' => '96867000007369006'],
+                'Enrolment' => [
+                    'classes' => [
+                        ['name' => 'Science | Grade 2 (Group) | Ringwood (Head Office)', 'id' => '96867000000927309'],
+                    ],
+                    'Grade' => 'Grade 2',
+                    'Location' => 'Ringwood Head Office',
+                ],
+                'otp_sent_on_to_mail_address' => 'nl1405-guardian@example.com',
+            ], 200),
+        ]);
+
+        $this->assertDatabaseMissing('students', ['zoho_student_id' => 'NL1405']);
+
+        $this->post(route('login.store'), [
+            'login_type' => 'student',
+            'nrich_student_id' => 'NL1405',
+        ])->assertRedirect(route('login.otp'));
+
+        $this->post(route('login.otp.verify'), ['otp' => '145263'])
+            ->assertRedirect(route('student.dashboard'));
+
+        $student = Student::where('zoho_student_id', 'NL1405')->first();
+
+        $this->assertNotNull($student);
+        $this->assertAuthenticatedAs($student, 'student');
+        $this->assertSame($branch->id, $student->branch_id);
+        $this->assertSame('avsbera', $student->student_name);
+        $this->assertSame('nl1405-guardian@example.com', $student->email);
+        $this->assertSame('Grade 2', $student->class);
+    }
+
+    public function test_student_otp_login_fails_clearly_when_a_new_student_cannot_be_provisioned(): void
     {
         Http::fake([
             '*accounts.zoho.com.au*' => Http::response(['access_token' => 'fake-access-token'], 200),
-            '*zohoapis.com.au*' => Http::response(['status' => 'success', 'error' => []], 200),
+            '*zohoapis.com.au*' => Http::response([
+                'status' => 'success',
+                'error' => [],
+                'Enrolment' => ['Location' => 'Nowhere Branch'],
+            ], 200),
         ]);
 
         $this->post(route('login.store'), [
@@ -479,9 +525,10 @@ class UnifiedLoginTest extends TestCase
 
         $this->post(route('login.otp.verify'), ['otp' => '145263'])
             ->assertRedirect(route('login'))
-            ->assertSessionHas('login_error', 'Your Student ID was verified, but no matching account exists in this system yet. Please contact your administrator.');
+            ->assertSessionHas('login_error', 'This Student has no account in this system yet, and their Zoho Enrolment Location does not match any Branch in this system. Please ask your Super Admin to add a matching Branch.');
 
         $this->assertGuest('student');
+        $this->assertDatabaseMissing('students', ['zoho_student_id' => 'NL1405']);
     }
 
     public function test_student_login_shows_mapped_error_when_zoho_reports_student_not_found(): void

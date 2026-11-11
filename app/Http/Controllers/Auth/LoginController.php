@@ -241,7 +241,7 @@ class LoginController extends Controller
         $student = Student::where('zoho_student_id', $nrichStudentId)->first();
 
         if (! $student) {
-            [$student, $provisionError] = $this->provisionStudentFromZoho($nrichStudentId, $result['data'], $zohoStudentService);
+            [$student, $provisionError] = $zohoStudentService->provisionStudent($nrichStudentId, $result['data']);
 
             if (! $student) {
                 LoginLogger::failed('Student', 'Teacher Override', $provisionError, identifier: $nrichStudentId);
@@ -279,57 +279,6 @@ class LoginController extends Controller
         return redirect()
             ->to(RoleRedirector::postLoginUrl($student))
             ->with('success', 'Login successful. Welcome back!');
-    }
-
-    /**
-     * Teacher Override must be able to log a Student in even when Zoho
-     * verifies an ID this app has never seen before — but creating that
-     * record still needs real data, never invented placeholders. Every
-     * field here is either a genuine Zoho value or, when Zoho didn't return
-     * one, causes provisioning to fail with a clear reason rather than
-     * fabricate something plausible-looking.
-     *
-     * @return array{0: ?Student, 1: ?string} [created student, or null with an error message]
-     */
-    private function provisionStudentFromZoho(string $nrichStudentId, array $zohoData, ZohoStudentService $zohoStudentService): array
-    {
-        $location = $zohoStudentService->extractLocation($zohoData);
-        $branch = $zohoStudentService->resolveBranchFromLocation($location);
-
-        if (! $branch) {
-            Log::warning('Could not create a new Student: no Branch matches the Zoho Enrolment Location.', [
-                'nrich_student_id' => $nrichStudentId,
-                'zoho_location' => $location,
-            ]);
-
-            return [null, 'This Student has no account in this system yet, and their Zoho Enrolment Location does not match any Branch in this system. Please ask your Super Admin to add a matching Branch.'];
-        }
-
-        $info = $zohoStudentService->extractProvisioningData($zohoData);
-
-        if (! $info['guardian_email']) {
-            return [null, 'This Student has no account in this system yet, and Zoho did not return a registered email to create one with. Please contact your administrator.'];
-        }
-
-        if (Student::where('email', $info['guardian_email'])->exists()) {
-            return [null, 'This Student\'s registered email is already used by a different account in this system. Please ask your administrator to resolve this before continuing.'];
-        }
-
-        $student = Student::create([
-            'branch_id' => $branch->id,
-            'student_name' => $info['student_name'] ?: $nrichStudentId,
-            'guardian_name' => $info['guardian_name'] ?: ($info['student_name'] ?: $nrichStudentId),
-            'guardian_email' => $info['guardian_email'],
-            'class' => $info['grade'] ?: ($info['class_name'] ?: 'Unassigned'),
-            'phone_number' => '',
-            'email' => $info['guardian_email'],
-            'zoho_student_id' => $nrichStudentId,
-            'is_active' => true,
-        ]);
-
-        $zohoStudentService->syncStudentFromZoho($student, $zohoData);
-
-        return [$student, null];
     }
 
     /**
