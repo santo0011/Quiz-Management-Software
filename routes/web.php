@@ -119,6 +119,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/results/{attempt}', [AdminResultController::class, 'show'])->name('results.show');
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::delete('/settings/exam-data', [SettingsController::class, 'clearExamData'])->name('settings.exam-data.clear');
     Route::get('/logs', [AdminLogController::class, 'index'])->name('logs.index');
 });
 

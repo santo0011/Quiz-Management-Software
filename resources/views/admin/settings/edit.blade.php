@@ -279,6 +279,57 @@
         </form>
     </section>
 
+    @if (auth()->user()->canClearExamData())
+        <section class="content-panel settings-panel border border-danger">
+            <div class="panel-header">
+                <div>
+                    <h2><i class="bi bi-exclamation-octagon-fill me-2 text-danger"></i>Clear Exam Data</h2>
+                    <p>Permanently deletes <strong>all</strong> exams, questions, options, passages, question categories, student attempts, answers and result PDFs. Branches, students, teachers, guardians, classes, subjects and settings are <strong>not</strong> touched. This cannot be undone.</p>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ route('admin.settings.exam-data.clear') }}" class="admin-form" data-confirm-clear-exam-data>
+                @csrf
+                @method('DELETE')
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="clear_password" class="form-label">Your Password</label>
+                        <div class="password-field">
+                            <input id="clear_password" type="password" name="clear_password" class="form-control @error('clear_password', 'clearExamData') is-invalid @enderror" autocomplete="current-password" required>
+                            <button class="password-toggle" type="button" aria-label="Show password" data-password-toggle>
+                                <i class="bi bi-eye-fill"></i>
+                            </button>
+                        </div>
+                        @error('clear_password', 'clearExamData')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-6">
+                        <label for="clear_confirmation" class="form-label">Type <code>CLEAR</code> to confirm</label>
+                        <input id="clear_confirmation" type="text" name="clear_confirmation" class="form-control @error('clear_confirmation', 'clearExamData') is-invalid @enderror" autocomplete="off" required>
+                        @error('clear_confirmation', 'clearExamData')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3-fill"></i>
+                        Clear Exam Data
+                    </button>
+                </div>
+            </form>
+        </section>
+    @endif
+
+    @push('scripts')
+        <script>
+            document.querySelector('[data-confirm-clear-exam-data]')?.addEventListener('submit', function (event) {
+                if (!window.confirm('This will permanently delete ALL exam data. Continue?')) {
+                    event.preventDefault();
+                }
+            });
+        </script>
+    @endpush
+
     @push('scripts')
         <script>
             document.querySelector('[data-logo-input]')?.addEventListener('change', function (event) {
