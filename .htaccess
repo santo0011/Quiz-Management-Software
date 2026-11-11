@@ -15,6 +15,10 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # Let Adminer (DB manager) run from the project root, e.g. /adminer-6.3.0.php
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^adminer[^/]*\.php$ - [L]
+
     # Serve real files (css, build, favicon...) straight from public/
     RewriteCond $1 !^public/
     RewriteCond $1#%{REQUEST_URI} ^(.+)#(.*)\1$

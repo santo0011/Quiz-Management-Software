@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Adminer DB manager (upload manually on the server, never commit)
+/adminer*.php
