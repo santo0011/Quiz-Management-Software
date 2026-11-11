@@ -20,13 +20,13 @@
 
     <section class="student-stat-grid" role="tablist" aria-label="My exams">
         <button type="button" class="student-stat student-stat-tab is-active" role="tab" aria-selected="true" aria-controls="exam-tab-available" data-exam-tab="available">
-            <span>Available</span><strong>{{ $availableExams->count() }}</strong>
+            <span>Available Exams</span><strong>{{ $availableExams->count() }}</strong>
         </button>
         <button type="button" class="student-stat student-stat-tab" role="tab" aria-selected="false" aria-controls="exam-tab-upcoming" data-exam-tab="upcoming">
-            <span>Upcoming</span><strong>{{ $upcomingExams->count() }}</strong>
+            <span>Upcoming Exams</span><strong>{{ $upcomingExams->count() }}</strong>
         </button>
         <button type="button" class="student-stat student-stat-tab" role="tab" aria-selected="false" aria-controls="exam-tab-completed" data-exam-tab="completed">
-            <span>Completed</span><strong>{{ $completedExams }}</strong>
+            <span>Completed Exams</span><strong>{{ $completedExams }}</strong>
         </button>
         <div class="student-stat">
             <span>Average Score</span><strong>{{ $averageScore }}%</strong>
