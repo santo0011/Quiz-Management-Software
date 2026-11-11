@@ -2882,37 +2882,44 @@ body {
     line-height: 1.1;
 }
 
-.student-stat-link {
+.student-stat-tab {
     display: block;
+    width: 100%;
+    text-align: left;
+    font: inherit;
     color: inherit;
-    text-decoration: none;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.student-stat-link small {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 10px;
-    color: #2563eb;
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.student-stat-link:hover,
-.student-stat-link:focus-visible {
-    color: inherit;
+.student-stat-tab:hover,
+.student-stat-tab:focus-visible {
     transform: translateY(-2px);
     border-color: rgba(37, 99, 235, 0.35);
     box-shadow: 0 16px 32px rgba(37, 99, 235, 0.12);
+    outline: none;
 }
 
-.student-stat-link:hover small i {
-    transform: translateX(2px);
+.student-stat-tab.is-active {
+    border-color: #2563eb;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+    box-shadow: 0 16px 32px rgba(37, 99, 235, 0.16);
 }
 
-.student-stat-link small i {
-    transition: transform 0.15s ease;
+.student-stat-tab.is-active span {
+    color: #2563eb;
+}
+
+.student-stat-tab.is-active::after {
+    content: "";
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: -1px;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: #2563eb;
 }
 
 .student-section {
