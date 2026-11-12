@@ -11,7 +11,8 @@
         ['id' => 'branch', 'icon' => 'bi-building-fill', 'color' => '#0891b2', 'name' => 'Branch', 'who' => 'Each tuition centre / location', 'login' => 'User ID + Password + OTP'],
         ['id' => 'teacher', 'icon' => 'bi-person-workspace', 'color' => '#059669', 'name' => 'Teacher', 'who' => 'Teachers working under a branch', 'login' => 'Email + Password + OTP'],
         ['id' => 'student', 'icon' => 'bi-mortarboard-fill', 'color' => '#d97706', 'name' => 'Student', 'who' => 'Learners who take the exams', 'login' => 'NRICH Student ID + OTP (or Teacher Override)'],
-        ['id' => 'guardian', 'icon' => 'bi-people-fill', 'color' => '#db2777', 'name' => 'Guardian', 'who' => 'Parents following their children', 'login' => 'Login tab not enabled yet'],
+        // Guardian hidden until the Guardian login is enabled.
+        // ['id' => 'guardian', 'icon' => 'bi-people-fill', 'color' => '#db2777', 'name' => 'Guardian', 'who' => 'Parents following their children', 'login' => 'Login tab not enabled yet'],
     ];
 @endphp
 
@@ -51,7 +52,7 @@
         <i class="bi bi-book-half hero-icon"></i>
         <div>
             <h2>{{ $siteName }} — Complete User Manual</h2>
-            <p>A simple, step-by-step guide for every person who uses the system: Super Admin, Branch, Teacher, Student and Guardian. Use the menu on the left to jump to any part.</p>
+            <p>A simple, step-by-step guide for every person who uses the system: Super Admin, Branch, Teacher and Student. Use the menu on the left to jump to any part.</p>
         </div>
     </div>
 
@@ -64,7 +65,7 @@
             <a href="#branch"><i class="bi bi-building-fill"></i> Branch panel</a>
             <a href="#teacher"><i class="bi bi-person-workspace"></i> Teacher panel</a>
             <a href="#student"><i class="bi bi-mortarboard-fill"></i> Student panel</a>
-            <a href="#guardian"><i class="bi bi-people-fill"></i> Guardian panel</a>
+            {{-- <a href="#guardian"><i class="bi bi-people-fill"></i> Guardian panel</a> --}}
             <a href="#exam-guide"><i class="bi bi-journal-plus"></i> Creating an exam</a>
             <a href="#results"><i class="bi bi-bar-chart-fill"></i> Results journey</a>
             <a href="#security"><i class="bi bi-lock-fill"></i> Security &amp; sessions</a>
@@ -99,7 +100,7 @@
                     <li><strong>Students</strong> log in with their NRICH Student ID. Student details, grade and subjects come automatically from Zoho — nobody types them in.</li>
                     <li>Students see the exams meant for their grade and subject, take them inside the time limit, and submit. Marks are calculated automatically.</li>
                     <li><strong>Branch</strong> reviews the result, writes feedback and sends the result PDF. <strong>Teachers</strong> can add remarks, which are emailed to the Student and Guardian.</li>
-                    <li><strong>Students and Guardians</strong> view the results; <strong>Super Admin</strong> watches everything from Results and Logs.</li>
+                    <li><strong>Students</strong> view their results; <strong>Super Admin</strong> watches everything from Results and Logs.</li>
                 </ol>
             </section>
 
@@ -126,7 +127,9 @@
                         </tbody>
                     </table>
                 </div>
+                {{-- Guardian login note hidden until the Guardian login is enabled.
                 <div class="warn"><i class="bi bi-exclamation-triangle-fill"></i> <strong>Guardian login:</strong> the Guardian panel exists, but there is currently <strong>no Guardian tab</strong> on the login page, so guardians cannot sign in yet. Until it is switched on, guardians receive results by email (Teacher remarks are sent to the guardian’s email).</div>
+                --}}
 
                 <div class="accordion" id="loginAccordion">
                     <div class="accordion-item">
@@ -290,7 +293,7 @@
                 <div class="warn"><i class="bi bi-exclamation-triangle-fill"></i> Don’t see an exam? It may not be published yet, may be for a different grade/subject, its time window may have ended, or you have used all allowed attempts.</div>
             </section>
 
-            {{-- GUARDIAN --}}
+            {{-- GUARDIAN: hidden until the Guardian login is enabled.
             <section id="guardian" class="content-panel manual-section">
                 <div class="panel-header">
                     <div>
@@ -310,6 +313,7 @@
                 <div class="tip"><i class="bi bi-lightbulb-fill"></i> How it works once enabled: a first-time guardian verifies their email with an OTP and creates a password; after that it is Email + Password + OTP every time.</div>
                 <div class="warn"><i class="bi bi-exclamation-triangle-fill"></i> The Guardian tab is not shown on the login page right now (see <a href="#login">Login methods</a>). Guardians still get result and remark emails.</div>
             </section>
+            --}}
 
             {{-- EXAM GUIDE --}}
             <section id="exam-guide" class="content-panel manual-section">
@@ -344,7 +348,7 @@
                     <li><strong>Automatic marking</strong> — correct, wrong and unanswered counts, marks and percentage are calculated instantly. The student sees the result right away.</li>
                     <li><strong>Branch review</strong> — the Branch opens the result in <em>Results</em>, writes feedback and presses <strong>Review &amp; Send Result</strong>. A professional PDF is created and its link is sent to Zoho.</li>
                     <li><strong>Teacher remark</strong> — a Teacher can add a remark; the result with the remark is emailed to the Student and Guardian.</li>
-                    <li><strong>Viewing</strong> — Student (Results), Guardian (My Students), Branch, Teacher and Super Admin can all open the result.</li>
+                    <li><strong>Viewing</strong> — Student (Results), Branch, Teacher and Super Admin can all open the result.</li>
                 </ol>
             </section>
 
@@ -358,7 +362,7 @@
                 </div>
                 <ul>
                     <li><strong>Every login needs an OTP</strong> (except Teacher Override), so a stolen password alone is not enough.</li>
-                    <li><strong>One device at a time</strong> for Student, Branch, Teacher and Guardian accounts — a new login signs the old device out.</li>
+                    <li><strong>One device at a time</strong> for Student, Branch and Teacher accounts — a new login signs the old device out.</li>
                     <li><strong>Remember me</strong> keeps you signed in for up to 7 days on that device. Don’t use it on shared computers.</li>
                     <li>Always press <strong>Logout</strong> (bottom of the left menu) on shared computers.</li>
                     <li>Deactivated branches or students cannot log in; reactivate them from the Super Admin panel.</li>
@@ -394,7 +398,7 @@
                     <dd>Someone signed in to the same account on another device. Log in again and change your password if it wasn’t you.</dd>
 
                     <dt>Who do I contact for anything else?</dt>
-                    <dd>Students/Guardians → their Branch. Teachers → their Branch. Branches → the Super Admin.</dd>
+                    <dd>Students → their Branch. Teachers → their Branch. Branches → the Super Admin.</dd>
                 </dl>
             </section>
         </div>

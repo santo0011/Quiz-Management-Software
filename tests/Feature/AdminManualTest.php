@@ -26,7 +26,10 @@ class AdminManualTest extends TestCase
             ->assertSee('Complete User Manual')
             ->assertSee('Teacher Override')
             ->assertSee('Branch panel')
-            ->assertSee('Student panel');
+            ->assertSee('Student panel')
+            ->assertDontSee('Guardian panel')
+            ->assertDontSee('Parents following their children')
+            ->assertDontSee('id="guardian"', false);
 
         $this->actingAs($admin)->get(route('admin.dashboard'))
             ->assertSee(route('admin.manual'), false);
