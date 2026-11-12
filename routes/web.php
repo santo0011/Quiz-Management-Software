@@ -179,6 +179,7 @@ Route::middleware(['auth:student', 'active', 'single_session'])->prefix('student
     Route::post('/attempts/{attempt}/answer', [StudentExamApiController::class, 'answer'])->name('attempts.answer');
     Route::post('/attempts/{attempt}/submit', [StudentExamApiController::class, 'submit'])->name('attempts.submit');
     Route::get('/profile', [StudentExamController::class, 'profile'])->name('profile');
+    Route::view('/tutorials', 'student.tutorials')->name('tutorials');
     Route::get('/results', [StudentExamController::class, 'results'])->name('results.index');
     Route::get('/results/{attempt}', [StudentExamController::class, 'result'])->name('results.show');
 });
