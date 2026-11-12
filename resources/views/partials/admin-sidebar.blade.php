@@ -10,6 +10,7 @@
         ['label' => 'Results', 'icon' => 'bi-bar-chart-fill', 'route' => 'admin.results.index', 'active' => 'admin.results.*'],
         ['label' => 'Logs', 'icon' => 'bi-clock-history', 'route' => 'admin.logs.index', 'active' => 'admin.logs.*'],
         ['label' => 'User Manual', 'icon' => 'bi-book-half', 'route' => 'admin.manual', 'active' => 'admin.manual'],
+        ['label' => 'Video Tutorials', 'icon' => 'bi-play-btn-fill', 'route' => 'admin.tutorials', 'active' => 'admin.tutorials'],
         ['label' => 'Settings', 'icon' => 'bi-gear-fill', 'route' => 'admin.settings.edit', 'active' => 'admin.settings.*'],
     ];
 @endphp
