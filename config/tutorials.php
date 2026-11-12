@@ -60,7 +60,30 @@ return [
             'label' => 'Student',
             'icon' => 'bi-mortarboard-fill',
             'color' => '#d97706',
-            'videos' => [],
+            'videos' => [
+                [
+                    'title' => 'Student Panel: login, dashboard and taking an exam',
+                    'description' => 'Both student login methods (one time code to the parent\'s email, and Teacher Override), '
+                        .'the dashboard tabs and profile, taking an exam with every question type, submitting, and the result.',
+                    'file' => 'videos/tutorials/student-panel.mp4',
+                    'poster' => 'videos/tutorials/student-panel.jpg',
+                    'duration' => '5:57',
+                    'chapters' => [
+                        ['0:06', 'Login with NRICH Student ID and a one time code'],
+                        ['0:58', 'Login with Teacher Override'],
+                        ['1:54', 'Dashboard: Available, Upcoming and Completed Exams'],
+                        ['2:38', 'My Profile'],
+                        ['3:16', 'Open an exam and read the rules'],
+                        ['3:41', 'Start the exam and answer questions'],
+                        ['4:17', 'Maths questions and text size'],
+                        ['4:30', 'Reading passage with several questions'],
+                        ['4:41', 'Submit the exam'],
+                        ['4:59', 'The result and answer review'],
+                        ['5:11', 'Completed Exams and Results'],
+                        ['5:42', 'Logout'],
+                    ],
+                ],
+            ],
         ],
     ],
 ];
