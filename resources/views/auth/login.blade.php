@@ -115,12 +115,15 @@
                     <label for="email" class="form-label" id="emailLabel">Email</label>
                     <div class="login-input-wrap">
                         <i class="bi bi-envelope-fill"></i>
-                        <input id="email" type="email" name="email" value="{{ old('email', old('nrich_student_id')) }}" class="form-control @error('email') is-invalid @enderror @error('nrich_student_id') is-invalid @enderror" required autofocus placeholder="Enter your email">
+                        <input id="email" type="email" name="email" value="{{ old('email', old('nrich_student_id', old('username'))) }}" class="form-control @error('email') is-invalid @enderror @error('nrich_student_id') is-invalid @enderror @error('username') is-invalid @enderror" required autofocus placeholder="Enter your email">
                     </div>
                     @error('email')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                     @error('nrich_student_id')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                    @error('username')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </div>
@@ -179,10 +182,10 @@
                 kicker: 'Branch Workspace',
                 title: 'Branch Login',
                 subtitle: 'Sign in to manage your branch',
-                emailLabel: 'Branch Email',
-                emailPlaceholder: 'branch@example.com',
-                identifierName: 'email',
-                identifierType: 'email',
+                emailLabel: 'Branch User ID',
+                emailPlaceholder: 'Enter your branch User ID',
+                identifierName: 'username',
+                identifierType: 'text',
                 passwordLabel: 'Password',
                 passwordPlaceholder: 'Enter your branch password',
                 requiresPassword: true,

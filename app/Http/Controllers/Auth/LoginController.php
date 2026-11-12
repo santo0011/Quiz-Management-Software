@@ -59,6 +59,10 @@ class LoginController extends Controller
             return $this->loginStudent($request, $validated['nrich_student_id']);
         }
 
+        if ($loginType === 'branch') {
+            return $this->loginBranch($request);
+        }
+
         $credentials = $request->validate([
             'login_type' => ['required', Rule::in(['super_admin', 'branch', 'student', 'guardian', 'teacher'])],
             'email' => ['required', 'email'],
@@ -81,40 +85,59 @@ class LoginController extends Controller
             return $this->loginTeacher($request, $credentials);
         }
 
-        $expectedRole = $loginType === 'super_admin' ? 'Super Admin' : 'Branch';
+        // Super Admin. Emails are no longer unique across users (several
+        // branches may share one), so look the account up by email AND role.
+        $user = User::where('email', $credentials['email'])->where('role', 'Super Admin')->first();
 
-        if (Auth::guard('web')->validate($credentials)) {
-            $user = User::where('email', $credentials['email'])->first();
-
-            if ($user->role !== $expectedRole) {
-                LoginLogger::failed($expectedRole, 'Password + OTP', 'These credentials do not match the selected login type.', $user->name, $user->email, $user->id, $user->role === 'Branch' ? $user->branch : null);
-
-                return back()
-                    ->with('login_error', 'These credentials do not match the selected login type.')
-                    ->withInput($request->only('email', 'login_type'));
-            }
-
-            if ($expectedRole === 'Branch') {
-                $branch = $user->branch;
-
-                if ($branch && ! $branch->isActive()) {
-                    LoginLogger::failed($expectedRole, 'Password + OTP', 'This branch account has been deactivated.', $user->name, $user->email, $user->id, $branch);
-
-                    return back()
-                        ->with('login_error', 'This branch account has been deactivated. Please contact the administrator.')
-                        ->withInput($request->only('email', 'login_type'));
-                }
-            }
-
+        if ($user && Hash::check($credentials['password'], $user->password)) {
             return $this->issueOtpAndRedirect($request, $loginType, $user->email, $request->boolean('remember'));
         }
 
-        $attemptedUser = User::where('email', $credentials['email'])->first();
-        LoginLogger::failed($expectedRole, 'Password + OTP', 'Invalid email or password.', $attemptedUser?->name, $credentials['email'], $attemptedUser?->id, $expectedRole === 'Branch' ? $attemptedUser?->branch : null);
+        LoginLogger::failed('Super Admin', 'Password + OTP', 'Invalid email or password.', $user?->name, $credentials['email'], $user?->id);
 
         return back()
             ->with('login_error', 'Invalid email or password. Please check your credentials and try again.')
             ->withInput($request->only('email', 'login_type'));
+    }
+
+    /**
+     * Branch accounts log in with their unique User ID (users.username),
+     * not their email — one email may be shared by several branches. The
+     * OTP is still emailed to the branch's address; the pending login is
+     * keyed by the User ID so it always resolves to exactly one account.
+     */
+    private function loginBranch(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'username' => ['required', 'string', 'max:50'],
+            'password' => ['required', 'string'],
+        ], [
+            'username.required' => 'User ID is required.',
+            'password.required' => 'Password is required.',
+        ]);
+
+        $username = strtolower(trim($validated['username']));
+        $user = User::where('username', $username)->where('role', 'Branch')->first();
+
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+            LoginLogger::failed('Branch', 'Password + OTP', 'Invalid User ID or password.', $user?->name, $username, $user?->id, $user?->branch);
+
+            return back()
+                ->with('login_error', 'Invalid User ID or password. Please check your credentials and try again.')
+                ->withInput($request->only('username', 'login_type'));
+        }
+
+        $branch = $user->branch;
+
+        if ($branch && ! $branch->isActive()) {
+            LoginLogger::failed('Branch', 'Password + OTP', 'This branch account has been deactivated.', $user->name, $username, $user->id, $branch);
+
+            return back()
+                ->with('login_error', 'This branch account has been deactivated. Please contact the administrator.')
+                ->withInput($request->only('username', 'login_type'));
+        }
+
+        return $this->issueOtpAndRedirect($request, 'branch', $user->username, $request->boolean('remember'));
     }
 
     public function logout(Request $request): RedirectResponse
@@ -334,12 +357,16 @@ class LoginController extends Controller
      * login immediately, email a 6-digit OTP and park the pending login in
      * the session until it is verified by LoginOtpController.
      */
+    /**
+     * $email is the account identifier: the email for every type except
+     * Branch, where it is the branch's unique User ID.
+     */
     private function issueOtpAndRedirect(Request $request, string $loginType, string $email, bool $remember = false): RedirectResponse
     {
         if (! LoginOtpService::send($loginType, $email)) {
             return back()
                 ->with('login_error', 'We could not send a verification code to your email. Please try again.')
-                ->withInput($request->only('email', 'login_type'));
+                ->withInput($request->only('email', 'username', 'login_type'));
         }
 
         $request->session()->regenerate();

@@ -55,9 +55,14 @@ class LoginOtpController extends Controller
             ]);
         }
 
+        // Branch logins are keyed by User ID; show the email the code went to.
+        $sentTo = $pending['type'] === 'branch'
+            ? (User::where('username', $pending['email'])->where('role', 'Branch')->value('email') ?? $pending['email'])
+            : $pending['email'];
+
         return view('auth.login-otp', [
             'typeLabel' => $typeLabel,
-            'maskedEmail' => $pending['email'],
+            'maskedEmail' => $sentTo,
             'cooldown' => LoginOtpService::secondsUntilResendAllowed($pending['type'], $pending['email']),
             'expiresInSeconds' => LoginOtpService::OTP_EXPIRY_MINUTES * 60,
         ]);
@@ -147,7 +152,9 @@ class LoginOtpController extends Controller
                 ->with('success', 'Login successful. Welcome back!');
         }
 
-        $user = User::where('email', $email)->first();
+        $user = $loginType === 'branch'
+            ? User::where('username', $email)->where('role', 'Branch')->firstOrFail()
+            : User::where('email', $email)->where('role', 'Super Admin')->firstOrFail();
 
         Auth::guard('web')->login($user, $pending['remember'] ?? false);
         $request->session()->regenerate();
@@ -180,8 +187,8 @@ class LoginOtpController extends Controller
                 return ['Teacher', $teacher?->name, $teacher?->id, $teacher?->branch];
             })(),
             default => (function () use ($type, $email) {
-                $user = User::where('email', $email)->first();
                 $role = $type === 'super_admin' ? 'Super Admin' : 'Branch';
+                $user = User::where($role === 'Branch' ? 'username' : 'email', $email)->where('role', $role)->first();
 
                 return [$role, $user?->name, $user?->id, $role === 'Branch' ? $user?->branch : null];
             })(),

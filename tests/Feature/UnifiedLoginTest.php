@@ -99,6 +99,7 @@ class UnifiedLoginTest extends TestCase
         User::create([
             'name' => $branch->name,
             'email' => $branch->email,
+            'username' => $branch->email,
             'role' => 'Branch',
             'branch_id' => $branch->id,
             'password' => Hash::make('123456'),
@@ -122,6 +123,7 @@ class UnifiedLoginTest extends TestCase
         User::create([
             'name' => $branch->name,
             'email' => $branch->email,
+            'username' => $branch->email,
             'role' => 'Branch',
             'branch_id' => $branch->id,
             'password' => Hash::make('123456'),
@@ -129,7 +131,7 @@ class UnifiedLoginTest extends TestCase
 
         $this->post(route('login.store'), [
             'login_type' => 'branch',
-            'email' => 'delhi@example.com',
+            'username' => 'delhi@example.com',
             'password' => '123456',
         ])->assertRedirect(route('login.otp'));
 
@@ -158,6 +160,7 @@ class UnifiedLoginTest extends TestCase
         User::create([
             'name' => $branch->name,
             'email' => $branch->email,
+            'username' => $branch->email,
             'role' => 'Branch',
             'branch_id' => $branch->id,
             'password' => Hash::make('123456'),
@@ -165,7 +168,7 @@ class UnifiedLoginTest extends TestCase
 
         $this->post(route('login.store'), [
             'login_type' => 'branch',
-            'email' => 'delhi-retry@example.com',
+            'username' => 'delhi-retry@example.com',
             'password' => '123456',
         ])->assertRedirect(route('login.otp'));
 

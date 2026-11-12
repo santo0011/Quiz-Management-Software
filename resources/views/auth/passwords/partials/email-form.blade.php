@@ -3,7 +3,7 @@
     <input type="hidden" name="type" value="{{ $type }}">
     <div class="mb-4">
         <label for="email" class="form-label">{{ $config['label'] }}</label>
-        <input id="email" type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" required autofocus placeholder="{{ $config['placeholder'] }}">
+        <input id="email" type="{{ $type === 'branch' ? 'text' : 'email' }}" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" required autofocus placeholder="{{ $config['placeholder'] }}">
         @error('email')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror

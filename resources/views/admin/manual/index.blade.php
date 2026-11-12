@@ -8,7 +8,7 @@
 
     $roles = [
         ['id' => 'super-admin', 'icon' => 'bi-shield-lock-fill', 'color' => '#4f46e5', 'name' => 'Super Admin', 'who' => 'Head office / system owner', 'login' => 'Email + Password + OTP'],
-        ['id' => 'branch', 'icon' => 'bi-building-fill', 'color' => '#0891b2', 'name' => 'Branch', 'who' => 'Each tuition centre / location', 'login' => 'Email + Password + OTP'],
+        ['id' => 'branch', 'icon' => 'bi-building-fill', 'color' => '#0891b2', 'name' => 'Branch', 'who' => 'Each tuition centre / location', 'login' => 'User ID + Password + OTP'],
         ['id' => 'teacher', 'icon' => 'bi-person-workspace', 'color' => '#059669', 'name' => 'Teacher', 'who' => 'Teachers working under a branch', 'login' => 'Email + Password + OTP'],
         ['id' => 'student', 'icon' => 'bi-mortarboard-fill', 'color' => '#d97706', 'name' => 'Student', 'who' => 'Learners who take the exams', 'login' => 'NRICH Student ID + OTP (or Teacher Override)'],
         ['id' => 'guardian', 'icon' => 'bi-people-fill', 'color' => '#db2777', 'name' => 'Guardian', 'who' => 'Parents following their children', 'login' => 'Login tab not enabled yet'],
@@ -119,7 +119,7 @@
                         </thead>
                         <tbody>
                             <tr><td><i class="bi bi-shield-lock-fill"></i> Super Admin</td><td>Email + Password</td><td>6-digit OTP sent to email</td><td>Yes — “Forgot password” link</td></tr>
-                            <tr><td><i class="bi bi-building-fill"></i> Branch</td><td>Branch Email + Password</td><td>6-digit OTP sent to email</td><td>Yes — “Forgot password” link</td></tr>
+                            <tr><td><i class="bi bi-building-fill"></i> Branch</td><td>Branch User ID + Password</td><td>6-digit OTP sent to the branch email</td><td>Yes — “Forgot password” link</td></tr>
                             <tr><td><i class="bi bi-person-workspace"></i> Teacher</td><td>Teacher Email + Password</td><td>6-digit OTP sent to email</td><td>Yes — “Forgot password” link</td></tr>
                             <tr><td><i class="bi bi-mortarboard-fill"></i> Student</td><td>NRICH Student ID (e.g. NL1184)</td><td>OTP sent by Zoho to the registered email</td><td>Not needed — there is no student password</td></tr>
                             <tr><td><i class="bi bi-mortarboard-fill"></i> Student (Teacher Override)</td><td>NRICH Student ID + tick “Teacher Override” + common password</td><td>None — logs in directly</td><td>Super Admin sets it in Settings</td></tr>
@@ -140,7 +140,7 @@
                                     <li>You are taken straight to your dashboard.</li>
                                 </ol>
                                 <div class="tip"><i class="bi bi-lightbulb-fill"></i> The code is valid for <strong>5 minutes</strong>. Didn’t get it? Check Spam, then press <strong>Resend</strong> (available after 60 seconds). After 5 wrong codes you must log in again.</div>
-                                <div class="warn"><i class="bi bi-exclamation-triangle-fill"></i> Choose the correct tab. A Branch email will not work on the Super Admin tab and vice-versa. If a Branch is deactivated, its Branch and Teacher logins stop working.</div>
+                                <div class="warn"><i class="bi bi-exclamation-triangle-fill"></i> Choose the correct tab. Branches sign in with their unique User ID (set by the Super Admin), not their email — several branches may share one email. A Branch User ID will not work on the Super Admin tab and vice-versa. If a Branch is deactivated, its Branch and Teacher logins stop working.</div>
                             </div>
                         </div>
                     </div>

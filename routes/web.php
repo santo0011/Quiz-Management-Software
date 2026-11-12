@@ -82,6 +82,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::put('/password', [AdminPasswordController::class, 'update'])->name('password.update');
     Route::put('/account/email', [AdminAccountController::class, 'updateEmail'])->name('account.email.update');
+    Route::get('/branches/check-username', [BranchController::class, 'checkUsername'])->name('branches.check-username');
     Route::resource('branches', BranchController::class);
     Route::post('/branches/{branch}/toggle-active', [BranchController::class, 'toggleActive'])->name('branches.toggle-active');
     Route::put('/branches/{branch}/password', [BranchController::class, 'updatePassword'])->name('branches.password.update');

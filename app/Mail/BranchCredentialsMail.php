@@ -13,7 +13,7 @@ class BranchCredentialsMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Branch $branch, public string $temporaryPassword)
+    public function __construct(public Branch $branch, public string $temporaryPassword, public ?string $username = null)
     {
     }
 
