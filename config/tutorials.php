@@ -77,7 +77,26 @@ return [
             'label' => 'Teacher',
             'icon' => 'bi-person-workspace',
             'color' => '#059669',
-            'videos' => [],
+            'videos' => [
+                [
+                    'title' => 'Teacher Panel: login, results and remarks',
+                    'description' => 'Teacher login with email, password and OTP, the dashboard, finding results that need a remark, '
+                        .'reviewing every answer with its explanation, writing a remark, profile and password.',
+                    'file' => 'videos/tutorials/teacher-panel.mp4',
+                    'poster' => 'videos/tutorials/teacher-panel.jpg',
+                    'duration' => '2:22',
+                    'chapters' => [
+                        ['0:04', 'Login with email, password and OTP'],
+                        ['0:34', 'Teacher dashboard'],
+                        ['0:49', 'Results and the Remark Pending filter'],
+                        ['1:02', 'Open a result and review the answers'],
+                        ['1:27', 'Write and send a remark'],
+                        ['1:53', 'Profile'],
+                        ['2:00', 'Change Password'],
+                        ['2:09', 'Logout'],
+                    ],
+                ],
+            ],
         ],
         'student' => [
             'label' => 'Student',

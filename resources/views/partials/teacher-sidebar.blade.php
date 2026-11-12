@@ -5,6 +5,7 @@
         ['label' => 'Results', 'icon' => 'bi-bar-chart-fill', 'url' => route('teacher.results.index'), 'active' => request()->routeIs('teacher.results.*')],
         ['label' => 'Profile', 'icon' => 'bi-person-circle', 'url' => route('teacher.profile'), 'active' => request()->routeIs('teacher.profile')],
         ['label' => 'Change Password', 'icon' => 'bi-shield-lock-fill', 'url' => route('teacher.password.edit'), 'active' => request()->routeIs('teacher.password.*')],
+        ['label' => 'Video Tutorials', 'icon' => 'bi-play-btn-fill', 'url' => route('teacher.tutorials'), 'active' => request()->routeIs('teacher.tutorials')],
     ];
 @endphp
 

@@ -26,7 +26,7 @@ class AdminTutorialsTest extends TestCase
             ->assertSee('Super Admin Panel: complete demo')
             ->assertSee(asset('videos/tutorials/super-admin-complete-demo.mp4'), false)
             ->assertSee('Branch Panel: login, teachers, exams and results')
-            ->assertSee('Teacher videos are coming soon.')
+            ->assertSee('Teacher Panel: login, results and remarks')
             ->assertSee('Student Panel: login, dashboard and taking an exam');
 
         $this->actingAs($admin)->get(route('admin.dashboard'))

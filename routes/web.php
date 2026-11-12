@@ -200,6 +200,7 @@ Route::middleware(['auth:teacher', 'single_session'])->prefix('teacher')->name('
     Route::get('/profile', [TeacherProfileController::class, 'show'])->name('profile');
     Route::get('/password', [TeacherPasswordUpdateController::class, 'edit'])->name('password.edit');
     Route::put('/password', [TeacherPasswordUpdateController::class, 'update'])->name('password.update');
+    Route::view('/tutorials', 'teacher.tutorials')->name('tutorials');
     Route::get('/results', [TeacherResultController::class, 'index'])->name('results.index');
     Route::get('/results/{attempt}', [TeacherResultController::class, 'show'])->name('results.show');
     Route::post('/results/{attempt}/remark', [TeacherResultController::class, 'storeRemark'])->name('results.remark.store');
