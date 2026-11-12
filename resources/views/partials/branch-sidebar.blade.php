@@ -6,6 +6,7 @@
         ['label' => 'Exams', 'icon' => 'bi-journal-check', 'route' => 'branch.exams.index', 'active' => 'branch.exams.*'],
         ['label' => 'Results', 'icon' => 'bi-bar-chart-fill', 'route' => 'branch.results.index', 'active' => 'branch.results.*'],
         ['label' => 'Change Password', 'icon' => 'bi-key-fill', 'route' => 'branch.password.edit', 'active' => 'branch.password.*'],
+        ['label' => 'Video Tutorials', 'icon' => 'bi-play-btn-fill', 'route' => 'branch.tutorials', 'active' => 'branch.tutorials'],
     ];
 @endphp
 

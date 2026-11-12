@@ -25,7 +25,7 @@ class AdminTutorialsTest extends TestCase
             ->assertOk()
             ->assertSee('Super Admin Panel: complete demo')
             ->assertSee(asset('videos/tutorials/super-admin-complete-demo.mp4'), false)
-            ->assertSee('Branch videos are coming soon.')
+            ->assertSee('Branch Panel: login, teachers, exams and results')
             ->assertSee('Teacher videos are coming soon.')
             ->assertSee('Student Panel: login, dashboard and taking an exam');
 

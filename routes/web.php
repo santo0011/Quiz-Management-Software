@@ -130,6 +130,7 @@ Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('
     Route::get('/dashboard', BranchDashboardController::class)->name('dashboard');
     Route::get('/password', [BranchPasswordController::class, 'edit'])->name('password.edit');
     Route::put('/password', [BranchPasswordController::class, 'update'])->name('password.update');
+    Route::view('/tutorials', 'branch.tutorials')->name('tutorials');
     Route::resource('classes', BranchSchoolClassController::class)->parameters(['classes' => 'class']);
     Route::get('/guardians/search', [BranchGuardianController::class, 'search'])->name('guardians.search');
     Route::get('/students/create', [BranchStudentController::class, 'create'])->name('students.create');

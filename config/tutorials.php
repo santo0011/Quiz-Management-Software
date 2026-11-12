@@ -48,7 +48,30 @@ return [
             'label' => 'Branch',
             'icon' => 'bi-building-fill',
             'color' => '#0891b2',
-            'videos' => [],
+            'videos' => [
+                [
+                    'title' => 'Branch Panel: login, teachers, exams and results',
+                    'description' => 'Branch login with the User ID and OTP, adding, editing and deleting teachers, '
+                        .'building an exam with every question type, publishing, and reviewing and sending results.',
+                    'file' => 'videos/tutorials/branch-panel.mp4',
+                    'poster' => 'videos/tutorials/branch-panel.jpg',
+                    'duration' => '5:43',
+                    'chapters' => [
+                        ['0:08', 'Login with User ID, password and OTP'],
+                        ['0:46', 'Branch dashboard'],
+                        ['0:54', 'Teachers: add, edit, password, delete'],
+                        ['1:56', 'Create an exam'],
+                        ['2:39', 'Add questions (normal and Math Equation)'],
+                        ['3:06', 'Summary (reading passage) with questions'],
+                        ['3:49', 'Publish and unpublish'],
+                        ['4:19', 'Delete an exam'],
+                        ['4:31', 'Results: review an attempt'],
+                        ['4:51', 'Write a review and send the result'],
+                        ['5:17', 'Change Password'],
+                        ['5:27', 'Logout'],
+                    ],
+                ],
+            ],
         ],
         'teacher' => [
             'label' => 'Teacher',
