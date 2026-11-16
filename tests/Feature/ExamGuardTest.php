@@ -26,6 +26,8 @@ class ExamGuardTest extends TestCase
             ->assertSee('id="examTabWarningModal"', false)
             ->assertSee('id="examSubmittedModal"', false)
             ->assertSee('id="examFullscreenGate"', false)
+            ->assertSee('id="examFullscreenExitModal"', false)
+            ->assertSee("navigator.keyboard?.lock?.(['Escape', 'F11'])", false)
             ->assertSee('your exam will end and be submitted now', false)
             ->assertSee("classList.add('sidebar-collapsed', 'exam-in-progress')", false);
     }

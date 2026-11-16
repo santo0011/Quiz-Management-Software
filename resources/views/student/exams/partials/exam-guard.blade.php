@@ -67,6 +67,28 @@
     </div>
 </div>
 
+<div class="modal fade" id="examFullscreenExitModal" tabindex="-1" aria-labelledby="examFullscreenExitModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content confirm-modal">
+            <div class="modal-header">
+                <div>
+                    <span class="page-kicker">Full screen</span>
+                    <h2 class="modal-title fs-5" id="examFullscreenExitModalLabel">Leave full screen?</h2>
+                </div>
+            </div>
+            <div class="modal-body text-center">
+                <div class="exam-guard-icon warn"><i class="bi bi-fullscreen-exit"></i></div>
+                <p class="mb-0">The exam must stay in full screen. <strong>Leaving full screen counts as leaving the exam:</strong>
+                    one warning, then your exam is submitted automatically.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-fullscreen-stay>Stay in full screen</button>
+                <button type="button" class="btn btn-outline-danger" data-fullscreen-leave>Leave full screen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="examTabWarningModal" tabindex="-1" aria-labelledby="examTabWarningModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content confirm-modal">
@@ -307,10 +329,13 @@
         });
 
         // ---- full screen ---------------------------------------------------------
-        // Browsers only allow full screen from a click, so a cover asks for one.
-        // Leaving full screen covers the exam again and counts like leaving the
-        // screen (one warning, then submit). Skipped where full screen is not
-        // supported (e.g. iPhone Safari) so nobody is locked out.
+        // Browsers only allow full screen after a user action, so the student's
+        // FIRST click/tap/key on the exam page switches to full screen (no extra
+        // button). In Chrome/Edge, Keyboard Lock keeps Esc/F11 from leaving at
+        // once: they open a "Leave full screen?" pop-up instead (holding Esc for
+        // 2 s still exits - a browser rule). Leaving full screen covers the exam
+        // and counts like leaving the screen (one warning, then submit). Skipped
+        // where full screen is not supported (e.g. iPhone Safari).
         const docEl = document.documentElement;
         const requestFullscreen = (docEl.requestFullscreen || docEl.webkitRequestFullscreen)?.bind(docEl);
         const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement;
@@ -331,12 +356,48 @@
             };
             const hideGate = () => gate.classList.remove('show');
 
-            gate.querySelector('[data-gate-enter]').addEventListener('click', async () => {
+            const lockExitKeys = () => {
+                // Chrome/Edge only; elsewhere this is a no-op.
+                navigator.keyboard?.lock?.(['Escape', 'F11']).catch(() => {});
+            };
+
+            const enterFullscreen = async () => {
                 try {
                     await requestFullscreen();
+                    lockExitKeys();
+                    return true;
                 } catch (error) {
+                    return false;
+                }
+            };
+
+            gate.querySelector('[data-gate-enter]').addEventListener('click', async () => {
+                if (! await enterFullscreen()) {
                     hideGate();                    // full screen refused: never lock the student out
                 }
+            });
+
+            // Automatic: the first action anywhere on the exam page enters full screen.
+            const firstAction = () => {
+                if (!active || wasFullscreen || fullscreenElement()) return;
+                enterFullscreen();
+            };
+            ['pointerdown', 'keydown', 'touchend'].forEach((type) => document.addEventListener(type, firstAction, true));
+
+            // Esc / F11 while in full screen: ask first (works where Keyboard Lock is supported).
+            const exitModalEl = document.getElementById('examFullscreenExitModal');
+            document.addEventListener('keydown', (event) => {
+                if (!active || !fullscreenElement() || (event.key !== 'Escape' && event.key !== 'F11')) return;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (!exitModalEl.classList.contains('show')) modal('examFullscreenExitModal').show();
+            }, true);
+            exitModalEl.querySelector('[data-fullscreen-stay]').addEventListener('click', () => {
+                modal('examFullscreenExitModal').hide();
+            });
+            exitModalEl.querySelector('[data-fullscreen-leave]').addEventListener('click', () => {
+                modal('examFullscreenExitModal').hide();
+                (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
             });
 
             const onFullscreenChange = () => {
@@ -357,8 +418,6 @@
             };
             document.addEventListener('fullscreenchange', onFullscreenChange);
             document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-            showGate(false);
         }
 
         document.querySelector('[data-exam-guard-result]').addEventListener('click', async () => {
