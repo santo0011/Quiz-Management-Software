@@ -11,3 +11,7 @@
         data-submit-url="{{ route('student.attempts.submit', $attempt) }}"
     ></div>
 @endsection
+
+@push('scripts')
+    @include('student.exams.partials.exam-guard')
+@endpush

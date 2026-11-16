@@ -955,6 +955,11 @@ body {
     color: var(--primary);
 }
 
+.feedback-alert.warning {
+    background: #fffbeb;
+    color: #92400e;
+}
+
 .feedback-alert i {
     margin-top: 2px;
 }

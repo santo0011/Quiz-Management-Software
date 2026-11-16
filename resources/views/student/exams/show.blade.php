@@ -123,6 +123,16 @@
             </div>
         </div>
 
+        {{-- Exam screen rules (enforced by student/exams/partials/exam-guard) --}}
+        <div class="feedback-alert warning mt-3">
+            <i class="bi bi-shield-exclamation"></i>
+
+            <div>
+                Stay on the exam screen until you submit. Opening another page ends and submits your exam.
+                Switching to another tab or window gives one warning; doing it again submits your exam automatically.
+            </div>
+        </div>
+
 
         {{-- Start Exam Form --}}
         <form
