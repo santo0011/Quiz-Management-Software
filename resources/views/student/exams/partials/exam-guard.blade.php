@@ -45,13 +45,12 @@
     </div>
 </div>
 
-<div class="modal fade" id="examMouseLeaveModal" tabindex="-1" aria-labelledby="examMouseLeaveModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade" id="examMouseLeaveModal" tabindex="-1" aria-label="Stay on the exam" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content confirm-modal">
             <div class="modal-header">
                 <div>
                     <span class="page-kicker">Stay on the exam</span>
-                    <h2 class="modal-title fs-5" id="examMouseLeaveModalLabel">Your mouse left the exam screen</h2>
                 </div>
             </div>
             <div class="modal-body text-center">
