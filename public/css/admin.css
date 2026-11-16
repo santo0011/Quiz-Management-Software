@@ -2857,7 +2857,7 @@ body {
 
 .student-stat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* Available / Upcoming / Completed, equal width */
     gap: 14px;
     margin: 20px 0;
 }
@@ -6669,6 +6669,21 @@ form .status-badge.status-published:hover {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
         margin: 14px 0;
+    }
+
+    /* The student dashboard has exactly three tabs: keep them in one row. */
+    .student-stat-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .student-stat-grid .student-stat {
+        padding: 12px 10px;
+        min-height: 88px;
+    }
+
+    .student-stat-grid .student-stat span {
+        font-size: 0.72rem;
     }
 
     .student-stat,

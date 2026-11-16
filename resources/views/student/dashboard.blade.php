@@ -28,9 +28,6 @@
         <button type="button" class="student-stat student-stat-tab" role="tab" aria-selected="false" aria-controls="exam-tab-completed" data-exam-tab="completed">
             <span>Completed Exams</span><strong>{{ $completedExams }}</strong>
         </button>
-        <div class="student-stat">
-            <span>Average Score</span><strong>{{ $averageScore }}%</strong>
-        </div>
     </section>
 
     <section class="student-section student-exam-tabs">
