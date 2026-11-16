@@ -2,6 +2,7 @@
     $teacher = auth('teacher')->user();
     $links = [
         ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2-fill', 'url' => route('teacher.dashboard'), 'active' => request()->routeIs('teacher.dashboard')],
+        ['label' => 'Exams', 'icon' => 'bi-journal-check', 'url' => route('teacher.exams.index'), 'active' => request()->routeIs('teacher.exams.*')],
         ['label' => 'Results', 'icon' => 'bi-bar-chart-fill', 'url' => route('teacher.results.index'), 'active' => request()->routeIs('teacher.results.*')],
         ['label' => 'Profile', 'icon' => 'bi-person-circle', 'url' => route('teacher.profile'), 'active' => request()->routeIs('teacher.profile')],
         ['label' => 'Change Password', 'icon' => 'bi-shield-lock-fill', 'url' => route('teacher.password.edit'), 'active' => request()->routeIs('teacher.password.*')],

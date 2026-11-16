@@ -214,7 +214,7 @@ class TeacherManagementTest extends TestCase
             ->assertSee('Main')
             ->assertSee('My Review Activity')
             ->assertSee(route('teacher.profile'), false)
-            ->assertDontSee('teacher/exams', false);
+            ->assertSee(route('teacher.exams.index'), false); // view-only Exams menu
 
         $this->actingAs($teacher, 'teacher')
             ->put(route('teacher.password.update'), [
