@@ -128,8 +128,8 @@
             <i class="bi bi-shield-exclamation"></i>
 
             <div>
-                The exam switches to full screen as soon as you start (your first click or tap). Stay on the exam screen until you submit. Opening another page ends and
-                submits your exam. Leaving full screen or switching to another tab or window gives one warning; doing it
+                Stay on the exam screen until you submit. Opening another page ends and
+                submits your exam. Switching to another tab or window gives one warning; doing it
                 again submits your exam automatically.
             </div>
         </div>

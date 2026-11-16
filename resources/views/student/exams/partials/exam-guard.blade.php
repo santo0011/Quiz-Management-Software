@@ -7,6 +7,7 @@
       pressing Back opens a pop-up: leaving submits the exam;
     - reloading or closing the tab shows the browser's "Leave site?" prompt,
       and if the student leaves anyway the exam is submitted;
+    - moving the mouse out of the page shows a reminder pop-up;
     - switching to another tab or window (more than 3 seconds away) is
       detected. The first time a warning is shown; the next time the exam is
       submitted immediately. Browsers do not allow a page to block tab
@@ -22,29 +23,7 @@
     .exam-guard-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 12px; font-size: 1.6rem; }
     .exam-guard-icon.warn { background: #fef3c7; color: #b45309; }
     .exam-guard-icon.danger { background: #fee2e2; color: #b91c1c; }
-    .exam-fullscreen-gate { position: fixed; inset: 0; z-index: 1040; display: none; align-items: center; justify-content: center;
-        padding: 16px; background: linear-gradient(135deg, #0f172a, #1e3a8a); color: #fff; text-align: center; }
-    .exam-fullscreen-gate.show { display: flex; }
-    .exam-fullscreen-gate .gate-card { max-width: 460px; }
-    .exam-fullscreen-gate .gate-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center;
-        margin: 0 auto 16px; font-size: 2rem; background: rgba(255, 255, 255, .12); }
-    .exam-fullscreen-gate h2 { color: #fff; font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; }
-    .exam-fullscreen-gate p { color: rgba(255, 255, 255, .85); }
-    .exam-fullscreen-gate .gate-warning { color: #fde68a; font-weight: 600; }
-    html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
 </style>
-
-<div class="exam-fullscreen-gate" id="examFullscreenGate" role="dialog" aria-modal="true" aria-labelledby="examFullscreenGateTitle">
-    <div class="gate-card">
-        <div class="gate-icon"><i class="bi bi-arrows-fullscreen"></i></div>
-        <h2 id="examFullscreenGateTitle" data-gate-title>Full screen exam</h2>
-        <p data-gate-text>This exam runs in full screen. Press the button below to begin. Your timer is already running.</p>
-        <p class="gate-warning d-none" data-gate-warning>You left full screen. This counts as leaving the exam: one warning, then your exam is submitted.</p>
-        <button type="button" class="btn btn-light btn-lg mt-2" data-gate-enter>
-            <i class="bi bi-arrows-fullscreen"></i> <span data-gate-button>Enter full screen</span>
-        </button>
-    </div>
-</div>
 
 <div class="modal fade" id="examLeaveModal" tabindex="-1" aria-labelledby="examLeaveModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
@@ -67,23 +46,22 @@
     </div>
 </div>
 
-<div class="modal fade" id="examFullscreenExitModal" tabindex="-1" aria-labelledby="examFullscreenExitModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade" id="examMouseLeaveModal" tabindex="-1" aria-labelledby="examMouseLeaveModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content confirm-modal">
             <div class="modal-header">
                 <div>
-                    <span class="page-kicker">Full screen</span>
-                    <h2 class="modal-title fs-5" id="examFullscreenExitModalLabel">Leave full screen?</h2>
+                    <span class="page-kicker">Stay on the exam</span>
+                    <h2 class="modal-title fs-5" id="examMouseLeaveModalLabel">Your mouse left the exam screen</h2>
                 </div>
             </div>
             <div class="modal-body text-center">
-                <div class="exam-guard-icon warn"><i class="bi bi-fullscreen-exit"></i></div>
-                <p class="mb-0">The exam must stay in full screen. <strong>Leaving full screen counts as leaving the exam:</strong>
-                    one warning, then your exam is submitted automatically.</p>
+                <div class="exam-guard-icon warn"><i class="bi bi-cursor-fill"></i></div>
+                <p class="mb-0">Please keep your mouse on the exam. <strong>Opening another tab or window during the exam
+                    will submit your exam</strong> after one warning.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-fullscreen-stay>Stay in full screen</button>
-                <button type="button" class="btn btn-outline-danger" data-fullscreen-leave>Leave full screen</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Back to my exam</button>
             </div>
         </div>
     </div>
@@ -301,6 +279,8 @@
         const cameBack = () => {
             if (!away) return;
             away = false;
+            // Close the mouse reminder first so two pop-ups never stack.
+            bootstrap.Modal.getInstance(document.getElementById('examMouseLeaveModal'))?.hide();
             if (autoSubmitted) {
                 bootstrap.Modal.getInstance(document.getElementById('examLeaveModal'))?.hide();
                 modal('examSubmittedModal').show();
@@ -328,97 +308,16 @@
             if (!document.hidden) cameBack();
         });
 
-        // ---- full screen ---------------------------------------------------------
-        // Browsers only allow full screen after a user action, so the student's
-        // FIRST click/tap/key on the exam page switches to full screen (no extra
-        // button). In Chrome/Edge, Keyboard Lock keeps Esc/F11 from leaving at
-        // once: they open a "Leave full screen?" pop-up instead (holding Esc for
-        // 2 s still exits - a browser rule). Leaving full screen covers the exam
-        // and counts like leaving the screen (one warning, then submit). Skipped
-        // where full screen is not supported (e.g. iPhone Safari).
-        const docEl = document.documentElement;
-        const requestFullscreen = (docEl.requestFullscreen || docEl.webkitRequestFullscreen)?.bind(docEl);
-        const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement;
-        const gate = document.getElementById('examFullscreenGate');
-
-        if (requestFullscreen && gate) {
-            let wasFullscreen = false;
-
-            const showGate = (leftFullscreen) => {
-                if (!active) return;
-                if (leftFullscreen) {
-                    gate.querySelector('[data-gate-title]').textContent = 'You left full screen';
-                    gate.querySelector('[data-gate-text]').textContent = 'Go back to full screen to continue your exam. Your timer is still running.';
-                    gate.querySelector('[data-gate-warning]').classList.remove('d-none');
-                    gate.querySelector('[data-gate-button]').textContent = 'Return to full screen';
-                }
-                gate.classList.add('show');
-            };
-            const hideGate = () => gate.classList.remove('show');
-
-            const lockExitKeys = () => {
-                // Chrome/Edge only; elsewhere this is a no-op.
-                navigator.keyboard?.lock?.(['Escape', 'F11']).catch(() => {});
-            };
-
-            const enterFullscreen = async () => {
-                try {
-                    await requestFullscreen();
-                    lockExitKeys();
-                    return true;
-                } catch (error) {
-                    return false;
-                }
-            };
-
-            gate.querySelector('[data-gate-enter]').addEventListener('click', async () => {
-                if (! await enterFullscreen()) {
-                    hideGate();                    // full screen refused: never lock the student out
-                }
-            });
-
-            // Automatic: the first action anywhere on the exam page enters full screen.
-            const firstAction = () => {
-                if (!active || wasFullscreen || fullscreenElement()) return;
-                enterFullscreen();
-            };
-            ['pointerdown', 'keydown', 'touchend'].forEach((type) => document.addEventListener(type, firstAction, true));
-
-            // Esc / F11 while in full screen: ask first (works where Keyboard Lock is supported).
-            const exitModalEl = document.getElementById('examFullscreenExitModal');
-            document.addEventListener('keydown', (event) => {
-                if (!active || !fullscreenElement() || (event.key !== 'Escape' && event.key !== 'F11')) return;
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                if (!exitModalEl.classList.contains('show')) modal('examFullscreenExitModal').show();
-            }, true);
-            exitModalEl.querySelector('[data-fullscreen-stay]').addEventListener('click', () => {
-                modal('examFullscreenExitModal').hide();
-            });
-            exitModalEl.querySelector('[data-fullscreen-leave]').addEventListener('click', () => {
-                modal('examFullscreenExitModal').hide();
-                (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
-            });
-
-            const onFullscreenChange = () => {
-                if (!active) return;
-                if (fullscreenElement()) {
-                    hideGate();
-                    if (wasFullscreen) cameBack();
-                    wasFullscreen = true;
-                } else if (wasFullscreen) {
-                    showGate(true);
-                    leftScreen();
-                    if (autoSubmitted) {           // they are still looking at this page
-                        away = false;
-                        hideGate();
-                        modal('examSubmittedModal').show();
-                    }
-                }
-            };
-            document.addEventListener('fullscreenchange', onFullscreenChange);
-            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-        }
+        // ---- mouse leaves the exam page ------------------------------------------
+        // Moving the pointer out of the page (towards the tab bar, address bar
+        // or another window) shows a reminder pop-up. It does not count as a
+        // violation by itself; actually switching tab/window does (see above).
+        const anyModalOpen = () => document.querySelector('.modal.show') !== null;
+        document.documentElement.addEventListener('mouseleave', (event) => {
+            if (!active || anyModalOpen()) return;
+            if (event.relatedTarget !== null) return;   // moved onto another element, still inside
+            modal('examMouseLeaveModal').show();
+        });
 
         document.querySelector('[data-exam-guard-result]').addEventListener('click', async () => {
             window.location.href = await submitNow();
