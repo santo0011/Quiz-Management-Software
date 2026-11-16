@@ -22,7 +22,29 @@
     .exam-guard-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 12px; font-size: 1.6rem; }
     .exam-guard-icon.warn { background: #fef3c7; color: #b45309; }
     .exam-guard-icon.danger { background: #fee2e2; color: #b91c1c; }
+    .exam-fullscreen-gate { position: fixed; inset: 0; z-index: 1040; display: none; align-items: center; justify-content: center;
+        padding: 16px; background: linear-gradient(135deg, #0f172a, #1e3a8a); color: #fff; text-align: center; }
+    .exam-fullscreen-gate.show { display: flex; }
+    .exam-fullscreen-gate .gate-card { max-width: 460px; }
+    .exam-fullscreen-gate .gate-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center;
+        margin: 0 auto 16px; font-size: 2rem; background: rgba(255, 255, 255, .12); }
+    .exam-fullscreen-gate h2 { color: #fff; font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; }
+    .exam-fullscreen-gate p { color: rgba(255, 255, 255, .85); }
+    .exam-fullscreen-gate .gate-warning { color: #fde68a; font-weight: 600; }
+    html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
 </style>
+
+<div class="exam-fullscreen-gate" id="examFullscreenGate" role="dialog" aria-modal="true" aria-labelledby="examFullscreenGateTitle">
+    <div class="gate-card">
+        <div class="gate-icon"><i class="bi bi-arrows-fullscreen"></i></div>
+        <h2 id="examFullscreenGateTitle" data-gate-title>Full screen exam</h2>
+        <p data-gate-text>This exam runs in full screen. Press the button below to begin. Your timer is already running.</p>
+        <p class="gate-warning d-none" data-gate-warning>You left full screen. This counts as leaving the exam: one warning, then your exam is submitted.</p>
+        <button type="button" class="btn btn-light btn-lg mt-2" data-gate-enter>
+            <i class="bi bi-arrows-fullscreen"></i> <span data-gate-button>Enter full screen</span>
+        </button>
+    </div>
+</div>
 
 <div class="modal fade" id="examLeaveModal" tabindex="-1" aria-labelledby="examLeaveModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
@@ -283,6 +305,61 @@
             clearTimeout(blurTimer);
             if (!document.hidden) cameBack();
         });
+
+        // ---- full screen ---------------------------------------------------------
+        // Browsers only allow full screen from a click, so a cover asks for one.
+        // Leaving full screen covers the exam again and counts like leaving the
+        // screen (one warning, then submit). Skipped where full screen is not
+        // supported (e.g. iPhone Safari) so nobody is locked out.
+        const docEl = document.documentElement;
+        const requestFullscreen = (docEl.requestFullscreen || docEl.webkitRequestFullscreen)?.bind(docEl);
+        const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+        const gate = document.getElementById('examFullscreenGate');
+
+        if (requestFullscreen && gate) {
+            let wasFullscreen = false;
+
+            const showGate = (leftFullscreen) => {
+                if (!active) return;
+                if (leftFullscreen) {
+                    gate.querySelector('[data-gate-title]').textContent = 'You left full screen';
+                    gate.querySelector('[data-gate-text]').textContent = 'Go back to full screen to continue your exam. Your timer is still running.';
+                    gate.querySelector('[data-gate-warning]').classList.remove('d-none');
+                    gate.querySelector('[data-gate-button]').textContent = 'Return to full screen';
+                }
+                gate.classList.add('show');
+            };
+            const hideGate = () => gate.classList.remove('show');
+
+            gate.querySelector('[data-gate-enter]').addEventListener('click', async () => {
+                try {
+                    await requestFullscreen();
+                } catch (error) {
+                    hideGate();                    // full screen refused: never lock the student out
+                }
+            });
+
+            const onFullscreenChange = () => {
+                if (!active) return;
+                if (fullscreenElement()) {
+                    hideGate();
+                    if (wasFullscreen) cameBack();
+                    wasFullscreen = true;
+                } else if (wasFullscreen) {
+                    showGate(true);
+                    leftScreen();
+                    if (autoSubmitted) {           // they are still looking at this page
+                        away = false;
+                        hideGate();
+                        modal('examSubmittedModal').show();
+                    }
+                }
+            };
+            document.addEventListener('fullscreenchange', onFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+            showGate(false);
+        }
 
         document.querySelector('[data-exam-guard-result]').addEventListener('click', async () => {
             window.location.href = await submitNow();

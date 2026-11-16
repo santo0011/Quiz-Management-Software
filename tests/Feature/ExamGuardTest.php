@@ -25,6 +25,7 @@ class ExamGuardTest extends TestCase
             ->assertSee('id="examLeaveModal"', false)
             ->assertSee('id="examTabWarningModal"', false)
             ->assertSee('id="examSubmittedModal"', false)
+            ->assertSee('id="examFullscreenGate"', false)
             ->assertSee('your exam will end and be submitted now', false)
             ->assertSee("classList.add('sidebar-collapsed', 'exam-in-progress')", false);
     }
