@@ -24,7 +24,7 @@ class ExamGuardTest extends TestCase
             ->assertOk()
             ->assertSee('id="examLeaveModal"', false)
             ->assertSee('id="examTabWarningModal"', false)
-            ->assertSee('id="examSubmittedModal"', false)
+            ->assertDontSee('id="examSubmittedModal"', false)
             ->assertSee('id="examMouseLeaveModal"', false)
             ->assertDontSee('requestFullscreen', false)
             ->assertSee('your exam will end and be submitted now', false)

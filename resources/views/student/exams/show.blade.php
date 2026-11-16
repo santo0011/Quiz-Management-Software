@@ -129,8 +129,7 @@
 
             <div>
                 Stay on the exam screen until you submit. Opening another page ends and
-                submits your exam. Switching to another tab or window gives one warning; doing it
-                again submits your exam automatically.
+                submits your exam. Switching to another tab or window is not allowed and shows a warning.
             </div>
         </div>
 

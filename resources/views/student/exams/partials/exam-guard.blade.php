@@ -9,9 +9,8 @@
       and if the student leaves anyway the exam is submitted;
     - moving the mouse out of the page shows a reminder pop-up;
     - switching to another tab or window (more than 3 seconds away) is
-      detected. The first time a warning is shown; the next time the exam is
-      submitted immediately. Browsers do not allow a page to block tab
-      switching outright, so detect-and-submit is the strongest option.
+      detected and a warning is shown when the student comes back, every
+      time. It never submits the exam.
 
     Plain JS on purpose: it works without rebuilding the React exam bundle.
     It notices the React app's own submit (Submit button or timer running out)
@@ -57,8 +56,8 @@
             </div>
             <div class="modal-body text-center">
                 <div class="exam-guard-icon warn"><i class="bi bi-cursor-fill"></i></div>
-                <p class="mb-0">Please keep your mouse on the exam. <strong>Opening another tab or window during the exam
-                    will submit your exam</strong> after one warning.</p>
+                <p class="mb-0">Please keep your mouse on the exam and <strong>do not open another tab or window</strong>
+                    until you have submitted.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Back to my exam</button>
@@ -79,30 +78,10 @@
             <div class="modal-body text-center">
                 <div class="exam-guard-icon warn"><i class="bi bi-eye-slash-fill"></i></div>
                 <p class="mb-0">Switching to another tab or window is not allowed during the exam.
-                    <strong>If you leave the exam screen again, your exam will be submitted automatically.</strong></p>
+                    <strong>Please stay on the exam screen until you submit.</strong></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Back to my exam</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="examSubmittedModal" tabindex="-1" aria-labelledby="examSubmittedModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content confirm-modal">
-            <div class="modal-header">
-                <div>
-                    <span class="page-kicker">Exam ended</span>
-                    <h2 class="modal-title fs-5" id="examSubmittedModalLabel">Your exam was submitted</h2>
-                </div>
-            </div>
-            <div class="modal-body text-center">
-                <div class="exam-guard-icon danger"><i class="bi bi-send-check-fill"></i></div>
-                <p class="mb-0">You left the exam screen again, so your exam has been submitted with the answers you gave.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-exam-guard-result>See my result</button>
             </div>
         </div>
     </div>
@@ -118,16 +97,13 @@
         const dashboardUrl = @json(route('student.dashboard'));
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
-        const ALLOWED_SWITCHES = 1;      // warnings before the next switch submits
         const AWAY_GRACE_MS = 3000;      // window blur shorter than this is ignored
 
         let active = true;               // false once the attempt is submitted (by anyone)
-        let switches = 0;
         let away = false;
         let blurTimer = null;
         let pending = null;              // { href } or { form } waiting on the leave pop-up
         let submitPromise = null;
-        let autoSubmitted = false;
 
         const modal = (id) => bootstrap.Modal.getOrCreateInstance(document.getElementById(id));
 
@@ -267,13 +243,10 @@
         });
 
         // ---- switching tabs / windows ---------------------------------------------
+        // Warn every time; never submit for this.
         const leftScreen = () => {
             if (!active || away) return;
             away = true;
-            if (switches >= ALLOWED_SWITCHES) {
-                autoSubmitted = true;
-                submitNow();                       // submit the moment they leave again
-            }
         };
 
         const cameBack = () => {
@@ -281,13 +254,7 @@
             away = false;
             // Close the mouse reminder first so two pop-ups never stack.
             bootstrap.Modal.getInstance(document.getElementById('examMouseLeaveModal'))?.hide();
-            if (autoSubmitted) {
-                bootstrap.Modal.getInstance(document.getElementById('examLeaveModal'))?.hide();
-                modal('examSubmittedModal').show();
-                return;
-            }
             if (!active) return;
-            switches += 1;
             modal('examTabWarningModal').show();
         };
 
@@ -310,17 +277,12 @@
 
         // ---- mouse leaves the exam page ------------------------------------------
         // Moving the pointer out of the page (towards the tab bar, address bar
-        // or another window) shows a reminder pop-up. It does not count as a
-        // violation by itself; actually switching tab/window does (see above).
+        // or another window) shows a reminder pop-up.
         const anyModalOpen = () => document.querySelector('.modal.show') !== null;
         document.documentElement.addEventListener('mouseleave', (event) => {
             if (!active || anyModalOpen()) return;
             if (event.relatedTarget !== null) return;   // moved onto another element, still inside
             modal('examMouseLeaveModal').show();
-        });
-
-        document.querySelector('[data-exam-guard-result]').addEventListener('click', async () => {
-            window.location.href = await submitNow();
         });
     })();
 </script>
