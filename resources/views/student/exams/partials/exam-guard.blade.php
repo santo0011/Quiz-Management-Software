@@ -166,6 +166,47 @@
             askToLeave({ href: link.href });
         }, true);
 
+        // ---- block every way a page can open a NEW tab/window ---------------------
+        // Ctrl/Shift/Cmd+click and middle-click on links, right-click "Open in
+        // new tab", dragging a link to the tab bar, and Ctrl/Shift+Enter on a
+        // focused link. (The browser's own Ctrl+T / Ctrl+N cannot be blocked by
+        // any web page; that new tab hides this one, which the tab-switch rule
+        // below catches.)
+        const newTabLink = (event) => event.target.closest?.('a[href], area[href]');
+
+        document.addEventListener('click', (event) => {
+            if (!active) return;
+            const link = newTabLink(event);
+            if (link && (event.ctrlKey || event.metaKey || event.shiftKey || link.target === '_blank')) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (!root.contains(link)) askToLeave({ href: link.href });
+            }
+        }, true);
+
+        ['auxclick', 'mousedown'].forEach((type) => document.addEventListener(type, (event) => {
+            if (active && event.button === 1) {      // middle button
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true));
+
+        document.addEventListener('contextmenu', (event) => {
+            if (active) event.preventDefault();      // no "Open link in new tab"
+        }, true);
+
+        document.addEventListener('dragstart', (event) => {
+            if (active) event.preventDefault();      // no dragging links/images to the tab bar
+        }, true);
+
+        document.addEventListener('keydown', (event) => {
+            if (!active || event.key !== 'Enter' || !(event.ctrlKey || event.metaKey || event.shiftKey)) return;
+            if (newTabLink(event)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
+
         // Back button: keep an extra history entry so Back lands here first.
         // In-page "#..." links also fire popstate; only a real Back (which
         // returns to the page's original address) asks to leave.
