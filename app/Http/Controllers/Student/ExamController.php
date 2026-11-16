@@ -64,8 +64,6 @@ class ExamController extends Controller
             'upcomingExams' => $upcomingExams,
             'totalExams' => $publishedExams->count(),
             'completedExams' => $allAttempts->count(),
-            'completedAttempts' => $allAttempts->take(12),
-            'attemptSummaries' => $summaries,
             'recentResults' => $releasedAttempts->take(5),
             'performanceData' => $performanceData,
         ]);

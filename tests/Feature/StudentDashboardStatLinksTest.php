@@ -42,23 +42,27 @@ class StudentDashboardStatLinksTest extends TestCase
         $content = $this->actingAs($student, 'student')
             ->get(route('student.dashboard'))
             ->assertOk()
-            ->assertSee('data-exam-tab="available"', false)
-            ->assertSee('data-exam-tab="upcoming"', false)
-            ->assertSee('data-exam-tab="completed"', false)
             ->assertDontSee('View exams')
+            ->assertDontSee('data-exam-tab=', false)
             ->getContent();
 
-        $availablePanel = $this->panel($content, 'available');
-        $upcomingPanel = $this->panel($content, 'upcoming');
+        // The three cards link to their own pages, showing the counts.
+        $this->assertMatchesRegularExpression('#<a href="'.preg_quote(route('student.exams.available'), '#').'"[^>]*student-stat-link[^>]*>\s*<span>Available Exams</span><strong>1</strong>#', $content);
+        $this->assertMatchesRegularExpression('#<a href="'.preg_quote(route('student.exams.upcoming'), '#').'"[^>]*student-stat-link[^>]*>\s*<span>Upcoming Exams</span><strong>1</strong>#', $content);
+        $this->assertMatchesRegularExpression('#<a href="'.preg_quote(route('student.results.index'), '#').'"[^>]*student-stat-link[^>]*>\s*<span>Completed Exams</span><strong>0</strong>#', $content);
 
+        // Below the cards, the dashboard lists the exams available right now.
+        $availablePanel = $this->panel($content, 'available');
         $this->assertStringContainsString('Open Maths Test', $availablePanel);
         $this->assertStringContainsString(route('student.exams.show', $available), $availablePanel);
         $this->assertStringNotContainsString('Next Week Maths Test', $availablePanel);
 
-        $this->assertStringContainsString('Next Week Maths Test', $upcomingPanel);
-        $this->assertStringNotContainsString('Open Maths Test', $upcomingPanel);
-
-        $this->assertStringContainsString('No completed exams yet', $this->panel($content, 'completed'));
+        // Each linked page opens and shows the right exams.
+        $this->actingAs($student, 'student')->get(route('student.exams.available'))
+            ->assertOk()->assertSee('Open Maths Test')->assertDontSee('Next Week Maths Test');
+        $this->actingAs($student, 'student')->get(route('student.exams.upcoming'))
+            ->assertOk()->assertSee('Next Week Maths Test')->assertDontSee('Open Maths Test');
+        $this->actingAs($student, 'student')->get(route('student.results.index'))->assertOk();
     }
 
     private function exam(SchoolClass $class, Subject $subject, string $title, $starts, $ends): Exam

@@ -18,21 +18,22 @@
         </div>
     </section>
 
-    <section class="student-stat-grid" role="tablist" aria-label="My exams">
-        <button type="button" class="student-stat student-stat-tab is-active" role="tab" aria-selected="true" aria-controls="exam-tab-available" data-exam-tab="available">
+    {{-- Each card opens its own page. --}}
+    <nav class="student-stat-grid" aria-label="My exams">
+        <a href="{{ route('student.exams.available') }}" class="student-stat student-stat-tab student-stat-link">
             <span>Available Exams</span><strong>{{ $availableExams->count() }}</strong>
-        </button>
-        <button type="button" class="student-stat student-stat-tab" role="tab" aria-selected="false" aria-controls="exam-tab-upcoming" data-exam-tab="upcoming">
+        </a>
+        <a href="{{ route('student.exams.upcoming') }}" class="student-stat student-stat-tab student-stat-link">
             <span>Upcoming Exams</span><strong>{{ $upcomingExams->count() }}</strong>
-        </button>
-        <button type="button" class="student-stat student-stat-tab" role="tab" aria-selected="false" aria-controls="exam-tab-completed" data-exam-tab="completed">
+        </a>
+        <a href="{{ route('student.results.index') }}" class="student-stat student-stat-tab student-stat-link">
             <span>Completed Exams</span><strong>{{ $completedExams }}</strong>
-        </button>
-    </section>
+        </a>
+    </nav>
 
     <section class="student-section student-exam-tabs">
         {{-- Available --}}
-        <div id="exam-tab-available" role="tabpanel" data-exam-panel="available">
+        <div id="exam-tab-available" data-exam-panel="available">
             <div class="student-section-header">
                 <div>
                     <span>Ready now</span>
@@ -64,92 +65,6 @@
                                 Start Exam
                             </a>
                         </article>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-
-        {{-- Upcoming --}}
-        <div id="exam-tab-upcoming" role="tabpanel" data-exam-panel="upcoming" hidden>
-            <div class="student-section-header">
-                <div>
-                    <span>Coming soon</span>
-                    <h2>Upcoming Exams</h2>
-                </div>
-                <a href="{{ route('student.exams.upcoming') }}" class="btn btn-soft">See all</a>
-            </div>
-            @if ($upcomingExams->isEmpty())
-                <div class="empty-state">
-                    <i class="bi bi-calendar-event"></i>
-                    <h3>No upcoming exams</h3>
-                    <p>You have no scheduled exams at the moment.</p>
-                </div>
-            @else
-                <div class="student-exam-grid-2">
-                    @foreach ($upcomingExams as $exam)
-                        <article class="exam-card">
-                            <span class="status-badge status-upcoming">Upcoming</span>
-                            <h3>{{ $exam->title }}</h3>
-                            <p>{{ $exam->description ?: 'This exam will be available at the scheduled start time.' }}</p>
-                            <dl>
-                                <div><dt>Starts</dt><dd>{{ $exam->starts_at?->format('d M Y, h:i A') }}</dd></div>
-                                <div><dt>Duration</dt><dd>{{ $exam->duration_minutes }} min</dd></div>
-                                <div><dt>Questions</dt><dd>{{ $exam->questions_count }}</dd></div>
-                                <div><dt>Total Marks</dt><dd>{{ $exam->total_marks }}</dd></div>
-                            </dl>
-                            <button class="btn btn-soft w-100" disabled>
-                                <i class="bi bi-clock"></i>
-                                Not Started Yet
-                            </button>
-                        </article>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-
-        {{-- Completed --}}
-        <div id="exam-tab-completed" role="tabpanel" data-exam-panel="completed" hidden>
-            <div class="student-section-header">
-                <div>
-                    <span>Done</span>
-                    <h2>Completed Exams</h2>
-                </div>
-                <a href="{{ route('student.results.index') }}" class="btn btn-soft">See all</a>
-            </div>
-            @if ($completedAttempts->isEmpty())
-                <div class="empty-state">
-                    <i class="bi bi-check2-circle"></i>
-                    <h3>No completed exams yet</h3>
-                    <p>Exams you submit will be listed here.</p>
-                </div>
-            @else
-                <div class="result-list">
-                    @foreach ($completedAttempts as $attempt)
-                        @php($released = $attemptSummaries[$attempt->exam_id]['released'] ?? false)
-                        @if ($released)
-                            <a href="{{ route('student.results.show', $attempt) }}" class="result-row">
-                        @else
-                            <div class="result-row">
-                        @endif
-                            <div>
-                                <strong>{{ $attempt->exam?->title }}</strong>
-                                <span>
-                                    Submitted {{ $attempt->submitted_at?->format('d M Y') }}
-                                    @if (($attempt->exam?->maximum_attempts ?? 1) > 1)
-                                        · Attempt {{ $attempt->attemptLabel() }}
-                                    @endif
-                                </span>
-                            </div>
-                            @if ($released)
-                                <span class="status-badge status-published">{{ $attempt->percentage }}%</span>
-                            @else
-                                <span class="status-badge status-upcoming">Result after all attempts</span>
-                            @endif
-                        @if ($released)
-                            </a>
-                        @else
-                            </div>
-                        @endif
                     @endforeach
                 </div>
             @endif
@@ -215,26 +130,6 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
-                // Stat cards act as tabs for the exam lists below them.
-                const tabs = document.querySelectorAll('[data-exam-tab]');
-                const showTab = function (name) {
-                    tabs.forEach(function (tab) {
-                        const active = tab.dataset.examTab === name;
-                        tab.classList.toggle('is-active', active);
-                        tab.setAttribute('aria-selected', active ? 'true' : 'false');
-                    });
-                    document.querySelectorAll('[data-exam-panel]').forEach(function (panel) {
-                        panel.hidden = panel.dataset.examPanel !== name;
-                    });
-                };
-                tabs.forEach(function (tab) {
-                    tab.addEventListener('click', function () { showTab(tab.dataset.examTab); });
-                });
-                const initial = (location.hash || '').replace('#exams-', '');
-                if (['available', 'upcoming', 'completed'].includes(initial)) {
-                    showTab(initial);
-                }
-
                 const performanceData = @json($performanceData);
 
                 // Performance Chart (Bar)

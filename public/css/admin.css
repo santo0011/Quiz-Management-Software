@@ -2906,6 +2906,36 @@ body {
     outline: none;
 }
 
+/* Student dashboard cards that open their own page. */
+.student-stat-link,
+.student-stat-link:hover,
+.student-stat-link:focus-visible {
+    text-decoration: none;
+    color: inherit;
+}
+
+.student-stat-link::before {
+    content: "\F138"; /* bootstrap-icons arrow-right-circle */
+    font-family: "bootstrap-icons";
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-size: 1rem;
+    color: #94a3b8;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.student-stat-link:hover::before,
+.student-stat-link:focus-visible::before {
+    color: #2563eb;
+    transform: translateX(2px);
+}
+
+.student-stat-link:hover span,
+.student-stat-link:focus-visible span {
+    color: #2563eb;
+}
+
 .student-stat-tab.is-active {
     border-color: #2563eb;
     background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
