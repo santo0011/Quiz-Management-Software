@@ -9,6 +9,7 @@ use App\Mail\SuperAdminLoginOtpMail;
 use App\Mail\TeacherLoginOtpMail;
 use App\Models\Branch;
 use App\Models\Student;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -61,10 +62,16 @@ class LoginOtpService
 
         try {
             match ($loginType) {
-                'branch' => Mail::to($email)->send(new BranchLoginOtpMail(
-                    Branch::where('email', $email)->first() ?? new Branch(['name' => 'Branch', 'email' => $email]),
-                    $otp
-                )),
+                // For Branch, $email is the unique User ID; the code goes to
+                // that account's email address (which may be shared).
+                'branch' => (function () use ($email, $otp) {
+                    $user = User::where('username', $email)->where('role', 'Branch')->firstOrFail();
+
+                    Mail::to($user->email)->send(new BranchLoginOtpMail(
+                        $user->branch ?? new Branch(['name' => $user->name, 'email' => $user->email]),
+                        $otp
+                    ));
+                })(),
                 'student' => Mail::to($email)->send(new StudentLoginOtpMail($otp, Student::where('email', $email)->first())),
                 'guardian' => Mail::to($email)->send(new GuardianLoginOtpMail($otp)),
                 'teacher' => Mail::to($email)->send(new TeacherLoginOtpMail($otp)),

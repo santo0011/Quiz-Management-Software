@@ -55,9 +55,14 @@ class LoginOtpController extends Controller
             ]);
         }
 
+        // Branch logins are keyed by User ID; show the email the code went to.
+        $sentTo = $pending['type'] === 'branch'
+            ? (User::where('username', $pending['email'])->where('role', 'Branch')->value('email') ?? $pending['email'])
+            : $pending['email'];
+
         return view('auth.login-otp', [
             'typeLabel' => $typeLabel,
-            'maskedEmail' => $pending['email'],
+            'maskedEmail' => $sentTo,
             'cooldown' => LoginOtpService::secondsUntilResendAllowed($pending['type'], $pending['email']),
             'expiresInSeconds' => LoginOtpService::OTP_EXPIRY_MINUTES * 60,
         ]);
@@ -147,7 +152,9 @@ class LoginOtpController extends Controller
                 ->with('success', 'Login successful. Welcome back!');
         }
 
-        $user = User::where('email', $email)->first();
+        $user = $loginType === 'branch'
+            ? User::where('username', $email)->where('role', 'Branch')->firstOrFail()
+            : User::where('email', $email)->where('role', 'Super Admin')->firstOrFail();
 
         Auth::guard('web')->login($user, $pending['remember'] ?? false);
         $request->session()->regenerate();
@@ -180,8 +187,8 @@ class LoginOtpController extends Controller
                 return ['Teacher', $teacher?->name, $teacher?->id, $teacher?->branch];
             })(),
             default => (function () use ($type, $email) {
-                $user = User::where('email', $email)->first();
                 $role = $type === 'super_admin' ? 'Super Admin' : 'Branch';
+                $user = User::where($role === 'Branch' ? 'username' : 'email', $email)->where('role', $role)->first();
 
                 return [$role, $user?->name, $user?->id, $role === 'Branch' ? $user?->branch : null];
             })(),
@@ -251,39 +258,38 @@ class LoginOtpController extends Controller
             return redirect()->route('login.otp')->with('otp_error', $result['message']);
         }
 
-        // Zoho has now verified both the ID and the OTP. This is the actual
-        // point at which a local Student record is required — resolve it
-        // here (by NRICH ID, not a student_id stashed earlier) rather than
-        // at the initial identify step, so an ID Zoho recognizes but this
-        // app has never seen still reaches this point instead of being
-        // rejected before the student ever had a chance to prove who they are.
+        // Zoho has now verified both the ID and the OTP. If this app has
+        // never seen the ID before, create the local Student from Zoho's
+        // data right here (same as Teacher Override) so a genuine Student
+        // can log in on their own without an admin adding them first.
         $student = Student::where('zoho_student_id', $pending['nrich_student_id'])->first();
 
         if (! $student) {
-            LoginLogger::failed('Student', 'OTP', 'No matching student account exists.', identifier: $pending['nrich_student_id']);
-            $request->session()->forget(self::SESSION_KEY);
+            [$student, $provisionError] = $zohoStudentService->provisionStudent($pending['nrich_student_id'], $result['data']);
 
-            return redirect()->route('login')->with(
-                'login_error',
-                'Your Student ID was verified, but no matching account exists in this system yet. Please contact your administrator.'
-            );
+            if (! $student) {
+                LoginLogger::failed('Student', 'OTP', $provisionError, identifier: $pending['nrich_student_id']);
+                $request->session()->forget(self::SESSION_KEY);
+
+                return redirect()->route('login')->with('login_error', $provisionError);
+            }
+        } else {
+            if (! $student->isActive()) {
+                LoginLogger::failed('Student', 'OTP', 'Student account is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
+                $request->session()->forget(self::SESSION_KEY);
+
+                return redirect()->route('login')->with('login_error', 'This student account has been deactivated. Please contact your administrator.');
+            }
+
+            if ($student->branch && ! $student->branch->isActive()) {
+                LoginLogger::failed('Student', 'OTP', 'Branch is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
+                $request->session()->forget(self::SESSION_KEY);
+
+                return redirect()->route('login')->with('login_error', 'This branch has been deactivated. Please contact your administrator.');
+            }
+
+            $zohoStudentService->syncStudentFromZoho($student, $result['data']);
         }
-
-        if (! $student->isActive()) {
-            LoginLogger::failed('Student', 'OTP', 'Student account is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
-            $request->session()->forget(self::SESSION_KEY);
-
-            return redirect()->route('login')->with('login_error', 'This student account has been deactivated. Please contact your administrator.');
-        }
-
-        if ($student->branch && ! $student->branch->isActive()) {
-            LoginLogger::failed('Student', 'OTP', 'Branch is deactivated.', $student->student_name, $pending['nrich_student_id'], $student->id, $student->branch);
-            $request->session()->forget(self::SESSION_KEY);
-
-            return redirect()->route('login')->with('login_error', 'This branch has been deactivated. Please contact your administrator.');
-        }
-
-        $zohoStudentService->syncStudentFromZoho($student, $result['data']);
 
         $request->session()->forget(self::SESSION_KEY);
 

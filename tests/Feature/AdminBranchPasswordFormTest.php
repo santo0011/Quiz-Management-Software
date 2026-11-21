@@ -47,7 +47,7 @@ class AdminBranchPasswordFormTest extends TestCase
         $this->assertTrue(Hash::check('new-password-1', $branchUser->fresh()->password));
     }
 
-    public function test_branch_without_a_login_account_gets_one_instead_of_an_error_page(): void
+    public function test_branch_without_a_login_account_is_asked_to_set_a_user_id_first(): void
     {
         $admin = $this->makeAdmin();
         $branch = Branch::create(['name' => 'No Account Branch', 'email' => 'no-account@example.com', 'is_active' => true]);
@@ -58,12 +58,8 @@ class AdminBranchPasswordFormTest extends TestCase
         ]);
 
         $response->assertRedirect(route('admin.branches.index'));
-        $response->assertSessionHas('success', 'Branch login account created with the new password.');
-
-        $account = User::where('email', 'no-account@example.com')->firstOrFail();
-        $this->assertSame('Branch', $account->role);
-        $this->assertSame($branch->id, (int) $account->branch_id);
-        $this->assertTrue(Hash::check('new-password-1', $account->password));
+        $response->assertSessionHas('error');
+        $this->assertSame(0, User::where('email', 'no-account@example.com')->count());
     }
 
     public function test_branch_email_taken_by_another_role_shows_a_message_not_an_error_page(): void

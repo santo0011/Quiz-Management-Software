@@ -63,10 +63,23 @@
             cards — so both tools share the same symbols and insert behaviour.
         --}}
         <template data-math-mode-template>
+            {{--
+                mathValue/mathName/etc. MUST be reset here: @include inherits
+                this partial's own variables, so without these the template's
+                textarea was pre-filled with the question's saved HTML. On
+                Save, commitEquation() then appended that HTML to the question
+                as literal text, so every edited question showed "<p>...</p>".
+            --}}
             @include('partials.math-editor', [
                 'mathId' => 'math_mode_template',
+                'mathName' => null,
+                'mathValue' => '',
                 'mathRows' => 2,
                 'mathPlaceholder' => 'Enter math equation (e.g. x² + 2x + 1)',
+                'mathRequired' => false,
+                'mathClass' => '',
+                'mathTextareaClass' => '',
+                'mathReadonly' => false,
             ])
         </template>
     @endonce

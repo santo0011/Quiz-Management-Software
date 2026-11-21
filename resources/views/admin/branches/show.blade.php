@@ -29,6 +29,10 @@
                 <dd>{{ $branch->name }}</dd>
             </div>
             <div>
+                <dt>Login User ID</dt>
+                <dd><code>{{ $branch->user?->username ?? '—' }}</code></dd>
+            </div>
+            <div>
                 <dt>Branch Email</dt>
                 <dd>{{ $branch->email }}</dd>
             </div>

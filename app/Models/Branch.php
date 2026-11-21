@@ -26,7 +26,7 @@ class Branch extends Model
 
     public function user()
     {
-        return $this->hasOne(User::class);
+        return $this->hasOne(User::class)->where('role', 'Branch');
     }
 
     public function students()

@@ -38,6 +38,7 @@ use App\Http\Controllers\ResultPdfController;
 use App\Http\Controllers\Student\ExamApiController as StudentExamApiController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
+use App\Http\Controllers\Teacher\ExamController as TeacherExamController;
 use App\Http\Controllers\Teacher\PasswordController as TeacherPasswordUpdateController;
 use App\Http\Controllers\Teacher\ProfileController as TeacherProfileController;
 use App\Http\Controllers\Teacher\ResultController as TeacherResultController;
@@ -82,6 +83,7 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::put('/password', [AdminPasswordController::class, 'update'])->name('password.update');
     Route::put('/account/email', [AdminAccountController::class, 'updateEmail'])->name('account.email.update');
+    Route::get('/branches/check-username', [BranchController::class, 'checkUsername'])->name('branches.check-username');
     Route::resource('branches', BranchController::class);
     Route::post('/branches/{branch}/toggle-active', [BranchController::class, 'toggleActive'])->name('branches.toggle-active');
     Route::put('/branches/{branch}/password', [BranchController::class, 'updatePassword'])->name('branches.password.update');
@@ -119,13 +121,17 @@ Route::middleware(['auth', 'active', 'role:Super Admin'])->prefix('admin')->name
     Route::get('/results/{attempt}', [AdminResultController::class, 'show'])->name('results.show');
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::delete('/settings/exam-data', [SettingsController::class, 'clearExamData'])->name('settings.exam-data.clear');
     Route::get('/logs', [AdminLogController::class, 'index'])->name('logs.index');
+    Route::view('/manual', 'admin.manual.index')->name('manual');
+    Route::view('/tutorials', 'admin.tutorials.index')->name('tutorials');
 });
 
 Route::middleware(['auth', 'active', 'role:Branch', 'single_session'])->prefix('branch')->name('branch.')->group(function () {
     Route::get('/dashboard', BranchDashboardController::class)->name('dashboard');
     Route::get('/password', [BranchPasswordController::class, 'edit'])->name('password.edit');
     Route::put('/password', [BranchPasswordController::class, 'update'])->name('password.update');
+    Route::view('/tutorials', 'branch.tutorials')->name('tutorials');
     Route::resource('classes', BranchSchoolClassController::class)->parameters(['classes' => 'class']);
     Route::get('/guardians/search', [BranchGuardianController::class, 'search'])->name('guardians.search');
     Route::get('/students/create', [BranchStudentController::class, 'create'])->name('students.create');
@@ -175,6 +181,7 @@ Route::middleware(['auth:student', 'active', 'single_session'])->prefix('student
     Route::post('/attempts/{attempt}/answer', [StudentExamApiController::class, 'answer'])->name('attempts.answer');
     Route::post('/attempts/{attempt}/submit', [StudentExamApiController::class, 'submit'])->name('attempts.submit');
     Route::get('/profile', [StudentExamController::class, 'profile'])->name('profile');
+    Route::view('/tutorials', 'student.tutorials')->name('tutorials');
     Route::get('/results', [StudentExamController::class, 'results'])->name('results.index');
     Route::get('/results/{attempt}', [StudentExamController::class, 'result'])->name('results.show');
 });
@@ -194,6 +201,9 @@ Route::middleware(['auth:teacher', 'single_session'])->prefix('teacher')->name('
     Route::get('/profile', [TeacherProfileController::class, 'show'])->name('profile');
     Route::get('/password', [TeacherPasswordUpdateController::class, 'edit'])->name('password.edit');
     Route::put('/password', [TeacherPasswordUpdateController::class, 'update'])->name('password.update');
+    Route::view('/tutorials', 'teacher.tutorials')->name('tutorials');
+    Route::get('/exams', [TeacherExamController::class, 'index'])->name('exams.index');
+    Route::get('/exams/{exam}', [TeacherExamController::class, 'show'])->name('exams.show');
     Route::get('/results', [TeacherResultController::class, 'index'])->name('results.index');
     Route::get('/results/{attempt}', [TeacherResultController::class, 'show'])->name('results.show');
     Route::post('/results/{attempt}/remark', [TeacherResultController::class, 'storeRemark'])->name('results.remark.store');

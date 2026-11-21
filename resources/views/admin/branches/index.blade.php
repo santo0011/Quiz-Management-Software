@@ -29,6 +29,7 @@
                         <tr>
                             <th>#</th>
                             <th>Name</th>
+                            <th>User ID</th>
                             <th>Email</th>
                             <th>Status</th>
                             <th>Created</th>
@@ -40,6 +41,7 @@
                             <tr>
                                 <td>{{ $branches->firstItem() + $loop->index }}</td>
                                 <td><strong>{{ $branch->name }}</strong></td>
+                                <td><code>{{ $branch->user?->username ?? '—' }}</code></td>
                                 <td>{{ $branch->email }}</td>
                                 <td>
                                     <span class="status-badge {{ $branch->is_active ? 'status-published' : 'status-closed' }}">
@@ -118,6 +120,10 @@
                     <div>
                         <dt>Branch Name</dt>
                         <dd>{{ $branch->name }}</dd>
+                    </div>
+                    <div>
+                        <dt>Login User ID</dt>
+                        <dd><code>{{ $branch->user?->username ?? '—' }}</code></dd>
                     </div>
                     <div>
                         <dt>Branch Email</dt>

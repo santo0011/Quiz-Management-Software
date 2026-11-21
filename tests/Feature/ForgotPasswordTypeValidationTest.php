@@ -45,6 +45,7 @@ class ForgotPasswordTypeValidationTest extends TestCase
 
         $this->branchUser = User::create([
             'name' => $branch->name,
+            'username' => 'kolkata_branch',
             'email' => $branch->email,
             'role' => 'Branch',
             'branch_id' => $branch->id,
@@ -69,13 +70,13 @@ class ForgotPasswordTypeValidationTest extends TestCase
         ]);
     }
 
-    public function test_branch_email_with_branch_type_succeeds_and_sends_branch_otp_mail(): void
+    public function test_branch_user_id_with_branch_type_succeeds_and_sends_branch_otp_mail(): void
     {
         Mail::fake();
 
         $this->post(route('password.email'), [
             'type' => 'branch',
-            'email' => $this->branchUser->email,
+            'email' => $this->branchUser->username,
         ])->assertRedirect(route('password.otp', ['type' => 'branch']));
 
         Mail::assertSent(BranchOtpMail::class, function (BranchOtpMail $mail): bool {
@@ -83,7 +84,7 @@ class ForgotPasswordTypeValidationTest extends TestCase
         });
         Mail::assertNotSent(SuperAdminOtpMail::class);
         $this->assertDatabaseHas('password_reset_otps', [
-            'email' => $this->branchUser->email,
+            'email' => $this->branchUser->username,
             'user_type' => 'branch',
             'used_at' => null,
         ]);
@@ -96,7 +97,7 @@ class ForgotPasswordTypeValidationTest extends TestCase
         $this->post(route('password.email'), [
             'type' => 'branch',
             'email' => $this->superAdmin->email,
-        ])->assertSessionHasErrors(['email' => 'No Branch account found with this email address.']);
+        ])->assertSessionHasErrors(['email' => 'No Branch account found with this User ID.']);
 
         Mail::assertNothingSent();
         $this->assertDatabaseMissing('password_reset_otps', [
@@ -141,11 +142,11 @@ class ForgotPasswordTypeValidationTest extends TestCase
         // Branch requests an OTP
         $this->post(route('password.email'), [
             'type' => 'branch',
-            'email' => $this->branchUser->email,
+            'email' => $this->branchUser->username,
         ])->assertRedirect(route('password.otp', ['type' => 'branch']));
 
         $record = DB::table('password_reset_otps')
-            ->where('email', $this->branchUser->email)
+            ->where('email', $this->branchUser->username)
             ->where('user_type', 'branch')
             ->first();
 

@@ -58,7 +58,7 @@ class MultiQuestionRequest extends FormRequest
             'questions.*.question_text' => ['required', 'string'],
             'questions.*.marks' => ['required', 'integer', 'min:1'],
             'questions.*.question_category_id' => [
-                'required',
+                'nullable',
                 Rule::exists('question_categories', 'id')->where(
                     fn ($query) => $query->where(fn ($q) => $q->where('branch_id', $exam?->branch_id)->orWhereNull('branch_id'))
                 ),

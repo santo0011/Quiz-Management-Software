@@ -8,10 +8,13 @@ use App\Mail\BranchCredentialsMail;
 use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class BranchController extends Controller
@@ -22,7 +25,7 @@ class BranchController extends Controller
     public function index(): View
     {
         return view('admin.branches.index', [
-            'branches' => Branch::latest()->paginate(20),
+            'branches' => Branch::with('user')->latest()->paginate(20),
         ]);
     }
 
@@ -42,10 +45,11 @@ class BranchController extends Controller
         $temporaryPassword = (string) random_int(100000, 999999);
 
         $branch = DB::transaction(function () use ($request, $temporaryPassword) {
-            $branch = Branch::create($request->validated());
+            $branch = Branch::create($request->safe()->only(['name', 'email']));
 
             User::create([
                 'name' => $branch->name,
+                'username' => $request->validated('username'),
                 'email' => $branch->email,
                 'role' => 'Branch',
                 'branch_id' => $branch->id,
@@ -56,7 +60,7 @@ class BranchController extends Controller
         });
 
         try {
-            Mail::to($branch->email)->send(new BranchCredentialsMail($branch, $temporaryPassword));
+            Mail::to($branch->email)->send(new BranchCredentialsMail($branch, $temporaryPassword, $request->validated('username')));
         } catch (\Throwable $e) {
             return redirect()->route('admin.branches.index')->with('error', 'Branch created, but login credentials could not be sent to the email.');
         }
@@ -86,18 +90,28 @@ class BranchController extends Controller
     public function update(BranchRequest $request, Branch $branch): RedirectResponse
     {
         DB::transaction(function () use ($request, $branch) {
-            $branch->update($request->validated());
+            $branch->update($request->safe()->only(['name', 'email']));
 
-            // $branch->user() (the relation query builder) would issue a
-            // bulk UPDATE scoped only by branch_id — if more than one users
-            // row ever shares that branch_id, it updates all of them to the
-            // same email/name in one statement, tripping the email unique
-            // constraint on the second row. Loading the single related model
-            // first scopes the update to that one row's own id instead.
-            $branch->user?->update([
+            // Update the single loaded login row by its own id (never a
+            // bulk UPDATE through the relation query).
+            $attributes = [
                 'name' => $branch->name,
+                'username' => $request->validated('username'),
                 'email' => $branch->email,
-            ]);
+            ];
+
+            if ($branch->user) {
+                $branch->user->update($attributes);
+            } else {
+                // Older branches may have no login row yet: create it now
+                // with a random password; the Super Admin sets a real one
+                // with the Password button.
+                User::create($attributes + [
+                    'role' => 'Branch',
+                    'branch_id' => $branch->id,
+                    'password' => Hash::make(\Illuminate\Support\Str::random(32)),
+                ]);
+            }
         });
 
         return redirect()->route('admin.branches.index')->with('success', 'Branch updated successfully.');
@@ -136,11 +150,9 @@ class BranchController extends Controller
             'password.confirmed' => 'Passwords do not match.',
         ]);
 
-        // Branch login looks the account up by email (LoginController), so
-        // update that exact row. $branch->user (hasOne by branch_id) can
-        // resolve to a different users row when several share a branch_id,
-        // which silently left the real login account on its old password.
-        $account = User::where('email', $branch->email)->where('role', 'Branch')->first() ?? $branch->user;
+        // Branch login looks the account up by its User ID, which lives on
+        // this branch's own Branch-role users row.
+        $account = $branch->user;
 
         if ($account) {
             $account->update([
@@ -151,23 +163,42 @@ class BranchController extends Controller
         }
 
         // A branch without a login account (e.g. added outside Admin →
-        // Branches, which always creates one) used to 404 here. Setting its
-        // password creates that account — exactly as store() would have —
-        // unless the email already belongs to a non-Branch login.
-        if (User::where('email', $branch->email)->exists()) {
-            return redirect()->route('admin.branches.index')
-                ->with('error', "This branch has no login account, and its email {$branch->email} is already used by another account. Change the branch email first, then set its password.");
+        // Branches, which always creates one) has no User ID yet, so it
+        // cannot log in — ask for one via Edit first.
+        return redirect()->route('admin.branches.index')
+            ->with('error', 'This branch has no login account yet. Edit the branch and set a User ID first, then set its password.');
+    }
+
+    /**
+     * Live "is this User ID free?" check used while the Super Admin types
+     * on the branch form. `ignore` is the branch being edited, if any.
+     */
+    public function checkUsername(Request $request): JsonResponse
+    {
+        $username = strtolower(trim((string) $request->query('username')));
+        $ignoreUserId = $request->filled('ignore')
+            ? Branch::find($request->integer('ignore'))?->user?->id
+            : null;
+
+        $validator = Validator::make(
+            ['username' => $username],
+            ['username' => [...BranchRequest::USERNAME_RULES, Rule::unique('users', 'username')->ignore($ignoreUserId)]],
+            BranchRequest::usernameMessages(),
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'available' => false,
+                'username' => $username,
+                'message' => $validator->errors()->first('username'),
+            ]);
         }
 
-        User::create([
-            'name' => $branch->name,
-            'email' => $branch->email,
-            'role' => 'Branch',
-            'branch_id' => $branch->id,
-            'password' => Hash::make($validated['password']),
+        return response()->json([
+            'available' => true,
+            'username' => $username,
+            'message' => 'This User ID is available.',
         ]);
-
-        return redirect()->route('admin.branches.index')->with('success', 'Branch login account created with the new password.');
     }
 
     public function toggleActive(Branch $branch): RedirectResponse

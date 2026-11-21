@@ -20,6 +20,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'role',
         'branch_id',
@@ -48,6 +49,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Only this one Super Admin account may wipe exam data.
+     */
+    public const EXAM_DATA_RESET_USER_ID = 9;
+
+    public function canClearExamData(): bool
+    {
+        return $this->role === 'Super Admin' && (int) $this->id === self::EXAM_DATA_RESET_USER_ID;
     }
 
     public function branch()

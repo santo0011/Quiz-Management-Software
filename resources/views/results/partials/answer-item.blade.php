@@ -12,6 +12,12 @@
                     <i class="bi {{ $answer?->is_correct ? 'bi-check-circle-fill' : ($answer?->question_option_id ? 'bi-x-circle-fill' : 'bi-dash-circle-fill') }}"></i>
                     {{ $answer?->is_correct ? 'Correct' : ($answer?->question_option_id ? 'Wrong' : 'Unanswered') }} · {{ $answer?->marks_awarded ?? 0 }} marks
                 </span>
+                @if ($question->category)
+                    <span class="question-marks-badge question-category-badge">
+                        <i class="bi bi-tag-fill"></i>
+                        {{ $question->category->name }}
+                    </span>
+                @endif
             </div>
             <div class="math-content passage-preview question-item-text">{!! \App\Support\HtmlSanitizer::sanitize($question->question_text) !!}</div>
         </div>
@@ -32,4 +38,18 @@
             </div>
         @endif
     </div>
+
+    {{-- Explanations are for staff only: shown on the Branch and Teacher result
+         pages (they pass showExplanation => true), never to Students/Guardians. --}}
+    @if (($showExplanation ?? false) && $question->explanation)
+        <div class="question-explanation">
+            <div class="explanation-icon">
+                <i class="bi bi-lightbulb-fill"></i>
+            </div>
+            <div>
+                <strong>Explanation</strong>
+                <p class="math-content mb-0">{{ $question->explanation }}</p>
+            </div>
+        </div>
+    @endif
 </article>

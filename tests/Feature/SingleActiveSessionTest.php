@@ -60,6 +60,7 @@ class SingleActiveSessionTest extends TestCase
         $user = User::create([
             'name' => $branch->name,
             'email' => $branch->email,
+            'username' => $branch->email,
             'role' => 'Branch',
             'branch_id' => $branch->id,
             'password' => Hash::make('123456'),
@@ -69,7 +70,7 @@ class SingleActiveSessionTest extends TestCase
 
         $this->post(route('login.store'), [
             'login_type' => 'branch',
-            'email' => 'nagpur@example.com',
+            'username' => 'nagpur@example.com',
             'password' => '123456',
         ])->assertRedirect(route('login.otp'));
 
@@ -159,6 +160,7 @@ class SingleActiveSessionTest extends TestCase
         $user = User::create([
             'name' => $branch->name,
             'email' => $branch->email,
+            'username' => $branch->email,
             'role' => 'Branch',
             'branch_id' => $branch->id,
             'password' => Hash::make('123456'),

@@ -18,11 +18,57 @@
         </div>
     </section>
 
-    <section class="student-stat-grid">
-        <div class="student-stat"><span>Available</span><strong>{{ $availableExams->count() }}</strong></div>
-        <div class="student-stat"><span>Upcoming</span><strong>{{ $upcomingExams->count() }}</strong></div>
-        <div class="student-stat"><span>Completed</span><strong>{{ $completedExams }}</strong></div>
-        <div class="student-stat"><span>Average Score</span><strong>{{ $averageScore }}%</strong></div>
+    {{-- Each card opens its own page. --}}
+    <nav class="student-stat-grid" aria-label="My exams">
+        <a href="{{ route('student.exams.available') }}" class="student-stat student-stat-tab student-stat-link">
+            <span>Available Exams</span><strong>{{ $availableExams->count() }}</strong>
+        </a>
+        <a href="{{ route('student.exams.upcoming') }}" class="student-stat student-stat-tab student-stat-link">
+            <span>Upcoming Exams</span><strong>{{ $upcomingExams->count() }}</strong>
+        </a>
+        <a href="{{ route('student.results.index') }}" class="student-stat student-stat-tab student-stat-link">
+            <span>Completed Exams</span><strong>{{ $completedExams }}</strong>
+        </a>
+    </nav>
+
+    <section class="student-section student-exam-tabs">
+        {{-- Available --}}
+        <div id="exam-tab-available" data-exam-panel="available">
+            <div class="student-section-header">
+                <div>
+                    <span>Ready now</span>
+                    <h2>Available Exams</h2>
+                </div>
+                <a href="{{ route('student.exams.available') }}" class="btn btn-soft">See all</a>
+            </div>
+            @if ($availableExams->isEmpty())
+                <div class="empty-state">
+                    <i class="bi bi-journal-check"></i>
+                    <h3>No exams available right now</h3>
+                    <p>Published exams for your grade will appear here during their scheduled time.</p>
+                </div>
+            @else
+                <div class="student-exam-grid-2">
+                    @foreach ($availableExams as $exam)
+                        <article class="exam-card">
+                            <span class="status-badge status-published">Available</span>
+                            <h3>{{ $exam->title }}</h3>
+                            <p>{{ $exam->description ?: 'Read the instructions and begin when ready.' }}</p>
+                            <dl>
+                                <div><dt>Ends</dt><dd>{{ $exam->ends_at?->format('d M Y, h:i A') }}</dd></div>
+                                <div><dt>Duration</dt><dd>{{ $exam->duration_minutes }} min</dd></div>
+                                <div><dt>Questions</dt><dd>{{ $exam->questions_count }}</dd></div>
+                                <div><dt>Attempts Left</dt><dd>{{ $exam->remainingAttemptsFor($student) }}</dd></div>
+                            </dl>
+                            <a href="{{ route('student.exams.show', $exam) }}" class="btn btn-primary w-100">
+                                <i class="bi bi-play-circle-fill"></i>
+                                Start Exam
+                            </a>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
+        </div>
     </section>
 
     <section class="student-section" id="performance-charts">

@@ -64,7 +64,6 @@ class ExamController extends Controller
             'upcomingExams' => $upcomingExams,
             'totalExams' => $publishedExams->count(),
             'completedExams' => $allAttempts->count(),
-            'averageScore' => round((float) $releasedAttempts->avg('percentage'), 2),
             'recentResults' => $releasedAttempts->take(5),
             'performanceData' => $performanceData,
         ]);

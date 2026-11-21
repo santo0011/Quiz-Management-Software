@@ -119,9 +119,9 @@
                             @error('questions.'.$qIndex.'.marks')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Category <span class="required-mark">*</span></label>
-                            <select name="questions[{{ $qIndex }}][question_category_id]" class="form-select form-control @error('questions.'.$qIndex.'.question_category_id') is-invalid @enderror" required>
-                                <option value="">Select category</option>
+                            <label class="form-label">Category <span class="text-muted small">(optional)</span></label>
+                            <select name="questions[{{ $qIndex }}][question_category_id]" class="form-select form-control @error('questions.'.$qIndex.'.question_category_id') is-invalid @enderror">
+                                <option value="">No category</option>
                                 @foreach ($categories ?? [] as $categoryOption)
                                     <option value="{{ $categoryOption->id }}" @selected(($oldQ['question_category_id'] ?? '') == $categoryOption->id)>{{ $categoryOption->name }}</option>
                                 @endforeach
@@ -166,7 +166,7 @@
                     </div>
 
                     <div class="question-explanation-field">
-                        <label class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
+                        <label class="form-label">Explanation <span class="text-muted fw-normal">(optional · only Branch &amp; Teacher can see this)</span></label>
                         @include('partials.math-editor', [
                             'mathId' => $formKey . '_q' . $qIndex . '_explanation',
                             'mathName' => 'questions[' . $qIndex . '][explanation]',
@@ -226,7 +226,7 @@
             // Read live (not captured once) so a default confirmed after this
             // form already rendered still applies to rows added afterward.
             const defaultId = window.defaultQuestionCategoryId ? String(window.defaultQuestionCategoryId) : '';
-            return '<option value="">Select category</option>' + CATEGORIES.map((c) => `<option value="${c.id}"${String(c.id) === defaultId ? ' selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+            return '<option value="">No category</option>' + CATEGORIES.map((c) => `<option value="${c.id}"${String(c.id) === defaultId ? ' selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
         };
 
         // Shared math-toolbar markup for every plain-textarea field — Answer
@@ -438,8 +438,8 @@
                                 <input type="number" step="1" min="1" name="questions[${qIdx}][marks]" value="${parseInt(form.dataset.defaultMarks || '1', 10)}" class="form-control" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Category <span class="required-mark">*</span></label>
-                                <select name="questions[${qIdx}][question_category_id]" class="form-select form-control" required>${categoryOptionsHtml()}</select>
+                                <label class="form-label">Category <span class="text-muted small">(optional)</span></label>
+                                <select name="questions[${qIdx}][question_category_id]" class="form-select form-control">${categoryOptionsHtml()}</select>
                             </div>
                         </div>
                         <div class="option-builder" data-option-builder>
@@ -465,7 +465,7 @@
                             </button>
                         </div>
                         <div class="question-explanation-field">
-                            <label class="form-label">Explanation <span class="text-muted fw-normal">(optional)</span></label>
+                            <label class="form-label">Explanation <span class="text-muted fw-normal">(optional · only Branch &amp; Teacher can see this)</span></label>
                             ${mathFieldHtml(`questions[${qIdx}][explanation]`, { rows: 1, placeholder: 'Enter explanation text or math expression...' })}
                         </div>
                     </div>

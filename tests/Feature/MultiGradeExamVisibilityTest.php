@@ -97,8 +97,9 @@ class MultiGradeExamVisibilityTest extends TestCase
             'password' => Hash::make('123456'),
         ]);
 
-        $this->actingAs($teacher, 'teacher')->get('/teacher/exams')->assertNotFound();
-        $this->actingAs($teacher, 'teacher')->post('/teacher/exams', $this->examPayload('Teacher Multi Grade', [$this->grade5->id]))->assertNotFound();
+        // Teachers may VIEW exams (read-only page) but never create or change them.
+        $this->actingAs($teacher, 'teacher')->get('/teacher/exams')->assertOk();
+        $this->actingAs($teacher, 'teacher')->post('/teacher/exams', $this->examPayload('Teacher Multi Grade', [$this->grade5->id]))->assertStatus(405);
         $this->actingAs($teacher, 'teacher')->get('/teacher/questions')->assertNotFound();
         $this->actingAs($teacher, 'teacher')->get('/teacher/question-categories')->assertNotFound();
 

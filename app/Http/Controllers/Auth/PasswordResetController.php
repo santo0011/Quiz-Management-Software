@@ -39,10 +39,21 @@ class PasswordResetController extends Controller
     protected function findAccountForType(string $type, string $email): User|Teacher|null
     {
         return match ($type) {
-            'branch' => User::where('email', $email)->where('role', 'Branch')->first(),
+            // Branches are identified by their unique User ID, not email.
+            'branch' => User::where('username', strtolower(trim($email)))->where('role', 'Branch')->first(),
             'teacher' => Teacher::where('email', $email)->first(),
             default => User::where('email', $email)->where('role', 'Super Admin')->first(),
         };
+    }
+
+    /**
+     * Branch accounts are identified by User ID; everyone else by email.
+     */
+    protected function identifierRules(?string $type): array
+    {
+        return $type === 'branch'
+            ? ['required', 'string', 'max:50']
+            : ['required', 'email'];
     }
 
     /**
@@ -51,7 +62,7 @@ class PasswordResetController extends Controller
     protected function notFoundMessage(string $type): string
     {
         return match ($type) {
-            'branch' => 'No Branch account found with this email address.',
+            'branch' => 'No Branch account found with this User ID.',
             'teacher' => 'No Teacher account found with this email address.',
             default => 'No Super Admin account found with this email address.',
         };
@@ -73,9 +84,9 @@ class PasswordResetController extends Controller
             'branch' => [
                 'title' => 'Forgot Password',
                 'heading' => 'Reset Branch password',
-                'copy' => 'Enter the Branch email address. A secure 6-digit code will be sent if the account exists.',
-                'label' => 'Branch Email',
-                'placeholder' => 'branch@example.com',
+                'copy' => 'Enter the Branch User ID. A secure 6-digit code will be sent to the branch email address.',
+                'label' => 'Branch User ID',
+                'placeholder' => 'Enter your branch User ID',
             ],
             'teacher' => [
                 'title' => 'Forgot Password',
@@ -98,7 +109,7 @@ class PasswordResetController extends Controller
     {
         $validated = $request->validate([
             'type' => ['required', Rule::in(['super_admin', 'branch', 'teacher'])],
-            'email' => ['required', 'email'],
+            'email' => $this->identifierRules($request->input('type')),
         ], [
             'type.required' => 'Please select a login type.',
             'type.in' => 'Please select a valid login type.',
@@ -107,7 +118,7 @@ class PasswordResetController extends Controller
         ]);
 
         $type = $validated['type'];
-        $email = $validated['email'];
+        $email = $type === 'branch' ? strtolower(trim($validated['email'])) : $validated['email'];
 
         // Only search the table/model that matches the selected login type.
         // This prevents cross-type lookups (e.g. a Super Admin email used for Branch reset).
@@ -144,9 +155,10 @@ class PasswordResetController extends Controller
 
         try {
             if ($type === 'branch') {
-                $branch = Branch::where('email', $email)->first()
-                    ?? new Branch(['name' => 'Branch', 'email' => $email]);
-                Mail::to($email)->send(new BranchOtpMail($branch, $otp));
+                /** @var User $account */
+                $branch = $account->branch
+                    ?? new Branch(['name' => $account->name, 'email' => $account->email]);
+                Mail::to($account->email)->send(new BranchOtpMail($branch, $otp));
             } elseif ($type === 'teacher') {
                 /** @var Teacher $account */
                 Mail::to($email)->send(new TeacherOtpMail($account, $otp));
@@ -188,7 +200,7 @@ class PasswordResetController extends Controller
                 'title' => 'Verify Reset Code',
                 'heading' => 'Verify reset code',
                 'copy' => 'Enter the 6-digit code sent to the Branch email address.',
-                'label' => 'Branch Email',
+                'label' => 'Branch User ID',
             ],
             'teacher' => [
                 'title' => 'Verify Reset Code',
@@ -210,7 +222,7 @@ class PasswordResetController extends Controller
     {
         $validated = $request->validate([
             'type' => ['required', Rule::in(['super_admin', 'branch', 'teacher'])],
-            'email' => ['required', 'email'],
+            'email' => $this->identifierRules($request->input('type')),
             'otp' => ['required', 'digits:6'],
         ], [
             'otp.required' => 'Reset code is required.',
@@ -218,7 +230,7 @@ class PasswordResetController extends Controller
         ]);
 
         $type = $validated['type'];
-        $email = $validated['email'];
+        $email = $type === 'branch' ? strtolower(trim($validated['email'])) : $validated['email'];
 
         // Only look up OTP records matching the selected account type.
         // This prevents a Branch OTP from being used for Student or Super Admin reset.
@@ -298,7 +310,7 @@ class PasswordResetController extends Controller
             $account = Teacher::where('email', $email)->firstOrFail();
         } else {
             $role = $type === 'branch' ? 'Branch' : 'Super Admin';
-            $account = User::where('email', $email)->where('role', $role)->firstOrFail();
+            $account = User::where($role === 'Branch' ? 'username' : 'email', $email)->where('role', $role)->firstOrFail();
         }
 
         $account->update(['password' => Hash::make($validated['password'])]);

@@ -36,6 +36,7 @@ class AuthRedirectSystemTest extends TestCase
         $this->branchUser = User::create([
             'name' => $branch->name,
             'email' => $branch->email,
+            'username' => $branch->email,
             'role' => 'Branch',
             'branch_id' => $branch->id,
             'password' => Hash::make('123456'),
@@ -118,7 +119,7 @@ class AuthRedirectSystemTest extends TestCase
         $this->withSession(['url.intended' => route('branch.password.edit')])
             ->post(route('login.store'), [
                 'login_type' => 'branch',
-                'email' => 'branch@example.com',
+                'username' => 'branch@example.com',
                 'password' => '123456',
             ])->assertRedirect(route('login.otp'));
 
@@ -158,7 +159,7 @@ class AuthRedirectSystemTest extends TestCase
 
         $this->post(route('login.store'), [
             'login_type' => 'branch',
-            'email' => 'branch@example.com',
+            'username' => 'branch@example.com',
             'password' => '123456',
         ])->assertRedirect(route('login.otp'));
 

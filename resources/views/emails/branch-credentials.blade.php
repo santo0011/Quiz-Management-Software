@@ -5,12 +5,15 @@
 
     <div class="message" style="color:#475569; margin-bottom:20px;">
         <p style="margin:0 0 10px;">Your Branch Panel account has been created for <strong>{{ $siteName }}</strong> — Quiz Management Software.</p>
-        <p style="margin:0;">Please use the credentials below to access your branch dashboard.</p>
+        <p style="margin:0;">On the login page choose <strong>Branch</strong>, then enter the User ID and password below.</p>
     </div>
 
     <div class="info-card" style="background-color:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:20px 24px; margin:20px 0;">
-        <p class="label" style="margin:0 0 4px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">Login Email</p>
-        <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b; word-break:break-all;">{{ $branch->email }}</p>
+        <p class="label" style="margin:0 0 4px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">Branch Name</p>
+        <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b; word-break:break-all;">{{ $branch->name }}</p>
+
+        <p class="label" style="margin:16px 0 4px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">Login User ID</p>
+        <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b; word-break:break-all;">{{ $username ?? $branch->user?->username }}</p>
 
         <p class="label" style="margin:16px 0 4px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">Temporary Password</p>
         <p class="value" style="margin:0; font-size:16px; font-weight:600; color:#1e293b; word-break:break-all;">{{ $temporaryPassword }}</p>
