@@ -519,6 +519,13 @@
                     }
                 }
 
+                // Shared with the answer-option editor (partials.option-editor-script),
+                // so options reuse the same image upload and Insert Math tool.
+                window.QuizEditorKit = {
+                    Base64UploadAdapterPlugin: Base64UploadAdapterPlugin,
+                    initMathToolFor: initMathToolFor,
+                };
+
                 function initSummaryEditors(scope) {
                     var root = (scope && typeof scope.querySelectorAll === 'function') ? scope : document;
 

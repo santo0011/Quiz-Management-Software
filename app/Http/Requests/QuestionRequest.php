@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\Question;
 use App\Models\Teacher;
 use App\Support\HtmlSanitizer;
+use App\Support\OptionContent;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,6 +19,13 @@ class QuestionRequest extends FormRequest
         // before storage — it's later rendered as raw HTML.
         if ($this->has('question_text')) {
             $this->merge(['question_text' => HtmlSanitizer::sanitize($this->input('question_text'))]);
+        }
+
+        if (is_array($this->input('options'))) {
+            $this->merge(['options' => array_map(
+                fn ($option) => is_string($option) ? OptionContent::normalize($option) : $option,
+                $this->input('options')
+            )]);
         }
     }
 
@@ -55,8 +63,18 @@ class QuestionRequest extends FormRequest
             ],
             'explanation' => ['nullable', 'string'],
             'options' => ['required', 'array', 'min:2'],
-            'options.*' => ['required', 'string'],
+            'options.*' => ['required', 'string', 'max:'.OptionContent::MAX_LENGTH],
+            'option_ids' => ['nullable', 'array'],
+            'option_ids.*' => ['nullable', 'integer'],
             'correct_option' => ['required', 'integer', 'min:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'options.*.required' => 'Every answer option needs text, an image or an equation (or remove the empty option).',
+            'options.*.max' => 'An answer option is too large. Please use smaller images.',
         ];
     }
 

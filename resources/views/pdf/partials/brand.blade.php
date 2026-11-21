@@ -9,7 +9,13 @@
 
     if ($pdfSettings->logo_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($pdfSettings->logo_path)) {
         $disk = \Illuminate\Support\Facades\Storage::disk('public');
-        $pdfLogo = 'data:'.$disk->mimeType($pdfSettings->logo_path).';base64,'.base64_encode($disk->get($pdfSettings->logo_path));
+        $pdfLogoMime = $disk->mimeType($pdfSettings->logo_path);
+
+        // Without PHP's GD extension Dompdf can't decode WebP/PNG/GIF and the
+        // whole PDF fails; leave the logo out rather than lose the PDF.
+        if (extension_loaded('gd') || in_array($pdfLogoMime, ['image/jpeg', 'image/svg+xml'], true)) {
+            $pdfLogo = 'data:'.$pdfLogoMime.';base64,'.base64_encode($disk->get($pdfSettings->logo_path));
+        }
     }
 @endphp
 <table class="brand-row">

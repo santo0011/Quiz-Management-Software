@@ -99,9 +99,11 @@
     @endif
 </section>
 
-@push('scripts')
-    <script>
-        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
-    </script>
-    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-@endpush
+@once('mathjax')
+    @push('scripts')
+        <script>
+            window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+        </script>
+        <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    @endpush
+@endonce

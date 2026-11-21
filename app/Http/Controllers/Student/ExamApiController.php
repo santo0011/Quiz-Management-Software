@@ -45,7 +45,8 @@ class ExamApiController extends Controller
                 'selected_option_id' => $answers->get($question->id)?->question_option_id,
                 'options' => $options->map(fn ($option) => [
                     'id' => $option->id,
-                    'text' => $option->option_text,
+                    // Sanitized HTML for both rich and legacy plain-text options.
+                    'html' => $option->option_html,
                 ])->values(),
             ];
         };
