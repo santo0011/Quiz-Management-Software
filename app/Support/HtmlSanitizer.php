@@ -36,7 +36,10 @@ class HtmlSanitizer
 
     private const ALLOWED_IMAGE_SCHEMES = ['http', 'https'];
 
-    public static function sanitize(?string $html): string
+    /**
+     * @param  list<string>  $excludeTags  allowed tags to unwrap (keeping their content) for this call
+     */
+    public static function sanitize(?string $html, array $excludeTags = []): string
     {
         $html = trim((string) $html);
 
@@ -60,7 +63,7 @@ class HtmlSanitizer
             return '';
         }
 
-        self::cleanNode($document, $root);
+        self::cleanNode($document, $root, array_diff(self::ALLOWED_TAGS, $excludeTags));
 
         $output = '';
         foreach (iterator_to_array($root->childNodes) as $child) {
@@ -70,7 +73,7 @@ class HtmlSanitizer
         return trim($output);
     }
 
-    private static function cleanNode(DOMDocument $document, DOMNode $node): void
+    private static function cleanNode(DOMDocument $document, DOMNode $node, array $allowedTags): void
     {
         foreach (iterator_to_array($node->childNodes) as $child) {
             if ($child->nodeType === XML_TEXT_NODE) {
@@ -85,10 +88,10 @@ class HtmlSanitizer
 
             $tag = strtolower($child->tagName);
 
-            if (! in_array($tag, self::ALLOWED_TAGS, true)) {
+            if (! in_array($tag, $allowedTags, true)) {
                 // Drop the wrapper but keep its (recursively cleaned) children
                 // so removing e.g. a stray <div> doesn't delete real content.
-                self::cleanNode($document, $child);
+                self::cleanNode($document, $child, $allowedTags);
 
                 while ($child->firstChild) {
                     $node->insertBefore($child->firstChild, $child);
@@ -109,7 +112,7 @@ class HtmlSanitizer
                 self::sanitizeImageSrc($child);
             }
 
-            self::cleanNode($document, $child);
+            self::cleanNode($document, $child, $allowedTags);
         }
     }
 

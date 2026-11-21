@@ -48,12 +48,7 @@
                                     <div class="option-row">
                                         <label class="option-badge">{{ chr(65 + $loop->index) }}</label>
                                         <div class="option-input-wrap">
-                                            @include('partials.math-editor', [
-                                                'mathId' => 'existing_q' . $existingQuestion->id . '_option_' . $loop->index,
-                                                'mathValue' => $option->option_text,
-                                                'mathRows' => 1,
-                                                'mathReadonly' => true,
-                                            ])
+                                            <div class="hybrid-option-preview is-readonly math-content option-html">{!! $option->option_html !!}</div>
                                         </div>
                                         <label class="correct-answer-label" title="Correct answer">
                                             <input type="radio" class="form-check-input correct-radio" @checked($option->is_correct) disabled aria-label="Correct option">
@@ -133,20 +128,19 @@
                     <div class="option-builder" data-option-builder>
                         <label class="form-label">Answer Options <span class="required-mark">*</span></label>
                         @error('questions.'.$qIndex.'.options')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
+                        @if ($errors->has('questions.'.$qIndex.'.options.*'))<div class="text-danger small mb-2">{{ $errors->first('questions.'.$qIndex.'.options.*') }}</div>@endif
                         @error('questions.'.$qIndex.'.correct_option')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
 
                         <div data-option-list>
-                            @foreach ($qOptions as $optIndex => $optValue)
+                            @foreach (array_values($qOptions) as $optIndex => $optValue)
                                 <div class="option-row" data-option-row>
                                     <label class="option-badge">{{ chr(65 + (int) $optIndex) }}</label>
                                     <div class="option-input-wrap">
-                                        @include('partials.math-editor', [
-                                            'mathId' => $formKey . '_q' . $qIndex . '_option_' . $optIndex,
-                                            'mathName' => 'questions[' . $qIndex . '][options][]',
-                                            'mathValue' => $optValue,
-                                            'mathPlaceholder' => 'Option ' . chr(65 + (int) $optIndex) . ' text or math expression',
-                                            'mathRows' => 1,
-                                            'mathRequired' => true,
+                                        @include('partials.option-editor-field', [
+                                            'optionName' => 'questions[' . $qIndex . '][options][]',
+                                            'optionValue' => $optValue,
+                                            'optionLetter' => chr(65 + (int) $optIndex),
+                                            'optionInvalid' => $errors->has('questions.' . $qIndex . '.options.' . $optIndex),
                                         ])
                                     </div>
                                     <label class="correct-answer-label" title="Mark as correct">
@@ -198,7 +192,7 @@
 </form>
 
 @push('scripts')
-    @once
+    @once('mathjax')
         {{--
             Previously only loaded when this exam already had saved questions
             to preview — but that left MathJax entirely absent (so inserted
@@ -353,11 +347,15 @@
                     });
                     block.querySelectorAll('[data-option-row]').forEach((row, optIdx) => {
                         const badge = row.querySelector('.option-badge');
-                        const textarea = row.querySelector('[data-math-textarea]');
+                        const optionValue = row.querySelector('[data-option-value]');
+                        const optionEditor = row.querySelector('[data-option-editor]');
                         const radio = row.querySelector('input[type="radio"]');
                         badge.textContent = LETTERS[optIdx % 26];
-                        if (textarea) {
-                            textarea.placeholder = 'Option ' + LETTERS[optIdx % 26] + ' text or math expression';
+                        if (optionValue) {
+                            optionValue.name = optionValue.name.replace(/questions\[\d+\]\[/g, 'questions[' + (existingCount + qIdx) + '][');
+                        }
+                        if (optionEditor) {
+                            window.HybridOptionEditor.setLetter(optionEditor, LETTERS[optIdx % 26]);
                         }
                         const radioName = radio.name.replace(/questions\[\d+\]\[correct_option\]/g, 'questions[' + (existingCount + qIdx) + '][correct_option]');
                         radio.name = radioName;
@@ -381,7 +379,7 @@
                     row.setAttribute('data-option-row', '');
                     row.innerHTML = `
                         <label class="option-badge">${letter}</label>
-                        <div class="option-input-wrap">${mathFieldHtml(`questions[${qIdx}][options][]`, { rows: 1, placeholder: `Option ${letter} text or math expression`, required: true })}</div>
+                        <div class="option-input-wrap">${window.HybridOptionEditor.fieldHtml({ name: `questions[${qIdx}][options][]`, letter })}</div>
                         <label class="correct-answer-label" title="Mark as correct">
                             <input type="radio" name="questions[${qIdx}][correct_option]" value="${optCount}" class="form-check-input correct-radio" aria-label="Correct option">
                             <span class="correct-answer-mark"><i class="bi bi-check-lg"></i></span>
@@ -392,10 +390,7 @@
                     `;
                     optionList.appendChild(row);
                     renumberAll();
-                    const textarea = row.querySelector('[data-math-textarea]');
-                    if (textarea) {
-                        textarea.focus();
-                    }
+                    row.querySelector('[data-option-preview]')?.focus();
                 });
 
                 optionList.addEventListener('click', (event) => {
@@ -403,7 +398,9 @@
                     if (! button || optionList.querySelectorAll('[data-option-row]').length <= 2) {
                         return;
                     }
-                    button.closest('[data-option-row]').remove();
+                    const row = button.closest('[data-option-row]');
+                    row.querySelectorAll('[data-option-editor]').forEach((editor) => window.HybridOptionEditor.destroy(editor));
+                    row.remove();
                     renumberAll();
                 });
             };
@@ -448,7 +445,7 @@
                                 ${['A', 'B', 'C', 'D'].map((letter, i) => `
                                     <div class="option-row" data-option-row>
                                         <label class="option-badge">${letter}</label>
-                                        <div class="option-input-wrap">${mathFieldHtml(`questions[${qIdx}][options][]`, { rows: 1, placeholder: `Option ${letter} text or math expression`, required: true })}</div>
+                                        <div class="option-input-wrap">${window.HybridOptionEditor.fieldHtml({ name: `questions[${qIdx}][options][]`, letter })}</div>
                                         <label class="correct-answer-label" title="Mark as correct">
                                             <input type="radio" name="questions[${qIdx}][correct_option]" value="${i}" class="form-check-input correct-radio" ${i === 0 ? 'checked' : ''} aria-label="Correct option">
                                             <span class="correct-answer-mark"><i class="bi bi-check-lg"></i></span>
@@ -482,7 +479,9 @@
                 if (! button || list.querySelectorAll('[data-question-block]').length <= 1) {
                     return;
                 }
-                button.closest('[data-question-block]').remove();
+                const block = button.closest('[data-question-block]');
+                block.querySelectorAll('[data-option-editor]').forEach((editor) => window.HybridOptionEditor.destroy(editor));
+                block.remove();
                 renumberAll();
             });
         }

@@ -57,7 +57,7 @@
         @foreach ($question->options as $option)
             <div class="option-preview-item {{ $option->is_correct ? 'correct' : '' }}">
                 <span class="option-letter">{{ chr(65 + $loop->index) }}</span>
-                <span class="math-content option-text">{{ $option->option_text }}</span>
+                <div class="math-content option-text option-html">{!! $option->option_html !!}</div>
                 @if ($option->is_correct)
                     <span class="correct-badge">
                         <i class="bi bi-check-circle-fill"></i>
