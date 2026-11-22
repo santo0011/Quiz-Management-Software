@@ -1,7 +1,7 @@
 {{-- Continuous numeric serial across the whole exam (Summary questions included). --}}
 @php($numberLabel = $questionNumber ?? $itemIndex + 1)
 
-<article class="question-admin-item {{ $question->passage_group_id ? 'passage-child-item' : '' }}">
+<article class="question-admin-item {{ $question->passage_group_id ? 'passage-child-item' : '' }}" id="question-{{ $question->id }}">
     <div class="question-item-header">
         <div class="question-number-badge">
             {{ $numberLabel }}
@@ -40,7 +40,7 @@
                     <button type="submit" class="btn btn-sm btn-soft" title="Move down"><i class="bi bi-arrow-down"></i></button>
                 </form>
             @endif
-            <a href="{{ route($prefix.'.questions.edit', $question) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit question">
+            <a href="{{ route($prefix.'.questions.edit', $question) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit question" data-keep-scroll-position>
                 <i class="bi bi-pencil-fill"></i>
             </a>
             <form method="POST" action="{{ route($prefix.'.questions.destroy', $question) }}" data-confirm-delete>

@@ -86,7 +86,7 @@
                                     <div class="question-item-meta">
                                         <span class="question-marks-badge">
                                             <i class="bi bi-collection"></i>
-                                            Passage/Summary · {{ $group->questions->count() }} {{ Str::plural('question', $group->questions->count()) }}
+                                            Passage · {{ $group->questions->count() }} {{ Str::plural('question', $group->questions->count()) }}
                                         </span>
                                     </div>
                                     <h3 class="question-item-text">{{ $group->title }}</h3>

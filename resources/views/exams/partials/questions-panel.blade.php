@@ -28,7 +28,7 @@
                                 <div class="question-item-meta">
                                     <span class="question-marks-badge">
                                         <i class="bi bi-collection"></i>
-                                        Passage/Summary · {{ $group->questions->count() }} {{ Str::plural('question', $group->questions->count()) }}
+                                        Passage · {{ $group->questions->count() }} {{ Str::plural('question', $group->questions->count()) }}
                                     </span>
                                 </div>
                                 <h3 class="question-item-text">{{ $group->title }}</h3>
@@ -52,7 +52,7 @@
                                         <button type="submit" class="btn btn-sm btn-soft" title="Move down"><i class="bi bi-arrow-down"></i></button>
                                     </form>
                                 @endif
-                                <button type="button" class="btn btn-sm btn-soft" data-bs-toggle="collapse" data-bs-target="#addQuestionToSummary{{ $group->id }}" title="Add question to this summary">
+                                <button type="button" class="btn btn-sm btn-soft" data-bs-toggle="collapse" data-bs-target="#addQuestionToSummary{{ $group->id }}" title="Add question to this passage">
                                     <i class="bi bi-plus-lg"></i>
                                 </button>
                                 <a href="{{ route($prefix.'.passage-groups.edit', $group) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit passage">
@@ -105,5 +105,79 @@
             window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
         </script>
         <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    @endpush
+@endonce
+
+@once
+    @push('scripts')
+        <script>
+            // Returning from Edit Question (Update or Cancel) lands back on this
+            // list at the same place: the edited question is put back where it
+            // was on screen, so the admin can carry on with the next one.
+            (function () {
+                var KEY = 'quizcore.questionList.returnPosition';
+                var MAX_AGE_MS = 30 * 60 * 1000;
+
+                // The admin/branch layouts scroll an inner panel (.admin-main),
+                // not the window; use whichever ancestor actually scrolls.
+                var scrollerFor = function (element) {
+                    for (var node = element && element.parentElement; node && node !== document.body; node = node.parentElement) {
+                        var overflow = getComputedStyle(node).overflowY;
+                        if ((overflow === 'auto' || overflow === 'scroll') && node.scrollHeight > node.clientHeight) {
+                            return node;
+                        }
+                    }
+                    return document.scrollingElement || document.documentElement;
+                };
+
+                document.addEventListener('click', function (event) {
+                    var link = event.target.closest('[data-keep-scroll-position]');
+                    if (! link) return;
+                    var item = link.closest('.question-admin-item[id]');
+                    try {
+                        sessionStorage.setItem(KEY, JSON.stringify({
+                            path: location.pathname,
+                            id: item ? item.id : null,
+                            top: item ? item.getBoundingClientRect().top : 0,
+                            y: scrollerFor(item || link).scrollTop,
+                            at: Date.now(),
+                        }));
+                    } catch (e) {}
+                });
+
+                var saved = null;
+                try {
+                    saved = JSON.parse(sessionStorage.getItem(KEY));
+                    sessionStorage.removeItem(KEY);
+                } catch (e) {}
+
+                if (! saved || saved.path !== location.pathname || Date.now() - saved.at > MAX_AGE_MS) return;
+
+                if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+                var userMoved = false;
+                ['wheel', 'touchmove', 'keydown', 'mousedown'].forEach(function (type) {
+                    window.addEventListener(type, function () { userMoved = true; }, { once: true, passive: true });
+                });
+
+                // Re-applied as images and MathJax equations finish laying out,
+                // until the admin scrolls on their own.
+                var restore = function () {
+                    if (userMoved) return;
+                    var item = saved.id ? document.getElementById(saved.id) : null;
+                    var scroller = scrollerFor(item || document.querySelector('.question-admin-item'));
+                    scroller.scrollTop = item
+                        ? scroller.scrollTop + item.getBoundingClientRect().top - saved.top
+                        : saved.y;
+                };
+
+                restore();
+                window.addEventListener('load', function () {
+                    restore();
+                    setTimeout(restore, 600);
+                    setTimeout(restore, 1500);
+                });
+            })();
+        </script>
     @endpush
 @endonce

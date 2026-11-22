@@ -41,7 +41,7 @@ class PassageGroupRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'content.required' => 'Please enter the passage/summary content.',
+            'content.required' => 'Please enter the passage content.',
         ];
     }
 }

@@ -26,14 +26,14 @@ class PassageGroupController extends Controller
     {
         $passageGroup = DB::transaction(function () use ($request, $exam) {
             $validated = $request->safe()->only(['content']);
-            $validated['title'] = 'Summary '.($exam->passageGroups()->count() + 1);
+            $validated['title'] = 'Passage '.($exam->passageGroups()->count() + 1);
             $validated['position'] = $exam->nextTopLevelPosition();
 
             return $exam->passageGroups()->create($validated);
         });
 
         return redirect()->to(route('admin.questions.create', $exam).'#summary-'.$passageGroup->id)
-            ->with('success', 'Summary added. Now add its questions below.')
+            ->with('success', 'Passage added. Now add its questions below.')
             ->with('open_summary_id', $passageGroup->id);
     }
 
@@ -52,7 +52,7 @@ class PassageGroupController extends Controller
             $passageGroup->update($request->safe()->only(['content']));
         });
 
-        return redirect()->route('admin.questions.create', $passageGroup->exam)->with('success', 'Passage/Summary updated successfully.');
+        return redirect()->route('admin.questions.create', $passageGroup->exam)->with('success', 'Passage updated successfully.');
     }
 
     public function destroy(PassageGroup $passageGroup): RedirectResponse
@@ -70,6 +70,6 @@ class PassageGroupController extends Controller
         $exam->recalculateTotalMarks();
 
         return redirect()->route('admin.questions.create', $exam)
-            ->with('success', 'Passage/Summary and all its questions were deleted successfully.');
+            ->with('success', 'Passage and all its questions were deleted successfully.');
     }
 }
