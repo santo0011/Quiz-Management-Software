@@ -28,7 +28,7 @@
                                 <div class="question-item-meta">
                                     <span class="question-marks-badge">
                                         <i class="bi bi-collection"></i>
-                                        Passage/Summary · {{ $group->questions->count() }} {{ Str::plural('question', $group->questions->count()) }}
+                                        Passage · {{ $group->questions->count() }} {{ Str::plural('question', $group->questions->count()) }}
                                     </span>
                                 </div>
                                 <h3 class="question-item-text">{{ $group->title }}</h3>
@@ -52,7 +52,7 @@
                                         <button type="submit" class="btn btn-sm btn-soft" title="Move down"><i class="bi bi-arrow-down"></i></button>
                                     </form>
                                 @endif
-                                <button type="button" class="btn btn-sm btn-soft" data-bs-toggle="collapse" data-bs-target="#addQuestionToSummary{{ $group->id }}" title="Add question to this summary">
+                                <button type="button" class="btn btn-sm btn-soft" data-bs-toggle="collapse" data-bs-target="#addQuestionToSummary{{ $group->id }}" title="Add question to this passage">
                                     <i class="bi bi-plus-lg"></i>
                                 </button>
                                 <a href="{{ route($prefix.'.passage-groups.edit', $group) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit passage">

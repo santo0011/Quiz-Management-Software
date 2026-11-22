@@ -8,7 +8,7 @@
         <div class="panel-header">
             <div>
                 <h2>{{ $exam->title }}</h2>
-                <p>Add MCQ questions under this passage/summary.</p>
+                <p>Add MCQ questions under this passage.</p>
             </div>
             <a href="{{ route('admin.passage-groups.edit', $passageGroup) }}" class="btn btn-soft">
                 <i class="bi bi-pencil-fill"></i>
@@ -21,7 +21,7 @@
                 <span class="question-card-icon accent"><i class="bi bi-file-earmark-text-fill"></i></span>
                 <div>
                     <h3>{{ $passageGroup->title }}</h3>
-                    <p>Passage/Summary shown to students above these questions.</p>
+                    <p>Passage shown to students above these questions.</p>
                 </div>
             </div>
             <div class="question-card-body">

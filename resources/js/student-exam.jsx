@@ -284,7 +284,7 @@ function PassageStep({ step, questionNumbers, onSelect }) {
                     className="passage-resize-handle"
                     role="separator"
                     aria-orientation="vertical"
-                    aria-label="Resize summary and question panels"
+                    aria-label="Resize passage and question panels"
                     aria-valuenow={Math.round(fractionRef.current * 100)}
                     aria-valuemin={Math.round(PASSAGE_PANEL_MIN_FRACTION * 100)}
                     aria-valuemax={Math.round(PASSAGE_PANEL_MAX_FRACTION * 100)}

@@ -55,7 +55,7 @@ class QuestionWithoutCategoryTest extends TestCase
         $this->actingAs($admin)->get(route('admin.questions.create', $exam))
             ->assertOk()
             ->assertSee('Add Another Question')
-            ->assertSee('Add Summary');
+            ->assertSee('Add Passage');
     }
 
     public function test_questions_can_be_saved_without_a_category(): void
