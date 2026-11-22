@@ -97,7 +97,11 @@ class QuestionRequest extends FormRequest
             $exam = $this->route('exam') ?: $this->route('question')?->exam;
             $question = $this->route('question');
 
-            if ($exam instanceof Exam && $this->filled('question_text')) {
+            // An edit that keeps the question text as it is must still save,
+            // even if an older duplicate of that text already exists.
+            $textUnchanged = $question && trim($this->input('question_text')) === $question->question_text;
+
+            if ($exam instanceof Exam && $this->filled('question_text') && ! $textUnchanged) {
                 $duplicate = Question::where('exam_id', $exam->id)
                     ->where('question_text', trim($this->input('question_text')))
                     ->when($question, fn ($query) => $query->whereKeyNot($question->id))

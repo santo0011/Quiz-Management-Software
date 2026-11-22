@@ -129,6 +129,30 @@ class HybridOptionEditorTest extends TestCase
         $this->assertSame('<p>A edited</p>', $a->fresh()->option_text);
     }
 
+    public function test_editing_a_question_that_already_has_a_duplicate_can_be_saved_unchanged(): void
+    {
+        [$admin, $exam] = $this->makeFixture();
+        $this->makeQuestion($exam, ['A', 'B']);
+        $duplicate = $this->makeQuestion($exam, ['C', 'D']);
+        $other = Question::create(['exam_id' => $exam->id, 'question_text' => '<p>Other</p>', 'question_type' => 'mcq', 'marks' => 1]);
+        $other->options()->createMany([['option_text' => 'E', 'is_correct' => true, 'position' => 0], ['option_text' => 'F', 'is_correct' => false, 'position' => 1]]);
+
+        $this->actingAs($admin)->put(route('admin.questions.update', $duplicate), [
+            'question_text' => '<p>Question</p>',
+            'marks' => 1,
+            'options' => ['C edited', 'D'],
+            'correct_option' => 0,
+        ])->assertSessionHasNoErrors();
+        $this->assertSame('C edited', $duplicate->options()->first()->option_text);
+
+        $this->actingAs($admin)->put(route('admin.questions.update', $other), [
+            'question_text' => '<p>Question</p>',
+            'marks' => 1,
+            'options' => ['E', 'F'],
+            'correct_option' => 0,
+        ])->assertSessionHasErrors('question_text');
+    }
+
     public function test_edit_form_renders_hybrid_option_fields_with_ids(): void
     {
         [$admin, $exam] = $this->makeFixture();
