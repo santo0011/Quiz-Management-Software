@@ -1516,6 +1516,16 @@ body {
     box-shadow: 0 0 0 4px rgba(35, 86, 216, .1);
 }
 
+.question-form [data-question-paste] {
+    border-color: var(--line);
+    border-radius: 8px;
+}
+
+.question-form [data-question-paste]:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(35, 86, 216, .1);
+}
+
 /* Option rows */
 .option-row {
     display: flex;

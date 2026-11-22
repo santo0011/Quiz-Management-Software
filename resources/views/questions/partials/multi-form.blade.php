@@ -6,7 +6,7 @@
 {{-- Display-only: how many exam questions come before this form's questions, so labels continue the exam-wide serial. Input name indices still use $existingCount. --}}
 @php($numberStart = (int) ($numberStart ?? 0))
 
-<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-form-id="{{ $formKey }}" data-default-marks="{{ (int) ($defaultMarks ?? 1) }}" data-existing-count="{{ $existingCount }}" data-number-start="{{ $numberStart }}">
+<form method="POST" action="{{ $action }}" class="admin-form question-form" data-multi-question-form data-form-id="{{ $formKey }}" data-enable-question-paste="{{ $prefix === 'admin' ? '1' : '0' }}" data-default-marks="{{ (int) ($defaultMarks ?? 1) }}" data-existing-count="{{ $existingCount }}" data-number-start="{{ $numberStart }}">
     @csrf
     <input type="hidden" name="_form_key" value="{{ $formKey }}">
 
@@ -93,6 +93,18 @@
                     </button>
                 </div>
                 <div class="question-card-body">
+                    @if ($prefix === 'admin')
+                        <div class="question-field-group mb-4">
+                            <label class="form-label">Paste a complete question</label>
+                            <textarea class="form-control" rows="5" data-question-paste placeholder="Question: Why did Bob and Garry sometimes stop by the hive?&#10;&#10;A. They liked watching the bees work together.&#10;B. They wanted to eat the honey.&#10;C. Queen Bella asked them to guard the hive.&#10;D. They wanted to join the colony.&#10;&#10;Answer: A&#10;&#10;Explanation: The text says they sometimes stopped by just to watch Benny and his family at work."></textarea>
+                            <small class="form-text text-muted">Use this format: <strong>Question:</strong> question text, options labeled <strong>A.</strong> through <strong>D.</strong>, <strong>Answer:</strong> correct letter, and <strong>Explanation:</strong> explanation text.</small>
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <button type="button" class="btn btn-sm btn-soft" data-copy-question-format>Copy example</button>
+                                <button type="button" class="btn btn-sm btn-primary" data-parse-question>Fill question fields</button>
+                                <span class="small text-muted" data-parse-question-status aria-live="polite"></span>
+                            </div>
+                        </div>
+                    @endif
                     <div class="question-field-group">
                         <label class="form-label">Question Text <span class="required-mark">*</span></label>
                         @include('partials.summary-editor', [
@@ -328,6 +340,114 @@
             const existingCount = parseInt(form.dataset.existingCount || '0', 10);
             const numberStart = parseInt(form.dataset.numberStart || '0', 10);
 
+            form.addEventListener('submit', () => {
+                form.querySelectorAll('textarea[data-summary-editor]').forEach((textarea) => {
+                    textarea.ckeditorInstance?.updateSourceElement();
+                });
+            }, true);
+
+            const sampleQuestion = 'Question: Why did Bob and Garry sometimes stop by the hive?\n\nA. They liked watching the bees work together.\nB. They wanted to eat the honey.\nC. Queen Bella asked them to guard the hive.\nD. They wanted to join the colony.\n\nAnswer: A\n\nExplanation: The text says the way the bees worked together was fascinating, and sometimes Bob and Garry would stop by just to watch Benny and his family at work.';
+
+            form.addEventListener('click', async (event) => {
+                const copyButton = event.target.closest('[data-copy-question-format]');
+                const parseButton = event.target.closest('[data-parse-question]');
+                if (!copyButton && !parseButton) return;
+
+                const block = event.target.closest('[data-question-block]');
+                if (!block) return;
+                const status = block.querySelector('[data-parse-question-status]');
+
+                if (copyButton) {
+                    try {
+                        await navigator.clipboard.writeText(sampleQuestion);
+                        status.textContent = 'Example copied. Paste it into this question box.';
+                        status.className = 'small text-success';
+                    } catch (error) {
+                        const input = block.querySelector('[data-question-paste]');
+                        input.value = sampleQuestion;
+                        input.focus();
+                        input.select();
+                        status.textContent = 'Example selected. Copy it, then paste your question here.';
+                        status.className = 'small text-muted';
+                    }
+                    return;
+                }
+
+                const input = block.querySelector('[data-question-paste]');
+                const lines = input.value.replace(/\r/g, '').split('\n');
+                const questionLines = [];
+                const options = {};
+                let answer = '';
+                let explanation = '';
+                let section = 'question';
+
+                lines.forEach((rawLine) => {
+                    const line = rawLine.trim();
+                    if (!line) return;
+                    const optionMatch = line.match(/^\s*\(?([A-D])\)?\s*[.):\-]\s*(.*)$/i);
+                    const answerMatch = line.match(/^(?:correct\s+)?answer\s*[:\-]?\s*(.*)$/i);
+                    const explanationMatch = line.match(/^explanation\s*[:\-]?\s*(.*)$/i);
+                    const questionMatch = line.match(/^question\s*[:\-]\s*(.*)$/i);
+
+                    if (optionMatch) {
+                        section = 'options';
+                        options[optionMatch[1].toUpperCase()] = optionMatch[2];
+                    } else if (answerMatch) {
+                        section = 'answer';
+                        answer = answerMatch[1];
+                    } else if (explanationMatch) {
+                        section = 'explanation';
+                        explanation = explanationMatch[1];
+                    } else if (questionMatch) {
+                        section = 'question';
+                        if (questionMatch[1]) questionLines.push(questionMatch[1]);
+                    } else if (section === 'question') {
+                        questionLines.push(line);
+                    } else if (section === 'explanation') {
+                        explanation += (explanation ? '\n' : '') + line;
+                    } else if (section === 'answer' && !answer) {
+                        answer = line;
+                    }
+                });
+
+                const questionField = block?.querySelector('[name$="[question_text]"]');
+                const optionLetters = ['A', 'B', 'C', 'D'];
+                const missing = optionLetters.filter((letter) => !Object.prototype.hasOwnProperty.call(options, letter));
+                const answerLetter = (answer.match(/[A-D]/i) || [])[0]?.toUpperCase();
+
+                if (!questionLines.length || missing.length || !answerLetter) {
+                    status.textContent = 'Include the question, options A–D, and an answer (for example, Answer: B).';
+                    status.className = 'small text-danger';
+                    return;
+                }
+
+                if (questionField?.ckeditorInstance) {
+                    questionField.ckeditorInstance.setData(questionLines.join('\n'));
+                } else if (questionField) {
+                    questionField.value = questionLines.join('\n');
+                }
+                optionLetters.forEach((letter, index) => {
+                    const row = block.querySelectorAll('[data-option-row]')[index];
+                    const value = row?.querySelector('[data-option-value]');
+                    const preview = row?.querySelector('[data-option-preview]');
+                    if (value) value.value = options[letter];
+                    if (preview) {
+                        preview.textContent = options[letter];
+                        preview.classList.remove('is-empty');
+                    }
+                    const radio = row?.querySelector('.correct-radio');
+                    if (radio) radio.checked = index === optionLetters.indexOf(answerLetter);
+                });
+                const explanationField = block.querySelector('[name$="[explanation]"]');
+                if (explanationField?.ckeditorInstance) {
+                    explanationField.ckeditorInstance.setData(explanation);
+                } else if (explanationField) {
+                    explanationField.value = explanation;
+                }
+                status.textContent = 'Question fields filled. Review them, then save.';
+                status.className = 'small text-success';
+            });
+
             // Re-number blocks and update name indices + badge letters
             const renumberAll = () => {
                 list.querySelectorAll('[data-question-block]').forEach((block, qIdx) => {
@@ -425,6 +545,17 @@
                         </button>
                     </div>
                     <div class="question-card-body">
+                        ${form.dataset.enableQuestionPaste === '1' ? `
+                        <div class="question-field-group mb-4">
+                            <label class="form-label">Paste a complete question</label>
+                            <textarea class="form-control" rows="5" data-question-paste placeholder="Question: ...&#10;&#10;A. ...&#10;B. ...&#10;C. ...&#10;D. ...&#10;&#10;Answer: A&#10;&#10;Explanation: ..."></textarea>
+                            <small class="form-text text-muted">Use this format: <strong>Question:</strong> question text, options labeled <strong>A.</strong> through <strong>D.</strong>, <strong>Answer:</strong> correct letter, and <strong>Explanation:</strong> explanation text.</small>
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <button type="button" class="btn btn-sm btn-soft" data-copy-question-format>Copy example</button>
+                                <button type="button" class="btn btn-sm btn-primary" data-parse-question>Fill question fields</button>
+                                <span class="small text-muted" data-parse-question-status aria-live="polite"></span>
+                            </div>
+                        </div>` : ''}
                         <div class="question-field-group">
                             <label class="form-label">Question Text <span class="required-mark">*</span></label>
                             ${richFieldHtml(`questions[${qIdx}][question_text]`, { rows: 3, placeholder: 'Enter the question text...' })}
