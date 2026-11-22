@@ -102,14 +102,7 @@ class QuestionController extends Controller
                 $question->passage_group_id = $passageGroup?->id;
                 $question->save();
 
-                $correctIndex = (int) ($questionData['correct_option'] ?? 0);
-                foreach (array_values($questionData['options'] ?? []) as $index => $option) {
-                    $question->options()->create([
-                        'option_text' => trim($option),
-                        'is_correct' => $index === $correctIndex,
-                        'position' => $index,
-                    ]);
-                }
+                $question->syncOptions($questionData['options'] ?? [], (int) ($questionData['correct_option'] ?? 0));
             }
 
             $exam->recalculateTotalMarks();
@@ -160,14 +153,11 @@ class QuestionController extends Controller
             $question->question_category_id = $request->input('question_category_id');
             $question->save();
 
-            $question->options()->delete();
-            foreach (array_values($request->input('options', [])) as $index => $option) {
-                $question->options()->create([
-                    'option_text' => trim($option),
-                    'is_correct' => $index === (int) $request->input('correct_option'),
-                    'position' => $index,
-                ]);
-            }
+            $question->syncOptions(
+                $request->input('options', []),
+                (int) $request->input('correct_option'),
+                $request->input('option_ids', [])
+            );
         });
     }
 

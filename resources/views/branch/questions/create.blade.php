@@ -66,7 +66,7 @@
             <div class="panel-header">
                 <div>
                     <h2><i class="bi bi-plus-circle-fill me-2 text-primary"></i>Add New Item</h2>
-                    <p>Add as many questions and summaries as you need, in any order.</p>
+                    <p>Add as many questions and passages as you need, in any order.</p>
                 </div>
             </div>
 
@@ -81,8 +81,8 @@
                 <button type="button" class="add-item-tile add-item-tile-accent" data-bs-toggle="collapse" data-bs-target="#addSummaryForm">
                     <span class="add-item-tile-icon"><i class="bi bi-file-earmark-text-fill"></i></span>
                     <span class="add-item-tile-body">
-                        <strong>Add Summary</strong>
-                        <small>A passage/summary with its own set of questions.</small>
+                        <strong>Add Passage</strong>
+                        <small>A passage with its own set of questions.</small>
                     </span>
                 </button>
             </div>
@@ -109,12 +109,12 @@
                     <form method="POST" action="{{ route('branch.passage-groups.store', $exam) }}" class="admin-form">
                         @csrf
                         <div class="mb-3">
-                            <label for="content" class="form-label">Summary Content <span class="required-mark">*</span></label>
+                            <label for="content" class="form-label">Passage Content <span class="required-mark">*</span></label>
                             @include('partials.summary-editor', [
                                 'mathId' => 'summary_content',
                                 'mathName' => 'content',
                                 'mathValue' => old('content'),
-                                'mathPlaceholder' => 'Enter the passage or summary text students will read...',
+                                'mathPlaceholder' => 'Enter the passage text students will read...',
                                 'mathRows' => 6,
                                 'mathRequired' => true,
                                 'mathClass' => $errors->has('content') ? 'is-invalid' : '',
@@ -124,7 +124,7 @@
                         </div>
                         <button class="btn btn-primary" type="submit">
                             <i class="bi bi-check-circle-fill"></i>
-                            Save Summary
+                            Save Passage
                         </button>
                     </form>
                 </div>
@@ -142,7 +142,7 @@
                     <i class="bi bi-check2-circle"></i>
                     Done
                 </a>
-                <p>Finished adding questions and summaries? Head back to the exam to review or publish it.</p>
+                <p>Finished adding questions and passages? Head back to the exam to review or publish it.</p>
             @else
                 <button type="button" class="btn btn-success btn-lg" disabled>
                     <i class="bi bi-check2-circle"></i>

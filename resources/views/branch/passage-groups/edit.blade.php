@@ -1,14 +1,14 @@
 @extends('layouts.branch')
 
-@section('title', 'Edit Passage/Summary')
-@section('page-title', 'Edit Passage/Summary')
+@section('title', 'Edit Passage')
+@section('page-title', 'Edit Passage')
 
 @section('content')
     <section class="content-panel">
         <div class="panel-header">
             <div>
                 <h2>{{ $exam->title }}</h2>
-                <p>Update the passage/summary for {{ $exam->gradeNames() }}.</p>
+                <p>Update the passage for {{ $exam->gradeNames() }}.</p>
             </div>
         </div>
         @include('branch.passage-groups.partials.form', [
@@ -17,7 +17,7 @@
             'passageGroup' => $passageGroup,
             'action' => route('branch.passage-groups.update', $passageGroup),
             'method' => 'PUT',
-            'button' => 'Update Passage/Summary',
+            'button' => 'Update Passage',
         ])
     </section>
 @endsection

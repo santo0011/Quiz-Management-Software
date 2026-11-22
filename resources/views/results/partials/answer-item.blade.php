@@ -27,14 +27,14 @@
             <span class="option-letter">
                 <i class="bi bi-person-check-fill"></i>
             </span>
-            <span class="math-content option-text"><strong>{{ $selectedLabel ?? 'Selected' }}:</strong> {{ $answer?->selectedOption?->option_text ?? 'Not answered' }}</span>
+            <div class="math-content option-text option-html option-html-labeled"><strong>{{ $selectedLabel ?? 'Selected' }}:</strong> @if ($answer?->selectedOption){!! $answer->selectedOption->option_html !!}@else Not answered @endif</div>
         </div>
         @if (! $answer?->is_correct)
             <div class="option-preview-item correct">
                 <span class="option-letter">
                     <i class="bi bi-check2-circle"></i>
                 </span>
-                <span class="math-content option-text"><strong>Correct:</strong> {{ $question->options->firstWhere('is_correct', true)?->option_text }}</span>
+                <div class="math-content option-text option-html option-html-labeled"><strong>Correct:</strong> {!! $question->options->firstWhere('is_correct', true)?->option_html !!}</div>
             </div>
         @endif
     </div>

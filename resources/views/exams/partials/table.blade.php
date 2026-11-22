@@ -1,6 +1,7 @@
 @php($prefix = $prefix ?? 'admin')
 {{-- Scope (Global / branch) is shown to Super Admin only — hidden on the Branch exam list. --}}
 @php($showScope = $prefix !== 'branch')
+@php($showQuestionsAndMarks = $prefix !== 'admin')
 
 @if ($exams->isEmpty())
     <div class="empty-state">
@@ -20,8 +21,10 @@
                     @if ($showScope)
                         <th>Scope</th>
                     @endif
-                    <th>Questions</th>
-                    <th>Marks</th>
+                    @if ($showQuestionsAndMarks)
+                        <th>Questions</th>
+                        <th>Marks</th>
+                    @endif
                     <th>Status</th>
                     <th class="text-end">Actions</th>
                 </tr>
@@ -55,8 +58,10 @@
                                 @endif
                             </td>
                         @endif
-                        <td>{{ $exam->questions_count ?? $exam->questions->count() }}</td>
-                        <td>{{ $exam->total_marks }}</td>
+                        @if ($showQuestionsAndMarks)
+                            <td>{{ $exam->questions_count ?? $exam->questions->count() }}</td>
+                            <td>{{ $exam->total_marks }}</td>
+                        @endif
                         <td>
                             @if (! $canManage)
                                 @if ($exam->isPublished())

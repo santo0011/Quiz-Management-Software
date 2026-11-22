@@ -1299,6 +1299,9 @@ body {
 
 .question-form {
     display: grid;
+    /* minmax(0, …): an auto track grows to the CKEditor toolbar's full
+       width and pushes every card past the screen on phones. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 18px;
 }
 
@@ -1637,37 +1640,38 @@ body {
     width: 100%;
     min-height: 34px;
     margin-top: 4px;
-    border: 1px dashed #c9d4e8;
+    border: 1px dashed #6ee7b7;
     border-radius: 8px;
-    background: #f8fafc;
-    color: var(--primary);
+    background: #f0fdf7;
+    color: #047857;
     font-weight: 700;
     font-size: .82rem;
     transition: all .18s ease;
 }
 
 .btn-add-option:hover {
-    background: #eef4ff;
-    border-color: var(--primary);
+    background: #d1fae5;
+    border-color: #059669;
+    color: #065f46;
 }
 
 .btn-add-question {
     width: 100%;
     min-height: 40px;
-    border: 2px dashed var(--primary);
+    border: 2px dashed #8b5cf6;
     border-radius: 10px;
-    background: #f8faff;
-    color: var(--primary);
+    background: #f7f3ff;
+    color: #6d28d9;
     font-weight: 800;
     font-size: .88rem;
     transition: all .18s ease;
 }
 
 .btn-add-question:hover {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: #7c3aed;
+    border-color: #7c3aed;
     color: #fff;
-    box-shadow: 0 8px 20px rgba(35, 86, 216, .2);
+    box-shadow: 0 8px 20px rgba(124, 58, 237, .22);
 }
 
 .multi-question-block {
@@ -8468,4 +8472,200 @@ form .status-badge.status-published:hover {
     background: #eef2ff;
     color: #4338ca;
     border-color: rgba(67, 56, 202, 0.18);
+}
+
+/* ===== Hybrid answer-option editor (Question Create / Edit) =====
+   Each option is a compact preview; only the option being edited expands
+   into a CKEditor (see partials/option-editor-script.blade.php). */
+.hybrid-option {
+    position: relative;
+}
+
+.hybrid-option-compact {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.hybrid-option-preview {
+    flex: 1;
+    min-width: 0;
+    min-height: 32px;
+    max-height: 180px;
+    overflow: hidden;
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    font-size: .85rem;
+    line-height: 1.45;
+    color: var(--ink);
+    cursor: text;
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.hybrid-option-preview:hover {
+    border-color: #b8c6e3;
+}
+
+.hybrid-option-preview:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(35, 86, 216, .1);
+}
+
+.hybrid-option-preview.is-empty::before {
+    content: attr(data-placeholder);
+    color: #98a2b3;
+}
+
+.hybrid-option-preview.is-readonly {
+    max-height: none;
+    background: #f8fafc;
+    cursor: default;
+}
+
+.hybrid-option.is-invalid .hybrid-option-preview,
+.hybrid-option.is-invalid [data-option-value] {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, .12);
+}
+
+.hybrid-option-tools {
+    display: inline-flex;
+    gap: 2px;
+    flex: 0 0 auto;
+}
+
+.hybrid-option-tool {
+    width: 30px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: .95rem;
+    cursor: pointer;
+    transition: all .18s ease;
+}
+
+.hybrid-option-tool:hover,
+.hybrid-option-tool:focus-visible {
+    color: var(--primary);
+    background: #eef4ff;
+    border-color: #c9d7f6;
+    outline: none;
+}
+
+.hybrid-option-editor {
+    padding: 8px;
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(35, 86, 216, .08);
+}
+
+.hybrid-option-editor[hidden] {
+    display: none;
+}
+
+.hybrid-option-editor .ck-editor__editable_inline {
+    min-height: 80px;
+    max-height: 320px;
+    font-size: .9rem;
+}
+
+.hybrid-option-editor-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.hybrid-option-hint {
+    color: var(--muted);
+    font-size: .76rem;
+}
+
+.option-row:has(.hybrid-option.is-editing) {
+    border-color: var(--primary);
+    background: #fff;
+}
+
+/* Rich option content wherever options are shown (previews, exam preview,
+   student exam, result review). Legacy plain-text options are unaffected. */
+.option-html p,
+.option-html ul,
+.option-html ol,
+.option-html figure,
+.option-html table {
+    margin: 0 0 4px;
+}
+
+.option-html > :last-child {
+    margin-bottom: 0;
+}
+
+.option-html ul,
+.option-html ol {
+    padding-left: 1.25rem;
+}
+
+.option-html figure {
+    max-width: 100%;
+}
+
+.option-html img {
+    display: block;
+    max-width: 100%;
+    max-height: 220px;
+    height: auto;
+    border-radius: 8px;
+}
+
+.hybrid-option-preview img {
+    max-height: 120px;
+}
+
+.option-html table {
+    border-collapse: collapse;
+    font-size: .88em;
+}
+
+.option-html td,
+.option-html th {
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+}
+
+/* "Selected: …" / "Correct: …" in result review: keep the label on the
+   same line as a single-paragraph answer. */
+.option-html-labeled > p:first-of-type {
+    display: inline;
+}
+
+.exam-option .option-html img {
+    max-height: 260px;
+}
+
+@media (max-width: 575.98px) {
+    .hybrid-option-compact {
+        flex-wrap: wrap;
+    }
+
+    .hybrid-option-preview {
+        flex-basis: 100%;
+    }
+
+    .hybrid-option-tools {
+        margin-left: auto;
+    }
+
+    .hybrid-option-editor-footer {
+        flex-wrap: wrap;
+    }
 }

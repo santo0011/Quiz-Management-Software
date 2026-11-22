@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\Question;
 use App\Models\Teacher;
 use App\Support\HtmlSanitizer;
+use App\Support\OptionContent;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,6 +19,13 @@ class QuestionRequest extends FormRequest
         // before storage — it's later rendered as raw HTML.
         if ($this->has('question_text')) {
             $this->merge(['question_text' => HtmlSanitizer::sanitize($this->input('question_text'))]);
+        }
+
+        if (is_array($this->input('options'))) {
+            $this->merge(['options' => array_map(
+                fn ($option) => is_string($option) ? OptionContent::normalize($option) : $option,
+                $this->input('options')
+            )]);
         }
     }
 
@@ -55,8 +63,18 @@ class QuestionRequest extends FormRequest
             ],
             'explanation' => ['nullable', 'string'],
             'options' => ['required', 'array', 'min:2'],
-            'options.*' => ['required', 'string'],
+            'options.*' => ['required', 'string', 'max:'.OptionContent::MAX_LENGTH],
+            'option_ids' => ['nullable', 'array'],
+            'option_ids.*' => ['nullable', 'integer'],
             'correct_option' => ['required', 'integer', 'min:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'options.*.required' => 'Every answer option needs text, an image or an equation (or remove the empty option).',
+            'options.*.max' => 'An answer option is too large. Please use smaller images.',
         ];
     }
 
@@ -79,7 +97,11 @@ class QuestionRequest extends FormRequest
             $exam = $this->route('exam') ?: $this->route('question')?->exam;
             $question = $this->route('question');
 
-            if ($exam instanceof Exam && $this->filled('question_text')) {
+            // An edit that keeps the question text as it is must still save,
+            // even if an older duplicate of that text already exists.
+            $textUnchanged = $question && trim($this->input('question_text')) === $question->question_text;
+
+            if ($exam instanceof Exam && $this->filled('question_text') && ! $textUnchanged) {
                 $duplicate = Question::where('exam_id', $exam->id)
                     ->where('question_text', trim($this->input('question_text')))
                     ->when($question, fn ($query) => $query->whereKeyNot($question->id))

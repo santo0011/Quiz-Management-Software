@@ -1,6 +1,7 @@
 @php($prefix = $prefix ?? 'admin')
 @php($optionValues = old('options', $question->exists ? $question->options->pluck('option_text')->all() : ['', '', '', '']))
 @php($correctIndex = old('correct_option', $question->exists ? max(0, $question->options->values()->search(fn ($option) => $option->is_correct)) : 0))
+@php($optionIds = old('option_ids', $question->exists ? $question->options->pluck('id')->all() : []))
 
 <form method="POST" action="{{ $action }}" class="admin-form question-form" data-question-form>
     @csrf
@@ -63,20 +64,21 @@
         </div>
         <div class="question-card-body">
             @error('options')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
+            @if ($errors->has('options.*'))<div class="text-danger small mb-2">{{ $errors->first('options.*') }}</div>@endif
             @error('correct_option')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
 
             <div data-option-list>
-                @foreach ($optionValues as $index => $optionValue)
+                @foreach (array_values($optionValues) as $index => $optionValue)
                     <div class="option-row" data-option-row>
                         <label class="option-badge">{{ chr(65 + $index) }}</label>
                         <div class="option-input-wrap">
-                            @include('partials.math-editor', [
-                                'mathId' => 'option_' . $index,
-                                'mathName' => 'options[]',
-                                'mathValue' => $optionValue,
-                                'mathPlaceholder' => 'Option ' . chr(65 + $index) . ' text or math expression',
-                                'mathRows' => 1,
-                                'mathRequired' => true,
+                            @include('partials.option-editor-field', [
+                                'optionName' => 'options[]',
+                                'optionIdName' => 'option_ids[]',
+                                'optionId' => $optionIds[$index] ?? '',
+                                'optionValue' => $optionValue,
+                                'optionLetter' => chr(65 + $index),
+                                'optionInvalid' => $errors->has('options.' . $index),
                             ])
                         </div>
                         <label class="correct-answer-label" title="Mark as correct">
@@ -137,10 +139,10 @@
             const renumberOptions = () => {
                 list.querySelectorAll('[data-option-row]').forEach((row, index) => {
                     const badge = row.querySelector('.option-badge');
-                    const input = row.querySelector('textarea');
+                    const editor = row.querySelector('[data-option-editor]');
                     badge.textContent = LETTERS[index % 26];
-                    if (input) {
-                        input.placeholder = 'Option ' + LETTERS[index % 26];
+                    if (editor) {
+                        window.HybridOptionEditor.setLetter(editor, LETTERS[index % 26]);
                     }
                     row.querySelector('input[type="radio"]').value = index;
                 });
@@ -150,17 +152,12 @@
                 const count = list.querySelectorAll('[data-option-row]').length;
                 const letter = LETTERS[count % 26];
 
-                // Clone an existing, already-initialized math input so the new
-                // option gets the identical toolbar without duplicating its markup.
-                const templateWrap = form.querySelector('[data-math-input-wrap]');
-                const wrapHtml = templateWrap ? templateWrap.outerHTML : '';
-
                 const row = document.createElement('div');
                 row.className = 'option-row';
                 row.setAttribute('data-option-row', '');
                 row.innerHTML = `
                     <label class="option-badge">${letter}</label>
-                    <div class="option-input-wrap">${wrapHtml}</div>
+                    <div class="option-input-wrap">${window.HybridOptionEditor.fieldHtml({ name: 'options[]', idName: 'option_ids[]', letter })}</div>
                     <label class="correct-answer-label" title="Mark as correct">
                         <input type="radio" name="correct_option" value="${count}" class="form-check-input correct-radio" aria-label="Correct option">
                         <span class="correct-answer-mark"><i class="bi bi-check-lg"></i></span>
@@ -170,27 +167,9 @@
                     </button>
                 `;
 
-                const wrap = row.querySelector('[data-math-input-wrap]');
-                if (wrap) {
-                    delete wrap.dataset.initialized;
-                    wrap.removeAttribute('data-math-id');
-                    wrap.querySelector('[data-math-toolbar]')?.setAttribute('hidden', '');
-                    const textarea = wrap.querySelector('[data-math-textarea]');
-                    if (textarea) {
-                        textarea.removeAttribute('id');
-                        textarea.name = 'options[]';
-                        textarea.value = '';
-                        textarea.placeholder = 'Option ' + letter + ' text or math expression';
-                        textarea.required = true;
-                    }
-                }
-
                 list.appendChild(row);
                 renumberOptions();
-                const textarea = row.querySelector('textarea');
-                if (textarea) {
-                    textarea.focus();
-                }
+                row.querySelector('[data-option-preview]')?.focus();
             });
 
             list.addEventListener('click', (event) => {
@@ -198,7 +177,12 @@
                 if (! button || list.querySelectorAll('[data-option-row]').length <= 2) {
                     return;
                 }
-                button.closest('[data-option-row]').remove();
+                const row = button.closest('[data-option-row]');
+                const editor = row.querySelector('[data-option-editor]');
+                if (editor) {
+                    window.HybridOptionEditor.destroy(editor);
+                }
+                row.remove();
                 renumberOptions();
             });
         });

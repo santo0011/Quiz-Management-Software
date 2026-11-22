@@ -1,7 +1,7 @@
 {{-- Continuous numeric serial across the whole exam (Summary questions included). --}}
 @php($numberLabel = $questionNumber ?? $itemIndex + 1)
 
-<article class="question-admin-item {{ $question->passage_group_id ? 'passage-child-item' : '' }}">
+<article class="question-admin-item {{ $question->passage_group_id ? 'passage-child-item' : '' }}" id="question-{{ $question->id }}">
     <div class="question-item-header">
         <div class="question-number-badge">
             {{ $numberLabel }}
@@ -40,7 +40,7 @@
                     <button type="submit" class="btn btn-sm btn-soft" title="Move down"><i class="bi bi-arrow-down"></i></button>
                 </form>
             @endif
-            <a href="{{ route($prefix.'.questions.edit', $question) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit question">
+            <a href="{{ route($prefix.'.questions.edit', $question) }}" class="btn btn-sm btn-soft" data-bs-toggle="tooltip" data-bs-title="Edit question" data-keep-scroll-position>
                 <i class="bi bi-pencil-fill"></i>
             </a>
             <form method="POST" action="{{ route($prefix.'.questions.destroy', $question) }}" data-confirm-delete>
@@ -57,7 +57,7 @@
         @foreach ($question->options as $option)
             <div class="option-preview-item {{ $option->is_correct ? 'correct' : '' }}">
                 <span class="option-letter">{{ chr(65 + $loop->index) }}</span>
-                <span class="math-content option-text">{{ $option->option_text }}</span>
+                <div class="math-content option-text option-html">{!! $option->option_html !!}</div>
                 @if ($option->is_correct)
                     <span class="correct-badge">
                         <i class="bi bi-check-circle-fill"></i>

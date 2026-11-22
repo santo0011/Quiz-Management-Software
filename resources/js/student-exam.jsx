@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // 0.75 is the smallest step — still legible (Summary/Question text both stay
@@ -108,6 +108,14 @@ function updateStepsWithAnswer(steps, questionId, optionId) {
     });
 }
 
+// React 19 re-applies dangerouslySetInnerHTML whenever the prop object is new,
+// i.e. on every render (the timer re-renders each second). That wiped
+// MathJax's typeset equations and re-decoded images, so only re-render when
+// the HTML itself changes.
+const RichHtml = memo(function RichHtml({ html, className }) {
+    return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
+});
+
 function QuestionOptions({ question, onSelect }) {
     return (
         <div className="exam-options">
@@ -126,7 +134,7 @@ function QuestionOptions({ question, onSelect }) {
                         onClick={() => onSelect(question.id, isSelected ? null : option.id)}
                     >
                         <span></span>
-                        <div className="math-content">{option.text}</div>
+                        <RichHtml className="math-content option-html" html={option.html} />
                     </button>
                 );
             })}
@@ -266,10 +274,7 @@ function PassageStep({ step, questionNumbers, onSelect }) {
                     {step.passage.image_url && (
                         <img src={step.passage.image_url} alt={step.passage.title} className="passage-panel-image" />
                     )}
-                    <div
-                        className="passage-panel-content math-content"
-                        dangerouslySetInnerHTML={{ __html: step.passage.content }}
-                    />
+                    <RichHtml className="passage-panel-content math-content" html={step.passage.content} />
 
                 </div>
             </aside>
@@ -279,7 +284,7 @@ function PassageStep({ step, questionNumbers, onSelect }) {
                     className="passage-resize-handle"
                     role="separator"
                     aria-orientation="vertical"
-                    aria-label="Resize summary and question panels"
+                    aria-label="Resize passage and question panels"
                     aria-valuenow={Math.round(fractionRef.current * 100)}
                     aria-valuemin={Math.round(PASSAGE_PANEL_MIN_FRACTION * 100)}
                     aria-valuemax={Math.round(PASSAGE_PANEL_MAX_FRACTION * 100)}
@@ -299,7 +304,7 @@ function PassageStep({ step, questionNumbers, onSelect }) {
                             <span>Question {questionNumbers[question.id]}</span>
                             <strong>{question.marks} marks</strong>
                         </div>
-                        <div className="exam-question-text math-content passage-preview" dangerouslySetInnerHTML={{ __html: question.text }} />
+                        <RichHtml className="exam-question-text math-content passage-preview" html={question.text} />
                         <QuestionOptions question={question} onSelect={onSelect} />
                     </div>
                 ))}
@@ -519,7 +524,7 @@ function StudentExamApp({ root }) {
                             <span>Question {questionNumbers[activeStep.question.id]} of {allQuestions.length}</span>
                             <strong>{activeStep.question.marks} marks</strong>
                         </div>
-                        <div className="exam-question-text math-content passage-preview" dangerouslySetInnerHTML={{ __html: activeStep.question.text }} />
+                        <RichHtml className="exam-question-text math-content passage-preview" html={activeStep.question.text} />
                         <QuestionOptions question={activeStep.question} onSelect={saveAnswer} />
                     </>
                 ) : (

@@ -25,7 +25,7 @@
                     <div class="question-number-badge"><i class="bi bi-file-earmark-text-fill"></i></div>
                     <div class="question-item-content">
                         <div class="question-item-meta">
-                            <span class="status-badge status-published"><i class="bi bi-collection"></i> Passage/Summary Question</span>
+                            <span class="status-badge status-published"><i class="bi bi-collection"></i> Passage Question</span>
                             <span class="question-marks-badge group-total">
                                 <i class="bi bi-trophy-fill"></i>
                                 {{ rtrim(rtrim(number_format($groupObtained, 2), '0'), '.') }}/{{ rtrim(rtrim(number_format($groupTotal, 2), '0'), '.') }} marks
