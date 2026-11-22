@@ -69,7 +69,7 @@
                 <div class="d-flex">
                     <div class="toast-body">
                         <i class="bi bi-exclamation-triangle-fill"></i>
-                        Could not save — please fix the {{ Str::plural('error', $errors->count()) }} highlighted below.
+                        Could not save: {{ $errors->first() }}
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>

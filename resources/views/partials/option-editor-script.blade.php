@@ -615,6 +615,12 @@
 
             var firstEmpty = null;
             form.querySelectorAll('[data-option-editor]').forEach(function (root) {
+                var preview = root.querySelector('[data-option-preview]');
+                if (preview && preview.hasAttribute('contenteditable')) {
+                    // Keep manually typed text synchronized even if the browser
+                    // didn't deliver an input event before the user submitted.
+                    syncPlainInput(preview);
+                }
                 var empty = isBlank(valueField(root).value);
                 root.classList.toggle('is-invalid', empty);
                 if (empty && ! firstEmpty) {
