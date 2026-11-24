@@ -19,6 +19,8 @@ class ExamController extends Controller
     public function index(Request $request): View
     {
         $branchId = $request->integer('branch_id') ?: null;
+        $subjectId = $request->integer('subject_id') ?: null;
+        $gradeId = $request->integer('grade_id') ?: null;
 
         // Super Admin sees every exam: its own global exams and every
         // branch's exams. The optional scope filter narrows that down.
@@ -28,6 +30,12 @@ class ExamController extends Controller
             ->when($request->string('scope')->toString() === 'branch', fn ($query) => $query->whereNotNull('branch_id'))
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
+            ->when($subjectId, fn ($query) => $query->where('subject_id', $subjectId))
+            // An Exam matches a Grade through its assigned Grades, or its
+            // legacy single school_class_id.
+            ->when($gradeId, fn ($query) => $query->where(fn ($q) => $q
+                ->whereHas('grades', fn ($g) => $g->whereKey($gradeId))
+                ->orWhere('school_class_id', $gradeId)))
             ->latest()
             ->paginate(20)
             ->withQueryString();
@@ -41,7 +49,7 @@ class ExamController extends Controller
             // drawer's Grade field always offers the full grade list.
             'classes' => SchoolClass::orderBy('name')->get(),
             'subjects' => Subject::orderBy('name')->get(),
-            'filters' => $request->only(['search', 'status', 'branch_id', 'scope']),
+            'filters' => $request->only(['search', 'status', 'branch_id', 'scope', 'subject_id', 'grade_id']),
         ]);
     }
 

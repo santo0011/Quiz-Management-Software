@@ -24,6 +24,18 @@
                     <option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
+            <select name="subject_id" class="form-select form-control" aria-label="Subject">
+                <option value="">All subjects</option>
+                @foreach ($subjects as $subject)
+                    <option value="{{ $subject->id }}" @selected((string) ($filters['subject_id'] ?? '') === (string) $subject->id)>{{ $subject->name }}</option>
+                @endforeach
+            </select>
+            <select name="grade_id" class="form-select form-control" aria-label="Grade">
+                <option value="">All grades</option>
+                @foreach ($classes as $class)
+                    <option value="{{ $class->id }}" @selected((string) ($filters['grade_id'] ?? '') === (string) $class->id)>{{ $class->name }}</option>
+                @endforeach
+            </select>
             <select name="scope" class="form-select form-control" aria-label="Scope">
                 <option value="">All scopes</option>
                 <option value="global" @selected(($filters['scope'] ?? '') === 'global')>All Branches (Super Admin)</option>

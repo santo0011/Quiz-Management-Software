@@ -8014,7 +8014,13 @@ form .status-badge.status-published:hover {
 
 /* Super Admin Exam List filters: search, status, scope, button. */
 .filter-bar.filter-bar-exams {
-    grid-template-columns: 3fr 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+}
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
+    .filter-bar.filter-bar-exams {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
 }
 
 @media (max-width: 767.98px) {
