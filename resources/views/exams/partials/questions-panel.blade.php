@@ -34,6 +34,9 @@
                                 <h3 class="question-item-text">{{ $group->title }}</h3>
                             </div>
                             <div class="action-group question-item-actions">
+                                <button type="button" class="btn btn-sm btn-soft" data-bs-toggle="modal" data-bs-target="#viewPassageModal{{ $group->id }}" title="View passage details" aria-label="View passage details">
+                                    <i class="bi bi-eye-fill" aria-hidden="true"></i>
+                                </button>
                                 @if ($loop->index > 0)
                                     <form method="POST" action="{{ route($prefix.'.exams.reorder', $exam) }}">
                                         @csrf
@@ -69,6 +72,23 @@
                         </div>
 
                         <div class="passage-preview math-content">{{ Str::limit(strip_tags($group->content), 220) }}</div>
+
+                        <div class="modal fade" id="viewPassageModal{{ $group->id }}" tabindex="-1" aria-labelledby="viewPassageModalLabel{{ $group->id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <div>
+                                            <h2 class="modal-title fs-5" id="viewPassageModalLabel{{ $group->id }}">{{ $group->title }}</h2>
+                                            <small class="text-muted">Passage · {{ $group->questions->count() }} {{ Str::plural('question', $group->questions->count()) }}</small>
+                                        </div>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="passage-preview math-content">{!! \App\Support\HtmlSanitizer::sanitize($group->content) !!}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="passage-group-questions">
                             @foreach ($group->questions as $question)
