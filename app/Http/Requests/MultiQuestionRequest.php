@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\Teacher;
 use App\Support\HtmlSanitizer;
 use App\Support\OptionContent;
+use App\Support\QuestionDuplicateChecker;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -90,11 +91,26 @@ class MultiQuestionRequest extends FormRequest
     {
         $validator->after(function ($validator): void {
             $questions = $this->input('questions', []);
+            $exam = $this->route('exam');
+
+            if (! is_array($questions) || ! $exam instanceof Exam) {
+                return;
+            }
+
+            $candidateQuestionTexts = collect($questions)
+                ->filter(fn ($question) => is_array($question) && is_string($question['question_text'] ?? null))
+                ->pluck('question_text')
+                ->all();
+            $existingSignatures = QuestionDuplicateChecker::existingSignatures($exam, $candidateQuestionTexts);
+            $submittedSignatures = [];
 
             foreach ($questions as $index => $question) {
+                if (! is_array($question)) {
+                    continue;
+                }
+
                 $options = collect($question['options'] ?? [])
-                    ->map(fn ($option) => trim((string) $option))
-                    ->filter()
+                    ->filter(fn ($option) => is_string($option) && trim($option) !== '')
                     ->values();
 
                 if ($options->count() < 2) {
@@ -105,14 +121,17 @@ class MultiQuestionRequest extends FormRequest
                     $validator->errors()->add("questions.$index.correct_option", 'Please select the correct answer.');
                 }
 
-                $exam = $this->route('exam');
-                if ($exam instanceof Exam && isset($question['question_text']) && trim((string) $question['question_text']) !== '') {
-                    $duplicate = \App\Models\Question::where('exam_id', $exam->id)
-                        ->where('question_text', trim((string) $question['question_text']))
-                        ->exists();
+                $questionText = $question['question_text'] ?? null;
+                if (is_string($questionText) && trim($questionText) !== '' && $options->count() >= 2) {
+                    $signature = QuestionDuplicateChecker::signature($questionText, $options->all());
 
-                    if ($duplicate) {
-                        $validator->errors()->add("questions.$index.question_text", 'This question already exists in this exam.');
+                    if (isset($existingSignatures[$signature]) || isset($submittedSignatures[$signature])) {
+                        $validator->errors()->add(
+                            "questions.$index.question_text",
+                            'A question with the same text and answer options already exists in this exam.'
+                        );
+                    } else {
+                        $submittedSignatures[$signature] = true;
                     }
                 }
             }
