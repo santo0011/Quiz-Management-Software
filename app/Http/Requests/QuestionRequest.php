@@ -3,10 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Models\Exam;
-use App\Models\Question;
 use App\Models\Teacher;
 use App\Support\HtmlSanitizer;
 use App\Support\OptionContent;
+use App\Support\QuestionDuplicateChecker;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -97,18 +97,21 @@ class QuestionRequest extends FormRequest
             $exam = $this->route('exam') ?: $this->route('question')?->exam;
             $question = $this->route('question');
 
-            // An edit that keeps the question text as it is must still save,
-            // even if an older duplicate of that text already exists.
-            $textUnchanged = $question && trim($this->input('question_text')) === $question->question_text;
+            $questionText = $this->input('question_text');
+            $submittedOptions = collect($this->input('options', []))
+                ->filter(fn ($option) => is_string($option) && trim($option) !== '')
+                ->values()
+                ->all();
 
-            if ($exam instanceof Exam && $this->filled('question_text') && ! $textUnchanged) {
-                $duplicate = Question::where('exam_id', $exam->id)
-                    ->where('question_text', trim($this->input('question_text')))
-                    ->when($question, fn ($query) => $query->whereKeyNot($question->id))
-                    ->exists();
+            if ($exam instanceof Exam && is_string($questionText) && trim($questionText) !== '' && count($submittedOptions) >= 2) {
+                $existingSignatures = QuestionDuplicateChecker::existingSignatures($exam, [$questionText], $question?->id);
+                $signature = QuestionDuplicateChecker::signature($questionText, $submittedOptions);
 
-                if ($duplicate) {
-                    $validator->errors()->add('question_text', 'This question already exists in this exam.');
+                if (isset($existingSignatures[$signature])) {
+                    $validator->errors()->add(
+                        'question_text',
+                        'A question with the same text and answer options already exists in this exam.'
+                    );
                 }
             }
         });
