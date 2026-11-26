@@ -283,9 +283,14 @@
 
             var host = state.panel.querySelector('[data-option-editor-host]');
             var letter = root.dataset.optionLetter || '';
+            var extraPlugins = [OptionImageUploadPlugin];
+
+            if (window.QuizEditorKit && typeof window.QuizEditorKit.UnderlineDataPlugin === 'function') {
+                extraPlugins.push(window.QuizEditorKit.UnderlineDataPlugin);
+            }
 
             state.ready = window.ClassicEditor.create(host, {
-                extraPlugins: [OptionImageUploadPlugin],
+                extraPlugins: extraPlugins,
                 toolbar: { items: TOOLBAR, shouldNotGroupWhenFull: false },
                 placeholder: 'Write option ' + letter + ' — text, image or math equation',
                 initialData: toEditorHtml(valueField(root).value),
@@ -293,6 +298,10 @@
                 state.editor = editor;
                 state.baseline = editor.getData();
                 state.sourceValue = valueField(root).value;
+
+                if (window.QuizEditorKit && typeof window.QuizEditorKit.initUnderlineToolFor === 'function') {
+                    window.QuizEditorKit.initUnderlineToolFor(editor);
+                }
 
                 if (window.QuizEditorKit && typeof window.QuizEditorKit.initMathToolFor === 'function') {
                     window.QuizEditorKit.initMathToolFor(host, editor);
