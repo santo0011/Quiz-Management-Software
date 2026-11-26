@@ -3599,7 +3599,7 @@ body {
     margin-bottom: 22px;
     color: #172033;
     font-size: calc(1.18rem * var(--exam-font-scale, 1));
-    font-weight: 800;
+    font-weight: 400;
     line-height: 1.55;
 }
 
@@ -3679,6 +3679,18 @@ body {
 .math-content {
     overflow-wrap: anywhere;
 }
+
+/* CKEditor 5 FontSize/Alignment output is rendered outside the editor too
+   (question previews, exam questions and passage content). The sanitizer
+   preserves only this small CKEditor class allowlist. */
+.math-content .text-tiny { font-size: 0.7em; }
+.math-content .text-small { font-size: 0.85em; }
+.math-content .text-big { font-size: 1.4em; }
+.math-content .text-huge { font-size: 1.8em; }
+.math-content .text-align-left { text-align: left; }
+.math-content .text-align-center { text-align: center; }
+.math-content .text-align-right { text-align: right; }
+.math-content .text-align-justify { text-align: justify; }
 
 /* Passage/Summary question group — student exam runner.
    Flex (not grid) so the Summary panel's width can be driven imperatively
@@ -4703,7 +4715,7 @@ body.is-resizing-panels * {
 .question-item-text {
     margin: 0;
     font-size: 1.02rem;
-    font-weight: 800;
+    font-weight: 400;
     line-height: 1.5;
     color: var(--ink);
 }

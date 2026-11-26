@@ -119,6 +119,99 @@
                     };
                 }
 
+                // The 41.4.2 Classic CDN build does not bundle CKEditor's
+                // Underline plugin. Register the same model-to-<u> conversion
+                // through the build's supported extraPlugins hook so formatting
+                // survives getData()/setData() and form submissions.
+                function UnderlineDataPlugin(editor) {
+                    editor.model.schema.extend('$text', { allowAttributes: 'underline' });
+                    editor.conversion.for('downcast').attributeToElement({
+                        model: 'underline',
+                        view: 'u'
+                    });
+                    editor.conversion.for('upcast').elementToAttribute({
+                        view: 'u',
+                        model: { key: 'underline', value: true }
+                    });
+                }
+
+                function initUnderlineToolFor(editor) {
+                    var toolbar = editor.ui.view.toolbar.element;
+                    if (!toolbar || toolbar.querySelector('[data-ckeditor-underline]')) {
+                        return;
+                    }
+
+                    var italicButton = Array.from(toolbar.querySelectorAll('button.ck-button')).find(function (candidate) {
+                        return [candidate.getAttribute('aria-label'), candidate.title, candidate.textContent]
+                            .some(function (label) { return (label || '').trim().toLowerCase() === 'italic'; });
+                    });
+                    if (!italicButton) {
+                        return;
+                    }
+
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'ck ck-button ck-button_with-text ck-off';
+                    button.setAttribute('aria-label', 'Underline');
+                    button.setAttribute('aria-pressed', 'false');
+                    button.setAttribute('data-ckeditor-underline', '');
+                    button.title = 'Underline';
+                    var label = document.createElement('span');
+                    label.className = 'ck-button__label';
+                    label.textContent = 'U';
+                    label.style.textDecoration = 'underline';
+                    label.style.fontWeight = '600';
+                    button.appendChild(label);
+
+                    // Keep a snapshot of the selected model range before the
+                    // toolbar button receives focus, so clicking U never loses
+                    // the text selection inside the editable area.
+                    var pendingSelection = null;
+                    button.addEventListener('mousedown', function (event) {
+                        var selection = editor.model.document.selection;
+                        pendingSelection = {
+                            range: selection.getFirstRange(),
+                            isCollapsed: selection.isCollapsed,
+                            isUnderlined: selection.hasAttribute('underline')
+                        };
+                        event.preventDefault();
+                        event.stopPropagation();
+                    });
+                    button.addEventListener('click', function () {
+                        var selection = pendingSelection || {
+                            range: editor.model.document.selection.getFirstRange(),
+                            isCollapsed: editor.model.document.selection.isCollapsed,
+                            isUnderlined: editor.model.document.selection.hasAttribute('underline')
+                        };
+                        pendingSelection = null;
+                        editor.model.change(function (writer) {
+                            if (selection.isCollapsed) {
+                                if (selection.isUnderlined) {
+                                    writer.removeSelectionAttribute('underline');
+                                } else {
+                                    writer.setSelectionAttribute('underline', true);
+                                }
+                            } else if (selection.isUnderlined) {
+                                writer.removeAttribute('underline', selection.range);
+                            } else {
+                                writer.setAttribute('underline', true, selection.range);
+                            }
+                        });
+                    });
+
+                    function refreshButtonState() {
+                        var isUnderlined = editor.model.document.selection.hasAttribute('underline');
+                        button.classList.toggle('ck-on', isUnderlined);
+                        button.classList.toggle('ck-off', !isUnderlined);
+                        button.setAttribute('aria-pressed', isUnderlined ? 'true' : 'false');
+                    }
+
+                    editor.model.document.selection.on('change:range', refreshButtonState);
+                    editor.model.document.selection.on('change:attribute', refreshButtonState);
+                    italicButton.insertAdjacentElement('afterend', button);
+                    refreshButtonState();
+                }
+
                 // Inserts a math-tool button's snippet into a staging input at the
                 // cursor (used by the Insert Math popover's staging input).
                 function insertMathSnippet(stagingInput, snippet) {
@@ -523,6 +616,8 @@
                 // so options reuse the same image upload and Insert Math tool.
                 window.QuizEditorKit = {
                     Base64UploadAdapterPlugin: Base64UploadAdapterPlugin,
+                    UnderlineDataPlugin: UnderlineDataPlugin,
+                    initUnderlineToolFor: initUnderlineToolFor,
                     initMathToolFor: initMathToolFor,
                 };
 
@@ -544,9 +639,12 @@
                         textarea.setAttribute('data-summary-editor-ready', '1');
                         var form = textarea.closest('form');
 
-                        ClassicEditor.create(textarea, { extraPlugins: [Base64UploadAdapterPlugin] })
+                        ClassicEditor.create(textarea, {
+                            extraPlugins: [Base64UploadAdapterPlugin, UnderlineDataPlugin]
+                        })
                             .then(function (editor) {
                                 textarea.ckeditorInstance = editor;
+                                initUnderlineToolFor(editor);
                                 initMathToolFor(textarea, editor);
 
                                 if (textarea.hasAttribute('data-math-mode')) {
