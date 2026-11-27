@@ -223,13 +223,29 @@ class Exam extends Model
     }
 
     /**
+     * NRICH Student IDs (students.zoho_student_id) used for testing. Their
+     * attempts never trigger the attendance-based exam lock, so an exam
+     * they attend stays fully editable, deletable and unpublishable.
+     */
+    public const ATTENDANCE_LOCK_EXEMPT_STUDENT_IDS = ['NL1405'];
+
+    /**
      * Whether any student has started (attempted) this exam. Once true, the
      * exam can no longer be deleted or unpublished — regardless of publish
      * status. Its settings and questions remain editable.
+     *
+     * Attempts by students in ATTENDANCE_LOCK_EXEMPT_STUDENT_IDS are ignored.
      */
     public function hasBeenAttempted(): bool
     {
-        return $this->attempts()->exists();
+        return $this->attempts()
+            ->whereHas('student', function (Builder $query): void {
+                $query->where(function (Builder $query): void {
+                    $query->whereNull('zoho_student_id')
+                        ->orWhereNotIn('zoho_student_id', self::ATTENDANCE_LOCK_EXEMPT_STUDENT_IDS);
+                });
+            })
+            ->exists();
     }
 
     public function isOpen(): bool
